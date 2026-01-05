@@ -54,7 +54,7 @@ import { cn } from "@/lib/utils";
 
 // Mock user data
 const initialUserData = {
-  name: "Nurasyl Kairkhanov",
+  name: "Nur Kairkhanov",
   email: "nurasyl@example.com",
   phone: "+7 777 123 4567",
   company: "Astana IT University",
