@@ -1,0 +1,580 @@
+{
+  "app": {
+    "name": "Senti News",
+    "tagline": "Media Intelligence Platform"
+  },
+  "nav": {
+    "mentions": "Mentions",
+    "insights": "AI Insights",
+    "analysis": "Analysis",
+    "assistant": "Brand Assistant",
+    "topics": "Topic Analysis",
+    "comparison": "Comparison",
+    "sources": "Sources",
+    "influencers": "Influencers",
+    "reports": {
+      "email": "Email Reports",
+      "pdf": "PDF Report",
+      "excel": "Excel Export",
+      "infographic": "Infographic"
+    },
+    "geo": "Geo Analysis",
+    "influencerAnalysis": "Influencer Analysis",
+    "hotHours": "Hot Hours",
+    "emotions": "Emotion Analysis",
+    "settings": "Settings",
+    "sections": {
+      "aiTools": "AI Tools",
+      "research": "Research",
+      "reports": "Reports",
+      "deepAnalysis": "Deep Analysis"
+    }
+  },
+  "landing": {
+    "hero": {
+      "badge": "AI-Powered Media Intelligence",
+      "title": "Monitor Your Brand",
+      "titleHighlight": "Across All Media",
+      "subtitle": "Real-time sentiment analysis, trend detection, and actionable insights from news, social media, and web sources. Powered by advanced NLP and AI.",
+      "ctaPrimary": "Get Started",
+      "ctaSecondary": "Watch Demo",
+      "trust": {
+        "security": "Enterprise Security",
+        "multilang": "Multi-language Support",
+        "realtime": "Real-time Updates"
+      }
+    },
+    "stats": {
+      "mentionsTracked": "Mentions Tracked",
+      "countriesCovered": "Countries Covered",
+      "uptimeSLA": "Uptime SLA",
+      "enterpriseClients": "Enterprise Clients"
+    },
+    "features": {
+      "title": "Everything You Need for",
+      "titleHighlight": "Media Intelligence",
+      "subtitle": "Comprehensive tools to monitor, analyze, and act on media mentions across all channels.",
+      "items": {
+        "tracking": {
+          "title": "Mention Tracking",
+          "description": "Track brand mentions across news, social media, blogs, podcasts, and videos in real-time."
+        },
+        "sentiment": {
+          "title": "AI Sentiment Analysis",
+          "description": "Advanced NLP models detect sentiment, emotions, and context in multiple languages."
+        },
+        "trends": {
+          "title": "Trend Detection",
+          "description": "Identify emerging trends, topics, and potential crises before they escalate."
+        },
+        "analytics": {
+          "title": "Analytics Dashboard",
+          "description": "Interactive visualizations with reach, engagement, and presence score metrics."
+        },
+        "competitive": {
+          "title": "Competitive Analysis",
+          "description": "Compare your brand against competitors with side-by-side metrics and insights."
+        },
+        "reports": {
+          "title": "Automated Reports",
+          "description": "Generate PDF, Excel, and infographic reports with scheduled email delivery."
+        }
+      }
+    },
+    "cta": {
+      "title": "Ready to Transform Your Media Monitoring?",
+      "subtitle": "Join hundreds of brands using Senti News to stay ahead of the conversation.",
+      "primary": "Create Account",
+      "secondary": "Learn More",
+      "note": "Setup in minutes • Start monitoring today"
+    },
+    "footer": {
+      "privacy": "Privacy",
+      "terms": "Terms",
+      "contact": "Contact",
+      "copyright": "All rights reserved."
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Welcome back",
+      "subtitle": "Enter your credentials to access your account",
+      "email": "Email",
+      "password": "Password",
+      "rememberMe": "Keep me signed in for 30 days",
+      "forgotPassword": "Forgot password?",
+      "submit": "Sign In",
+      "submitting": "Signing in...",
+      "noAccount": "Don't have an account?",
+      "createAccount": "Create account",
+      "orContinueWith": "Or continue with",
+      "google": "Continue with Google"
+    },
+    "register": {
+      "title": "Create your account",
+      "subtitle": "Get started with Senti News today. No credit card required.",
+      "name": "Full Name",
+      "email": "Work Email",
+      "password": "Password",
+      "acceptTerms": "I agree to the Terms of Service and Privacy Policy",
+      "submit": "Create Account",
+      "submitting": "Creating account...",
+      "hasAccount": "Already have an account?",
+      "signIn": "Sign in"
+    },
+    "passwordStrength": {
+      "length": "8+ characters",
+      "uppercase": "Uppercase",
+      "lowercase": "Lowercase",
+      "number": "Number"
+    }
+  },
+  "header": {
+    "search": "Search mentions, sources...",
+    "quickActions": "Quick Actions",
+    "generatePDF": "Generate PDF",
+    "exportExcel": "Export Excel",
+    "scheduleReport": "Schedule Report",
+    "notifications": "Notifications",
+    "markAllRead": "Mark all read",
+    "viewAll": "View all notifications",
+    "all": "All",
+    "unread": "Unread",
+    "alerts": "Alerts",
+    "mentions": "Mentions",
+    "reports": "Reports",
+    "noNotifications": "No notifications",
+    "allCaughtUp": "All caught up!",
+    "nothingToShow": "Nothing to show here",
+    "newProject": "New Project",
+    "profile": "Profile",
+    "settings": "Settings",
+    "logout": "Log out",
+    "language": "Language",
+    "stayUpdated": "Stay updated with your media monitoring alerts"
+  },
+  "mentions": {
+    "title": "Mentions & Reach",
+    "subtitle": "Monitor your brand mentions across all sources in real-time",
+    "totalMentions": "Total Mentions",
+    "socialReach": "Social Reach",
+    "nonSocialReach": "Non-social Reach",
+    "positiveSentiment": "Positive Sentiment",
+    "aiSummary": "AI Summary",
+    "selectAll": "Select All",
+    "bulkActions": "Bulk Actions",
+    "recentMentions": "Recent Mentions",
+    "last7days": "Last 7 days",
+    "filters": {
+      "title": "Filters",
+      "dateRange": "Date Range",
+      "sources": "Sources",
+      "sentiment": "Sentiment",
+      "influenceScore": "Influence Score",
+      "author": "Author",
+      "savedFilters": "Saved Filters",
+      "saveFilter": "Save Current Filter",
+      "apply": "Apply Filters",
+      "clear": "Clear All",
+      "showAll": "Show all sources",
+      "from": "From",
+      "to": "To",
+      "min": "Min",
+      "max": "Max",
+      "searchByAuthor": "Search by author...",
+      "noSavedFilters": "No saved filters yet"
+    },
+    "sentiment": {
+      "positive": "Positive",
+      "neutral": "Neutral",
+      "negative": "Negative"
+    },
+    "table": {
+      "mention": "Mention",
+      "sentiment": "Sentiment",
+      "score": "Score",
+      "reach": "Reach",
+      "location": "Location",
+      "actions": "Actions",
+      "influence": "influence",
+      "noMentionsFound": "No mentions found matching your filters."
+    },
+    "actions": {
+      "goToSource": "Go to source",
+      "viewDetails": "View details",
+      "addTag": "Add tag",
+      "addToReport": "Add to report",
+      "save": "Save",
+      "unsave": "Unsave",
+      "muteSource": "Mute source",
+      "delete": "Delete"
+    },
+    "charts": {
+      "mentionsOverTime": "Mentions Over Time",
+      "sentimentDistribution": "Sentiment Distribution",
+      "mentions": "Mentions",
+      "reach": "Reach",
+      "both": "Both"
+    }
+  },
+  "insights": {
+    "title": "AI Insights",
+    "subtitle": "Actionable intelligence powered by advanced AI analysis",
+    "filters": {
+      "all": "All Insights",
+      "alerts": "Alerts",
+      "trends": "Trends",
+      "recommendations": "Recommendations",
+      "opportunities": "Opportunities"
+    },
+    "types": {
+      "alert": "Alert",
+      "trend": "Trend",
+      "recommendation": "Recommendation",
+      "opportunity": "Opportunity"
+    },
+    "severity": {
+      "high": "High Priority",
+      "medium": "Medium Priority",
+      "low": "Low Priority"
+    },
+    "actions": {
+      "dismiss": "Dismiss",
+      "viewDetails": "View Details",
+      "takeAction": "Take Action",
+      "share": "Share"
+    },
+    "charts": {
+      "insightsByCategory": "Insights by Category",
+      "insightsOverTime": "Insights Over Time"
+    },
+    "noInsights": "No insights available"
+  },
+  "analysis": {
+    "title": "Analysis",
+    "subtitle": "Comprehensive analytics and insights",
+    "tabs": {
+      "overview": "Overview",
+      "sentiment": "Sentiment",
+      "sources": "Sources",
+      "topics": "Topics"
+    }
+  },
+  "assistant": {
+    "title": "AI Brand Assistant",
+    "subtitle": "Get instant answers about your brand performance",
+    "placeholder": "Ask me anything about your brand...",
+    "send": "Send",
+    "suggestions": {
+      "title": "Quick Questions",
+      "items": {
+        "sentiment": "What's the sentiment trend?",
+        "topics": "What are the main topics?",
+        "influencers": "Who are the top influencers?",
+        "recommendations": "Give me recommendations"
+      }
+    },
+    "newChat": "New Chat",
+    "chatHistory": "Chat History",
+    "noChats": "No chat history yet"
+  },
+  "topics": {
+    "title": "Topic Analysis",
+    "subtitle": "Discover trending topics and themes",
+    "extract": "Extract Topics",
+    "merge": "Merge Topics",
+    "table": {
+      "topic": "Topic",
+      "mentions": "Mentions",
+      "reach": "Reach",
+      "sentiment": "Sentiment",
+      "trend": "Trend"
+    }
+  },
+  "comparison": {
+    "title": "Comparison",
+    "subtitle": "Compare projects, periods, or competitors",
+    "compareProjects": "Compare Projects",
+    "comparePeriods": "Compare Periods",
+    "compareCompetitors": "Compare Competitors"
+  },
+  "sources": {
+    "title": "Sources",
+    "subtitle": "Manage and monitor your data sources",
+    "addSource": "Add Source",
+    "totalSources": "Total Sources",
+    "active": "Active",
+    "trusted": "Trusted",
+    "table": {
+      "source": "Source",
+      "type": "Type",
+      "mentions": "Mentions",
+      "visits": "Visits",
+      "score": "Score",
+      "status": "Status"
+    },
+    "types": {
+      "news": "News",
+      "social": "Social Media",
+      "video": "Video",
+      "blog": "Blogs"
+    },
+    "actions": {
+      "goToSite": "Go to site",
+      "markTrusted": "Mark as trusted",
+      "removeTrust": "Remove trust",
+      "block": "Block source"
+    }
+  },
+  "influencers": {
+    "title": "Influencers",
+    "subtitle": "Track and analyze key influencers",
+    "table": {
+      "influencer": "Influencer",
+      "platform": "Platform",
+      "followers": "Followers",
+      "mentions": "Mentions",
+      "reach": "Reach",
+      "sentiment": "Sentiment"
+    }
+  },
+  "reports": {
+    "email": {
+      "title": "Email Reports",
+      "subtitle": "Schedule automated email reports",
+      "create": "Create Schedule",
+      "frequency": "Frequency",
+      "recipients": "Recipients"
+    },
+    "pdf": {
+      "title": "PDF Report",
+      "subtitle": "Generate comprehensive PDF reports",
+      "generate": "Generate Report",
+      "configuring": "Configuring report..."
+    },
+    "excel": {
+      "title": "Excel Export",
+      "subtitle": "Export data to Excel format",
+      "export": "Export to Excel",
+      "configuring": "Configuring export..."
+    },
+    "infographic": {
+      "title": "Infographic",
+      "subtitle": "Create visual infographics",
+      "generate": "Generate Infographic"
+    }
+  },
+  "geo": {
+    "title": "Geo Analysis",
+    "subtitle": "Geographic distribution of your media mentions",
+    "worldMap": "World Map - Mentions by Country",
+    "countriesBreakdown": "Countries Breakdown",
+    "countries": "countries",
+    "filterCountries": "Filter Countries",
+    "table": {
+      "country": "Country",
+      "mentions": "Mentions",
+      "reach": "Reach",
+      "sentiment": "Sentiment",
+      "change": "Change"
+    },
+    "loadingMap": "Loading map...",
+    "mapError": "Failed to load world map. Please try again later."
+  },
+  "influencerAnalysis": {
+    "title": "Influencer Analysis",
+    "subtitle": "Deep dive into influencer performance"
+  },
+  "hotHours": {
+    "title": "Hot Hours",
+    "subtitle": "Peak activity times for your brand",
+    "heatmap": "Activity Heatmap"
+  },
+  "emotions": {
+    "title": "Emotion Analysis",
+    "subtitle": "Emotional sentiment breakdown",
+    "emotions": {
+      "joy": "Joy",
+      "anger": "Anger",
+      "sadness": "Sadness",
+      "fear": "Fear",
+      "surprise": "Surprise",
+      "disgust": "Disgust"
+    }
+  },
+  "settings": {
+    "title": "Project Settings",
+    "subtitle": "Configure your project preferences and monitoring rules",
+    "save": "Save Changes",
+    "tabs": {
+      "general": "General",
+      "keywords": "Keywords",
+      "sources": "Sources",
+      "notifications": "Notifications",
+      "team": "Team"
+    },
+    "general": {
+      "title": "Project Information",
+      "subtitle": "Basic information about your monitoring project",
+      "name": "Project Name",
+      "description": "Description",
+      "logo": "Project Logo",
+      "logoHint": "Upload a logo for your project",
+      "accentColor": "Accent Color"
+    },
+    "keywords": {
+      "required": {
+        "title": "Required Keywords",
+        "subtitle": "Mentions must contain at least one of these keywords"
+      },
+      "excluded": {
+        "title": "Excluded Keywords",
+        "subtitle": "Mentions containing these keywords will be filtered out"
+      },
+      "addPlaceholder": "Add keyword..."
+    },
+    "notifications": {
+      "title": "Notification Preferences",
+      "subtitle": "Configure how you want to be notified about important events",
+      "email": "Email Notifications",
+      "emailDesc": "Receive email alerts for important mentions",
+      "threshold": "Alert Threshold",
+      "thresholdDesc": "Only notify for mentions above this importance level",
+      "webhook": "Webhook URL",
+      "webhookDesc": "Receive real-time notifications via webhook"
+    },
+    "team": {
+      "title": "Team Members",
+      "subtitle": "Manage who has access to this project",
+      "invite": "Invite Team Member"
+    }
+  },
+  "profile": {
+    "title": "Profile",
+    "subtitle": "Your account information and activity",
+    "edit": "Edit Profile",
+    "settings": "Settings",
+    "joined": "Joined",
+    "bio": "Bio",
+    "location": "Location",
+    "website": "Website",
+    "company": "Company",
+    "role": "Role",
+    "stats": {
+      "projects": "Projects",
+      "reportsGenerated": "Reports Generated",
+      "mentionsAnalyzed": "Mentions Analyzed",
+      "insightsCreated": "Insights Created"
+    },
+    "activity": {
+      "title": "Recent Activity",
+      "projectCreated": "Created new project",
+      "reportGenerated": "Generated PDF report",
+      "mentionsAnalyzed": "Analyzed mentions",
+      "alertTriggered": "Sentiment alert triggered",
+      "insightsGenerated": "AI Insights generated"
+    },
+    "quickActions": {
+      "title": "Quick Actions",
+      "createProject": "Create Project",
+      "generateReport": "Generate Report",
+      "viewInsights": "View Insights"
+    }
+  },
+  "profileSettings": {
+    "title": "Profile Settings",
+    "subtitle": "Manage your account settings and preferences",
+    "tabs": {
+      "profile": "Profile",
+      "security": "Security",
+      "notifications": "Notifications",
+      "preferences": "Preferences"
+    },
+    "profile": {
+      "title": "Profile Information",
+      "name": "Full Name",
+      "email": "Email",
+      "bio": "Bio",
+      "location": "Location",
+      "website": "Website",
+      "company": "Company",
+      "avatar": "Profile Picture"
+    },
+    "security": {
+      "title": "Security Settings",
+      "changePassword": "Change Password",
+      "currentPassword": "Current Password",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm Password",
+      "twoFactor": "Two-Factor Authentication",
+      "activeSessions": "Active Sessions"
+    },
+    "notifications": {
+      "title": "Notification Preferences",
+      "email": "Email Notifications",
+      "push": "Push Notifications",
+      "mentions": "Mention Alerts",
+      "reports": "Report Ready"
+    },
+    "preferences": {
+      "title": "Preferences",
+      "language": "Language",
+      "timezone": "Timezone",
+      "theme": "Theme",
+      "dateFormat": "Date Format"
+    }
+  },
+  "common": {
+    "search": "Search",
+    "export": "Export",
+    "refresh": "Refresh",
+    "filter": "Filter",
+    "hideFilters": "Hide Filters",
+    "showFilters": "Show Filters",
+    "previous": "Previous",
+    "next": "Next",
+    "showing": "Showing",
+    "of": "of",
+    "loading": "Loading...",
+    "noData": "No data available",
+    "error": "An error occurred",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "remove": "Remove",
+    "close": "Close",
+    "back": "Back",
+    "vsLastPeriod": "vs last period",
+    "collapse": "Collapse",
+    "selectAll": "Select All",
+    "deselectAll": "Deselect All",
+    "apply": "Apply",
+    "reset": "Reset",
+    "clear": "Clear",
+    "update": "Update",
+    "create": "Create",
+    "view": "View",
+    "download": "Download",
+    "upload": "Upload",
+    "yes": "Yes",
+    "no": "No",
+    "new": "new"
+  },
+  "dateRanges": {
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "last7days": "Last 7 days",
+    "last30days": "Last 30 days",
+    "last90days": "Last 90 days",
+    "custom": "Custom range"
+  },
+  "languages": {
+    "en": "English",
+    "ru": "Русский",
+    "kz": "Қазақша"
+  }
+}
