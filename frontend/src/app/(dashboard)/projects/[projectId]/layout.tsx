@@ -26,10 +26,11 @@ export default function ProjectLayout({ children, params }: ProjectLayoutProps) 
       <main
         className={cn(
           "pt-16 min-h-screen transition-all duration-300",
-          isCollapsed ? "pl-[72px]" : "pl-[260px]"
+          "pl-0 lg:pl-[72px]",
+          isCollapsed ? "lg:pl-[72px]" : "lg:pl-[260px]"
         )}
       >
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {children}
         </div>
       </main>

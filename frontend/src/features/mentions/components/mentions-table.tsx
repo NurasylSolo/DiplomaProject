@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useMentionsFilterStore } from "@/stores";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 interface MentionsTableProps {
   projectId: string;
@@ -222,6 +223,7 @@ export function MentionsTable({ projectId }: MentionsTableProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(25);
+  const isMobile = useMediaQuery("(max-width: 768px)");
   
   // Apply filters with safe defaults
   const filteredMentions = useMemo(() => {
@@ -310,6 +312,204 @@ export function MentionsTable({ projectId }: MentionsTableProps) {
     return reach.toString();
   };
   
+  // Mobile Card View
+  if (isMobile) {
+    return (
+      <div className="space-y-4">
+        {/* Results info */}
+        {filteredMentions.length !== mockMentions.length && (
+          <div className="px-4 py-2 bg-muted/30 border-b border-border/50">
+            <p className="text-sm text-muted-foreground">
+              Showing <span className="font-medium text-foreground">{filteredMentions.length}</span> of {mockMentions.length} mentions
+            </p>
+          </div>
+        )}
+        
+        {/* Mobile Cards */}
+        <div className="space-y-3 px-4 pb-4">
+          {paginatedMentions.length === 0 ? (
+            <div className="p-8 text-center">
+              <div className="flex flex-col items-center gap-2">
+                <p className="text-muted-foreground">No mentions match your filters</p>
+                <p className="text-sm text-muted-foreground/70">Try adjusting your filter criteria</p>
+              </div>
+            </div>
+          ) : (
+            paginatedMentions.map((mention) => (
+              <div
+                key={mention.id}
+                className={cn(
+                  "p-4 rounded-lg border border-border/50 bg-card hover:bg-muted/30 transition-colors",
+                  mention.visited && "opacity-70"
+                )}
+              >
+                <div className="flex items-start gap-3 mb-3">
+                  <Checkbox
+                    checked={selectedIds.includes(mention.id)}
+                    onCheckedChange={() => toggleSelection(mention.id)}
+                    className="mt-1"
+                  />
+                  <Avatar className="h-10 w-10 rounded-lg flex-shrink-0">
+                    <AvatarFallback className="rounded-lg text-xs font-medium bg-primary/10">
+                      {mention.source.icon}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs text-muted-foreground">
+                        {mention.source.name}
+                      </span>
+                      <span className="text-xs text-muted-foreground/50">•</span>
+                      <span className="text-xs text-muted-foreground">
+                        {formatDistanceToNow(mention.publishedAt, { addSuffix: true })}
+                      </span>
+                      {mention.saved && (
+                        <Bookmark className="h-3 w-3 text-primary fill-primary ml-auto" />
+                      )}
+                    </div>
+                    <h4 className="font-medium text-sm mb-1 line-clamp-2">
+                      {mention.title}
+                    </h4>
+                    <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
+                      {mention.snippet}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "capitalize text-xs font-medium",
+                          sentimentColors[mention.sentiment]
+                        )}
+                      >
+                        {mention.sentiment}
+                      </Badge>
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <span className="font-semibold">{mention.influenceScore.toFixed(1)}</span>
+                        <span>influence</span>
+                      </div>
+                      <span className="text-xs font-medium">
+                        {formatReach(mention.reach)} reach
+                      </span>
+                      <span className="text-lg" title={mention.country}>
+                        {countryFlags[mention.country] || "🌍"}
+                      </span>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 ml-auto">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuItem>
+                            <ExternalLink className="h-4 w-4 mr-2" />
+                            Go to source
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <Eye className="h-4 w-4 mr-2" />
+                            View details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <Tag className="h-4 w-4 mr-2" />
+                            Add tag
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <FileText className="h-4 w-4 mr-2" />
+                            Add to report
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <Bookmark className="h-4 w-4 mr-2" />
+                            {mention.saved ? "Unsave" : "Save"}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem>
+                            <VolumeX className="h-4 w-4 mr-2" />
+                            Mute source
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive">
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+        
+        {/* Mobile Pagination */}
+        <div className="flex flex-col gap-3 px-4 py-3 border-t border-border/50">
+          <div className="flex items-center justify-between">
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              Showing <span className="font-medium">{(currentPage - 1) * perPage + 1}-{Math.min(currentPage * perPage, filteredMentions.length)}</span> of <span className="font-medium">{filteredMentions.length}</span>
+            </p>
+            <Select value={String(perPage)} onValueChange={(v) => { setPerPage(Number(v)); setCurrentPage(1); }}>
+              <SelectTrigger className="w-[90px] h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(p => p - 1)}
+              className="flex-1"
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Previous
+            </Button>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(3, totalPages) }, (_, i) => {
+                let pageNum: number;
+                if (totalPages <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 2) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 1) {
+                  pageNum = totalPages - 2 + i;
+                } else {
+                  pageNum = currentPage - 1 + i;
+                }
+                
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={currentPage === pageNum ? "default" : "outline"}
+                    size="sm"
+                    className="w-8 p-0 text-xs"
+                    onClick={() => setCurrentPage(pageNum)}
+                  >
+                    {pageNum}
+                  </Button>
+                );
+              })}
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              disabled={currentPage === totalPages || totalPages === 0}
+              onClick={() => setCurrentPage(p => p + 1)}
+              className="flex-1"
+            >
+              Next
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  // Desktop Table View
   return (
     <div className="overflow-x-auto">
       {/* Results info */}

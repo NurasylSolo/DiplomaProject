@@ -151,17 +151,19 @@ export function Header({ projectId }: HeaderProps) {
         "fixed top-0 right-0 z-30 h-16",
         "bg-background/80 backdrop-blur-xl border-b border-border/50",
         "transition-all duration-300",
-        isCollapsed ? "left-[72px]" : "left-[260px]"
+        "left-0 lg:left-[72px]",
+        isCollapsed && "lg:left-[72px]",
+        !isCollapsed && "lg:left-[260px]"
       )}
     >
-      <div className="flex items-center justify-between h-full px-4 lg:px-6">
+      <div className="flex items-center justify-between h-full px-3 sm:px-4 lg:px-6">
         {/* Left side */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
           {/* Mobile menu button */}
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden"
+            className="lg:hidden flex-shrink-0"
             onClick={toggleMobileOpen}
           >
             <Menu className="h-5 w-5" />
@@ -172,13 +174,13 @@ export function Header({ projectId }: HeaderProps) {
             value={currentProject.id} 
             onValueChange={(value) => router.push(`/projects/${value}/mentions`)}
           >
-            <SelectTrigger className="w-[200px] h-9 border-0 bg-muted/50 hover:bg-muted">
-              <div className="flex items-center gap-2">
+            <SelectTrigger className="w-[140px] sm:w-[180px] lg:w-[200px] h-9 border-0 bg-muted/50 hover:bg-muted flex-shrink-0">
+              <div className="flex items-center gap-2 min-w-0">
                 <div 
-                  className="w-2.5 h-2.5 rounded-full"
+                  className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                   style={{ backgroundColor: currentProject.color }}
                 />
-                <SelectValue>{currentProject.name}</SelectValue>
+                <SelectValue className="truncate">{currentProject.name}</SelectValue>
               </div>
             </SelectTrigger>
             <SelectContent>
@@ -207,7 +209,7 @@ export function Header({ projectId }: HeaderProps) {
           </Select>
           
           {/* Search */}
-          <div className="hidden sm:block relative">
+          <div className="hidden md:block relative flex-1 max-w-[320px]">
             <motion.div
               animate={{ width: searchFocused ? 320 : 240 }}
               className="relative"
@@ -215,11 +217,11 @@ export function Header({ projectId }: HeaderProps) {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder={t("header.search")}
-                className="pl-9 h-9 bg-muted/50 border-0 focus-visible:ring-1"
+                className="pl-9 pr-20 h-9 bg-muted/50 border-0 focus-visible:ring-1"
                 onFocus={() => setSearchFocused(true)}
                 onBlur={() => setSearchFocused(false)}
               />
-              <kbd className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+              <kbd className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none hidden lg:inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
                 ⌘K
               </kbd>
             </motion.div>
@@ -227,14 +229,14 @@ export function Header({ projectId }: HeaderProps) {
         </div>
         
         {/* Right side */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
           {/* Quick Actions */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="gap-2">
+              <Button variant="ghost" size="sm" className="gap-1 sm:gap-2">
                 <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">{t("header.quickActions")}</span>
-                <ChevronDown className="h-3 w-3" />
+                <span className="hidden lg:inline">{t("header.quickActions")}</span>
+                <ChevronDown className="h-3 w-3 hidden sm:inline" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
@@ -474,17 +476,17 @@ export function Header({ projectId }: HeaderProps) {
           {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="gap-2 pl-2">
-                <Avatar className="h-7 w-7">
+              <Button variant="ghost" size="sm" className="gap-1 sm:gap-2 pl-1 sm:pl-2">
+                <Avatar className="h-7 w-7 flex-shrink-0">
                   <AvatarImage src="" />
                   <AvatarFallback className="bg-primary/10 text-primary text-xs">
                     JD
                   </AvatarFallback>
                 </Avatar>
-                <div className="hidden sm:flex flex-col items-start">
+                <div className="hidden md:flex flex-col items-start">
                   <span className="text-sm font-medium">John Doe</span>
                 </div>
-                <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                <ChevronDown className="h-3 w-3 text-muted-foreground hidden sm:inline" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">

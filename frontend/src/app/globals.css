@@ -389,4 +389,40 @@
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
     background: var(--sidebar-foreground);
   }
+  
+  /* Responsive utilities */
+  .container-responsive {
+    @apply w-full px-4 sm:px-6 lg:px-8;
+  }
+  
+  .text-responsive {
+    @apply text-sm sm:text-base;
+  }
+  
+  .heading-responsive {
+    @apply text-xl sm:text-2xl lg:text-3xl;
+  }
+  
+  .gap-responsive {
+    @apply gap-3 sm:gap-4 lg:gap-6;
+  }
+  
+  .padding-responsive {
+    @apply p-4 sm:p-6;
+  }
+  
+  /* Mobile-first grid utilities */
+  .grid-responsive {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
+  }
+  
+  /* Hide on mobile, show on desktop */
+  .hide-mobile {
+    @apply hidden sm:block;
+  }
+  
+  /* Show on mobile, hide on desktop */
+  .show-mobile {
+    @apply block sm:hidden;
+  }
 }
