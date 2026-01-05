@@ -27,7 +27,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 // Mock user data
 const userData = {
   id: "1",
-  name: "Nur Kairkhanov",
+  name: "Nurasyl Kairkhanov",
   email: "nurasyl@example.com",
   avatar: null,
   role: "User",
