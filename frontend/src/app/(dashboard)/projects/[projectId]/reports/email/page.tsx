@@ -46,6 +46,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/hooks";
 
 interface EmailReportsPageProps {
   params: Promise<{ projectId: string }>;
@@ -95,6 +96,7 @@ const contentOptions = [
 
 export default function EmailReportsPage({ params }: EmailReportsPageProps) {
   const { projectId } = use(params);
+  const { t } = useTranslation();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [reports, setReports] = useState(scheduledReports);
   
@@ -109,10 +111,10 @@ export default function EmailReportsPage({ params }: EmailReportsPageProps) {
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
             <Mail className="h-7 w-7 text-primary" />
-            Email Reports
+            {t("reports.email.title")}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Schedule automated email reports for your team
+            {t("reports.email.subtitle")}
           </p>
         </div>
         
@@ -120,12 +122,12 @@ export default function EmailReportsPage({ params }: EmailReportsPageProps) {
           <DialogTrigger asChild>
             <Button className="glow-sm">
               <Plus className="h-4 w-4 mr-2" />
-              Create Schedule
+              {t("reports.email.create")}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Create Scheduled Report</DialogTitle>
+              <DialogTitle>{t("reports.email.createScheduledReport")}</DialogTitle>
             </DialogHeader>
             <CreateReportForm onClose={() => setIsCreateOpen(false)} />
           </DialogContent>
@@ -141,7 +143,7 @@ export default function EmailReportsPage({ params }: EmailReportsPageProps) {
             </div>
             <div>
               <p className="text-2xl font-bold">{reports.length}</p>
-              <p className="text-xs text-muted-foreground">Scheduled Reports</p>
+              <p className="text-xs text-muted-foreground">{t("reports.email.scheduledReports")}</p>
             </div>
           </CardContent>
         </Card>
@@ -152,7 +154,7 @@ export default function EmailReportsPage({ params }: EmailReportsPageProps) {
             </div>
             <div>
               <p className="text-2xl font-bold">{reports.filter(r => r.active).length}</p>
-              <p className="text-xs text-muted-foreground">Active</p>
+              <p className="text-xs text-muted-foreground">{t("reports.email.active")}</p>
             </div>
           </CardContent>
         </Card>
@@ -163,7 +165,7 @@ export default function EmailReportsPage({ params }: EmailReportsPageProps) {
             </div>
             <div>
               <p className="text-2xl font-bold">{new Set(reports.flatMap(r => r.recipients)).size}</p>
-              <p className="text-xs text-muted-foreground">Recipients</p>
+              <p className="text-xs text-muted-foreground">{t("reports.email.recipients")}</p>
             </div>
           </CardContent>
         </Card>
@@ -172,7 +174,7 @@ export default function EmailReportsPage({ params }: EmailReportsPageProps) {
       {/* Scheduled Reports */}
       <Card className="glass">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base font-medium">Scheduled Reports</CardTitle>
+          <CardTitle className="text-base font-medium">{t("reports.email.scheduledReports")}</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <div className="divide-y divide-border/30">

@@ -37,6 +37,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/hooks";
 
 interface SourcesPageProps {
   params: Promise<{ projectId: string }>;
@@ -147,6 +148,7 @@ const countryFlags: Record<string, string> = {
 
 export default function SourcesPage({ params }: SourcesPageProps) {
   const { projectId } = use(params);
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [sources, setSources] = useState(mockSources);
@@ -175,21 +177,21 @@ export default function SourcesPage({ params }: SourcesPageProps) {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight">
-            Sources
+            {t("sources.title")}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Manage and monitor your data sources
+            {t("sources.subtitle")}
           </p>
         </div>
         
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm">
             <Download className="h-4 w-4 mr-2" />
-            Export
+            {t("common.export")}
           </Button>
           <Button size="sm" className="glow-sm">
             <Plus className="h-4 w-4 mr-2" />
-            Add Source
+            {t("sources.addSource")}
           </Button>
         </div>
       </div>
@@ -208,7 +210,7 @@ export default function SourcesPage({ params }: SourcesPageProps) {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{stats.total}</p>
-                  <p className="text-xs text-muted-foreground">Total Sources</p>
+                  <p className="text-xs text-muted-foreground">{t("sources.totalSources")}</p>
                 </div>
               </div>
             </CardContent>
@@ -228,7 +230,7 @@ export default function SourcesPage({ params }: SourcesPageProps) {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{stats.active}</p>
-                  <p className="text-xs text-muted-foreground">Active</p>
+                  <p className="text-xs text-muted-foreground">{t("sources.active")}</p>
                 </div>
               </div>
             </CardContent>
@@ -248,7 +250,7 @@ export default function SourcesPage({ params }: SourcesPageProps) {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{stats.trusted}</p>
-                  <p className="text-xs text-muted-foreground">Trusted</p>
+                  <p className="text-xs text-muted-foreground">{t("sources.trusted")}</p>
                 </div>
               </div>
             </CardContent>
@@ -263,7 +265,7 @@ export default function SourcesPage({ params }: SourcesPageProps) {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search sources..."
+                placeholder={t("common.search") + "..."}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
@@ -271,14 +273,14 @@ export default function SourcesPage({ params }: SourcesPageProps) {
             </div>
             <Select value={typeFilter} onValueChange={setTypeFilter}>
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="All types" />
+                <SelectValue placeholder={t("sources.table.type")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All types</SelectItem>
-                <SelectItem value="news">News</SelectItem>
-                <SelectItem value="social">Social Media</SelectItem>
-                <SelectItem value="video">Video</SelectItem>
-                <SelectItem value="blog">Blogs</SelectItem>
+                <SelectItem value="all">{t("common.all") || "All types"}</SelectItem>
+                <SelectItem value="news">{t("sources.types.news")}</SelectItem>
+                <SelectItem value="social">{t("sources.types.social")}</SelectItem>
+                <SelectItem value="video">{t("sources.types.video")}</SelectItem>
+                <SelectItem value="blog">{t("sources.types.blog")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -293,22 +295,22 @@ export default function SourcesPage({ params }: SourcesPageProps) {
               <thead>
                 <tr className="border-b border-border/50 text-left">
                   <th className="p-4 text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                    Source
+                    {t("sources.table.source")}
                   </th>
                   <th className="p-4 text-xs font-medium text-muted-foreground uppercase tracking-wide w-24">
-                    Type
+                    {t("sources.table.type")}
                   </th>
                   <th className="p-4 text-xs font-medium text-muted-foreground uppercase tracking-wide w-24 text-right">
-                    Mentions
+                    {t("sources.table.mentions")}
                   </th>
                   <th className="p-4 text-xs font-medium text-muted-foreground uppercase tracking-wide w-24 text-right">
-                    Visits
+                    {t("sources.table.visits")}
                   </th>
                   <th className="p-4 text-xs font-medium text-muted-foreground uppercase tracking-wide w-24 text-center">
-                    Score
+                    {t("sources.table.score")}
                   </th>
                   <th className="p-4 text-xs font-medium text-muted-foreground uppercase tracking-wide w-20 text-center">
-                    Status
+                    {t("sources.table.status")}
                   </th>
                   <th className="p-4 w-12"></th>
                 </tr>
@@ -388,25 +390,25 @@ export default function SourcesPage({ params }: SourcesPageProps) {
                         <DropdownMenuContent align="end" className="w-48">
                           <DropdownMenuItem>
                             <ExternalLink className="h-4 w-4 mr-2" />
-                            Go to site
+                            {t("sources.actions.goToSite")}
                           </DropdownMenuItem>
                           <DropdownMenuItem>
                             {source.trusted ? (
                               <>
                                 <ShieldOff className="h-4 w-4 mr-2" />
-                                Remove trust
+                                {t("sources.actions.removeTrust")}
                               </>
                             ) : (
                               <>
                                 <Shield className="h-4 w-4 mr-2" />
-                                Mark as trusted
+                                {t("sources.actions.markTrusted")}
                               </>
                             )}
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem className="text-destructive">
                             <Ban className="h-4 w-4 mr-2" />
-                            Block source
+                            {t("sources.actions.block")}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

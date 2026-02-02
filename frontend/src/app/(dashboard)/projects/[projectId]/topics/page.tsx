@@ -35,6 +35,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/hooks";
 
 interface TopicsPageProps {
   params: Promise<{ projectId: string }>;
@@ -123,6 +124,7 @@ const topSources = [
 
 export default function TopicsPage({ params }: TopicsPageProps) {
   const { projectId } = use(params);
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTopic, setSelectedTopic] = useState<typeof topicsData[0] | null>(null);
   
@@ -138,16 +140,16 @@ export default function TopicsPage({ params }: TopicsPageProps) {
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
             <Tags className="h-7 w-7 text-primary" />
-            AI Topic Analysis
+            {t("topics.title")}
           </h1>
           <p className="text-muted-foreground mt-1">
-            AI-detected topics from your media mentions
+            {t("topics.subtitle")}
           </p>
         </div>
         
         <Button size="sm" className="glow-sm">
           <Plus className="h-4 w-4 mr-2" />
-          Create Topic
+          {t("topics.extract")}
         </Button>
       </div>
       

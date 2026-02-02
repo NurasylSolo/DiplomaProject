@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/hooks";
 
 interface ComparisonPageProps {
   params: Promise<{ projectId: string }>;
@@ -102,6 +103,7 @@ const chartData = [
 
 export default function ComparisonPage({ params }: ComparisonPageProps) {
   const { projectId } = use(params);
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const isDark = theme === "dark";
   const [selectedProjects, setSelectedProjects] = useState(["1", "2", "3"]);
@@ -139,10 +141,10 @@ export default function ComparisonPage({ params }: ComparisonPageProps) {
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
             <GitCompare className="h-7 w-7 text-primary" />
-            Comparison
+            {t("comparison.title")}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Compare your brand with competitors or across time periods
+            {t("comparison.subtitle")}
           </p>
         </div>
         

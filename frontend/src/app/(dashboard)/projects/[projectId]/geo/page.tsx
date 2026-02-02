@@ -23,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/hooks";
 
 interface GeoAnalysisPageProps {
   params: Promise<{ projectId: string }>;
@@ -77,6 +78,7 @@ const countryCodeToName: Record<string, string> = {
 
 export default function GeoAnalysisPage({ params }: GeoAnalysisPageProps) {
   const { projectId } = use(params);
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const isDark = theme === "dark";
   const [excludedCountries, setExcludedCountries] = useState<string[]>([]);
@@ -201,10 +203,10 @@ export default function GeoAnalysisPage({ params }: GeoAnalysisPageProps) {
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
             <Globe className="h-7 w-7 text-primary" />
-            Geo Analysis
+            {t("geo.title")}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Geographic distribution of your media mentions
+            {t("geo.subtitle")}
           </p>
         </div>
         

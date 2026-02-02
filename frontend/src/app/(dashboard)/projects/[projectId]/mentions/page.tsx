@@ -34,7 +34,7 @@ interface MentionsPageProps {
 export default function MentionsPage({ params }: MentionsPageProps) {
   const { projectId } = use(params);
   const { t } = useTranslation();
-  const [showFilters, setShowFilters] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   
   // Mock stats data with translations
@@ -235,7 +235,7 @@ export default function MentionsPage({ params }: MentionsPageProps) {
       <Sheet open={showFilters} onOpenChange={setShowFilters}>
         <SheetContent side="left" className="w-[280px] sm:w-[320px] p-0">
           <SheetHeader className="p-4 pb-3 border-b border-border">
-            <SheetTitle>{t("common.filters")}</SheetTitle>
+            <SheetTitle>{t("Common Filters")}</SheetTitle>
           </SheetHeader>
           <div className="p-4 overflow-y-auto h-[calc(100vh-73px)]">
             <MentionsFilters projectId={projectId} />

@@ -44,6 +44,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/hooks";
 
 interface InfluencersPageProps {
   params: Promise<{ projectId: string }>;
@@ -149,6 +150,7 @@ const influencersData = [
 
 export default function InfluencersPage({ params }: InfluencersPageProps) {
   const { projectId } = use(params);
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [platformFilter, setPlatformFilter] = useState("all");
   const [selectedInfluencer, setSelectedInfluencer] = useState<typeof influencersData[0] | null>(null);
@@ -167,16 +169,16 @@ export default function InfluencersPage({ params }: InfluencersPageProps) {
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
             <Users className="h-7 w-7 text-primary" />
-            Influencers
+            {t("influencers.title")}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Track and manage influencers mentioning your brand
+            {t("influencers.subtitle")}
           </p>
         </div>
         
         <Button variant="outline" size="sm">
           <Download className="h-4 w-4 mr-2" />
-          Export
+          {t("common.export")}
         </Button>
       </div>
       

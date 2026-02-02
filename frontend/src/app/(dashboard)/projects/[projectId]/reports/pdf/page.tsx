@@ -30,6 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/hooks";
 
 interface PDFReportPageProps {
   params: Promise<{ projectId: string }>;
@@ -63,6 +64,7 @@ const accentColors = [
 
 export default function PDFReportPage({ params }: PDFReportPageProps) {
   const { projectId } = use(params);
+  const { t } = useTranslation();
   const [sections, setSections] = useState(
     reportSections.map(s => ({ ...s, checked: s.defaultChecked }))
   );
@@ -89,17 +91,17 @@ export default function PDFReportPage({ params }: PDFReportPageProps) {
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
             <FileText className="h-7 w-7 text-primary" />
-            PDF Report
+            {t("reports.pdf.title")}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Configure and generate a customized PDF report
+            {t("reports.pdf.subtitle")}
           </p>
         </div>
         
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm">
             <Eye className="h-4 w-4 mr-2" />
-            Preview
+            {t("reports.pdf.preview")}
           </Button>
           <Button 
             className="glow-sm" 
@@ -107,7 +109,7 @@ export default function PDFReportPage({ params }: PDFReportPageProps) {
             disabled={isGenerating}
           >
             <Download className="h-4 w-4 mr-2" />
-            {isGenerating ? "Generating..." : "Generate & Download"}
+            {isGenerating ? t("reports.pdf.generating") : t("reports.pdf.generateDownload")}
           </Button>
         </div>
       </div>

@@ -35,6 +35,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/hooks";
 
 interface AssistantPageProps {
   params: Promise<{ projectId: string }>;
@@ -101,6 +102,7 @@ const initialChats: Chat[] = [
 
 export default function AssistantPage({ params }: AssistantPageProps) {
   const { projectId } = use(params);
+  const { t } = useTranslation();
   const [chats, setChats] = useState<Chat[]>(initialChats);
   const [activeChat, setActiveChat] = useState<Chat>(initialChats[0]);
   const [input, setInput] = useState("");

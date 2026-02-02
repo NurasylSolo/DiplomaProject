@@ -328,40 +328,143 @@
   },
   "influencers": {
     "title": "Influencers",
-    "subtitle": "Track and analyze key influencers",
+    "subtitle": "Track and manage influencers mentioning your brand",
+    "searchInfluencers": "Search influencers...",
+    "allPlatforms": "All Platforms",
     "table": {
       "influencer": "Influencer",
       "platform": "Platform",
       "followers": "Followers",
       "mentions": "Mentions",
       "reach": "Reach",
-      "sentiment": "Sentiment"
-    }
+      "sentiment": "Sentiment",
+      "shareOfVoice": "Share of Voice",
+      "score": "Score"
+    },
+    "actions": {
+      "viewProfile": "View Profile",
+      "openProfile": "Open Profile",
+      "addToCampaign": "Add to Campaign",
+      "removeFromList": "Remove from List"
+    },
+    "sentimentDistribution": "Sentiment Distribution",
+    "recentPosts": "Recent Posts",
+    "positive": "Positive",
+    "neutral": "Neutral",
+    "negative": "Negative"
   },
   "reports": {
     "email": {
       "title": "Email Reports",
-      "subtitle": "Schedule automated email reports",
+      "subtitle": "Schedule automated email reports for your team",
       "create": "Create Schedule",
+      "createScheduledReport": "Create Scheduled Report",
       "frequency": "Frequency",
-      "recipients": "Recipients"
+      "recipients": "Recipients",
+      "scheduledReports": "Scheduled Reports",
+      "active": "Active",
+      "paused": "Paused",
+      "next": "Next",
+      "sendNow": "Send Now",
+      "reportName": "Report Name",
+      "sendTime": "Send Time",
+      "reportContents": "Report Contents",
+      "reportLanguage": "Report Language",
+      "executiveSummary": "Executive Summary",
+      "recentMentions": "Recent Mentions",
+      "sentimentAnalysis": "Sentiment Analysis",
+      "trendingTopics": "Trending Topics",
+      "topInfluencers": "Top Influencers",
+      "importantAlerts": "Important Alerts",
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly",
+      "onEvent": "On Event"
     },
     "pdf": {
       "title": "PDF Report",
-      "subtitle": "Generate comprehensive PDF reports",
+      "subtitle": "Configure and generate a customized PDF report",
       "generate": "Generate Report",
-      "configuring": "Configuring report..."
+      "configuring": "Configuring report...",
+      "preview": "Preview",
+      "generateDownload": "Generate & Download",
+      "generating": "Generating...",
+      "reportSections": "Report Sections",
+      "additionalOptions": "Additional Options",
+      "reportLanguage": "Report Language",
+      "reportDescription": "Report Description",
+      "addDescription": "Add a custom description for this report...",
+      "companyLogo": "Company Logo",
+      "dragDrop": "Drag & drop or click to upload",
+      "fileLimit": "PNG, JPG up to 2MB",
+      "accentColor": "Accent Color",
+      "applySavedFilter": "Apply Saved Filter",
+      "selectFilter": "Select a saved filter...",
+      "noFilter": "No filter",
+      "sectionsSelected": "sections selected",
+      "summaryOfMentions": "Summary of Mentions",
+      "socialReachGraphs": "Social Reach Graphs",
+      "volumePerCategory": "Volume per Category",
+      "contextOfDiscussion": "Context of Discussion",
+      "topPublicProfiles": "Top Public Profiles",
+      "mostInfluentialSites": "Most Influential Sites",
+      "quotes": "Quotes",
+      "volumeChart": "Volume Chart",
+      "nonSocialReach": "Non-social Reach",
+      "numericSummary": "Numeric Summary",
+      "popularMentions": "Popular Mentions",
+      "activeProfiles": "Active Profiles/Sites",
+      "trendingHashtags": "Trending Hashtags",
+      "mediaMonitoringReport": "Media Monitoring Report",
+      "logo": "Logo"
     },
     "excel": {
       "title": "Excel Export",
-      "subtitle": "Export data to Excel format",
+      "subtitle": "Export your data to Microsoft Excel format",
       "export": "Export to Excel",
-      "configuring": "Configuring export..."
+      "configuring": "Configuring export...",
+      "exportType": "Export Type",
+      "currentFilters": "Current Filters",
+      "currentFiltersDesc": "Export data matching your current filter settings",
+      "fullDataset": "Full Dataset",
+      "fullDatasetDesc": "Export all mentions without any filters",
+      "summarizedReport": "Summarized Report",
+      "summarizedReportDesc": "Export aggregated statistics and summaries",
+      "includeSheets": "Include Sheets",
+      "mentions": "Mentions",
+      "sources": "Sources",
+      "sentimentAnalysis": "Sentiment Analysis",
+      "influencers": "Influencers",
+      "trendingTopics": "Trending Topics",
+      "dailyStatistics": "Daily Statistics",
+      "readyToExport": "Ready to Export",
+      "exportComplete": "Export Complete!",
+      "fileDownloaded": "Your file has been downloaded",
+      "sheetsSelected": "sheets selected",
+      "exporting": "Exporting...",
+      "downloaded": "Downloaded",
+      "downloadExcel": "Download Excel"
     },
     "infographic": {
       "title": "Infographic",
-      "subtitle": "Create visual infographics",
-      "generate": "Generate Infographic"
+      "subtitle": "Auto-generated visual summary of your media data",
+      "generate": "Generate Infographic",
+      "regenerate": "Regenerate",
+      "share": "Share",
+      "exportPng": "Export PNG",
+      "mediaMonitoringReport": "Media Monitoring Report",
+      "mentions": "Mentions",
+      "reach": "Reach",
+      "engagement": "Engagement",
+      "positive": "Positive",
+      "sentimentDistribution": "Sentiment Distribution",
+      "neutral": "Neutral",
+      "negative": "Negative",
+      "topTopics": "Top Topics",
+      "topCountries": "Top Countries",
+      "topInfluencers": "Top Influencers",
+      "trendingHashtags": "Trending Hashtags",
+      "generatedBy": "Generated by"
     }
   },
   "geo": {
@@ -383,12 +486,45 @@
   },
   "influencerAnalysis": {
     "title": "Influencer Analysis",
-    "subtitle": "Deep dive into influencer performance"
+    "subtitle": "Deep dive into influencer performance and impact",
+    "exportReport": "Export Report",
+    "totalInfluencers": "Total Influencers",
+    "avgInfluenceScore": "Avg. Influence Score",
+    "totalReach": "Total Reach",
+    "avgEngagement": "Avg. Engagement",
+    "influencerRanking": "Influencer Ranking",
+    "overview": "Overview",
+    "samplePosts": "Sample Posts",
+    "trends": "Trends",
+    "mentions": "Mentions",
+    "reach": "Reach",
+    "engagement": "Engagement",
+    "positive": "Positive",
+    "sentimentMentioning": "Sentiment when mentioning brand",
+    "noSamplePosts": "No sample posts available",
+    "engagementTrend": "Engagement Trend",
+    "followerGrowth": "Follower Growth",
+    "thisMonth": "this month",
+    "followerGrowthComparison": "Follower Growth Comparison",
+    "engagements": "engagements"
   },
   "hotHours": {
     "title": "Hot Hours",
-    "subtitle": "Peak activity times for your brand",
-    "heatmap": "Activity Heatmap"
+    "subtitle": "Discover when your brand is mentioned most",
+    "heatmap": "Activity Heatmap",
+    "exportData": "Export Data",
+    "peakHour": "Peak Hour",
+    "totalWeeklyMentions": "Total Weekly Mentions",
+    "mostActiveDays": "Most Active Days",
+    "topHours": "Top Hours",
+    "bestTimesToPost": "Best Times to Post",
+    "peakEngagement": "Peak engagement window",
+    "highMentionVolume": "High mention volume",
+    "activeSocialDiscussions": "Active social discussions",
+    "mentionsDuringHour": "mentions during this hour",
+    "filterMentions": "Filter Mentions",
+    "less": "Less",
+    "more": "More"
   },
   "emotions": {
     "title": "Emotion Analysis",
@@ -529,6 +665,7 @@
     "export": "Export",
     "refresh": "Refresh",
     "filter": "Filter",
+    "filters": "Filters",
     "hideFilters": "Hide Filters",
     "showFilters": "Show Filters",
     "previous": "Previous",
@@ -576,5 +713,211 @@
     "en": "English",
     "ru": "Русский",
     "kz": "Қазақша"
+  },
+  "privacy": {
+    "title": "Privacy Policy",
+    "lastUpdated": "Last updated",
+    "intro": "At Senti News, we are committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, and protect your data.",
+    "sections": {
+      "dataCollection": {
+        "title": "1. Data Collection",
+        "content": "We collect information that you provide directly to us, including your name, email address, company information, and any other data you choose to provide when using our services."
+      },
+      "dataUsage": {
+        "title": "2. How We Use Your Data",
+        "content": "We use the collected information to provide and improve our media monitoring services, send you notifications and reports, analyze trends and usage patterns, and communicate with you about our services."
+      },
+      "dataProtection": {
+        "title": "3. Data Protection",
+        "content": "We implement industry-standard security measures to protect your personal information from unauthorized access, alteration, disclosure, or destruction. All data is encrypted in transit and at rest."
+      },
+      "cookies": {
+        "title": "4. Cookies and Tracking",
+        "content": "We use cookies and similar technologies to enhance your experience, remember your preferences, and analyze how our services are used. You can control cookie settings through your browser."
+      },
+      "thirdParty": {
+        "title": "5. Third-Party Services",
+        "content": "We may share your information with trusted third-party service providers who assist us in operating our platform. These providers are bound by confidentiality agreements."
+      },
+      "rights": {
+        "title": "6. Your Rights",
+        "content": "You have the right to access, correct, or delete your personal data. You may also request a copy of your data or object to its processing. Contact us to exercise these rights."
+      },
+      "contact": {
+        "title": "7. Contact Us",
+        "content": "If you have any questions about this Privacy Policy, please contact our team."
+      }
+    },
+    "developers": {
+      "title": "Development Team",
+      "names": "Kairkhanov Nurasyl, Meirkhanov Akezhan"
+    },
+    "backToHome": "Back to Home"
+  },
+  "terms": {
+    "title": "Terms of Service",
+    "lastUpdated": "Last updated",
+    "intro": "Welcome to Senti News. By accessing or using our services, you agree to be bound by these Terms of Service. Please read them carefully before using our platform.",
+    "sections": {
+      "acceptance": {
+        "title": "1. Acceptance of Terms",
+        "content": "By accessing or using Senti News, you agree to be bound by these Terms of Service and all applicable laws and regulations. If you do not agree with any of these terms, you are prohibited from using our services. Users must be at least 18 years old to use our platform."
+      },
+      "account": {
+        "title": "2. Account Registration",
+        "content": "To access certain features of our service, you must register for an account. You agree to provide accurate, current, and complete information during registration. You are responsible for maintaining the confidentiality of your password and for all activities that occur under your account."
+      },
+      "service": {
+        "title": "3. Service Description",
+        "content": "Senti News provides media monitoring and analytics services, including real-time mention tracking, sentiment analysis, AI-powered insights, competitive analysis, and automated reporting. We reserve the right to modify, suspend, or discontinue any part of the service at any time."
+      },
+      "responsibilities": {
+        "title": "4. User Responsibilities",
+        "content": "You agree to use our services only for lawful purposes. You must not: violate any laws or regulations, infringe on intellectual property rights, transmit malware or harmful code, attempt to gain unauthorized access to our systems, use automated tools to scrape our platform, or interfere with other users' access to the service."
+      },
+      "payment": {
+        "title": "5. Payment and Billing",
+        "content": "Paid subscriptions are billed in advance on a monthly or annual basis. All fees are non-refundable except as required by law. We reserve the right to change our pricing with 30 days notice. Failure to pay may result in suspension or termination of your account."
+      },
+      "intellectual": {
+        "title": "6. Intellectual Property",
+        "content": "All content, features, and functionality of Senti News, including but not limited to text, graphics, logos, icons, and software, are the exclusive property of Senti News and are protected by international copyright, trademark, and other intellectual property laws."
+      },
+      "data": {
+        "title": "7. Data and Content",
+        "content": "You retain ownership of all data you upload to our platform. By using our service, you grant us a limited license to process, analyze, and store your data for the purpose of providing our services. Upon account termination, your data will be retained for 30 days before permanent deletion."
+      },
+      "thirdParty": {
+        "title": "8. Third-Party Services",
+        "content": "Our service integrates with third-party platforms such as social media networks and news APIs. We are not responsible for the content, privacy practices, or availability of these external services. Your use of third-party services is subject to their respective terms and conditions."
+      },
+      "availability": {
+        "title": "9. Service Availability",
+        "content": "We strive to maintain 99.9% uptime for our services. However, we do not guarantee uninterrupted access. Scheduled maintenance will be announced in advance. We are not liable for any downtime due to circumstances beyond our reasonable control."
+      },
+      "liability": {
+        "title": "10. Limitation of Liability",
+        "content": "Senti News is provided 'as is' without warranties of any kind. To the maximum extent permitted by law, we shall not be liable for any indirect, incidental, special, consequential, or punitive damages, or any loss of profits or revenues."
+      },
+      "termination": {
+        "title": "11. Termination",
+        "content": "You may terminate your account at any time through your account settings. We may terminate or suspend your account immediately for violations of these terms. Upon termination, your right to use the service will cease immediately."
+      },
+      "disputes": {
+        "title": "12. Dispute Resolution",
+        "content": "Any disputes arising from these terms shall be resolved through binding arbitration in accordance with applicable laws. You agree to resolve disputes on an individual basis and waive any right to participate in class action lawsuits."
+      },
+      "changes": {
+        "title": "13. Changes to Terms",
+        "content": "We reserve the right to modify these terms at any time. We will notify users of significant changes via email or through our platform. Continued use of the service after changes constitutes acceptance of the modified terms."
+      },
+      "contact": {
+        "title": "14. Contact Information",
+        "content": "If you have any questions about these Terms of Service, please contact us through our support channels or via email. Our team is available to assist you with any inquiries regarding your use of Senti News."
+      }
+    },
+    "developers": {
+      "title": "Development Team",
+      "names": "Kairkhanov Nurasyl, Meirkhanov Akezhan"
+    },
+    "backToHome": "Back to Home"
+  },
+  "contacts": {
+    "title": "Contact Us",
+    "subtitle": "Have questions? We're here to help!",
+    "description": "Choose the most convenient way to contact us. Our team is ready to answer your questions and help solve any issues.",
+    "form": {
+      "title": "Send us a message",
+      "name": "Your name",
+      "namePlaceholder": "Enter your name",
+      "email": "Email address",
+      "emailPlaceholder": "your@email.com",
+      "subject": "Subject",
+      "subjectPlaceholder": "Select a topic",
+      "subjects": {
+        "general": "General inquiry",
+        "support": "Technical support",
+        "billing": "Billing question",
+        "partnership": "Partnership proposal",
+        "bug": "Report a bug",
+        "feedback": "Feedback",
+        "other": "Other"
+      },
+      "message": "Message",
+      "messagePlaceholder": "Describe your question or issue in detail...",
+      "send": "Send Message",
+      "sending": "Sending...",
+      "success": "Message sent successfully!",
+      "successDescription": "We will respond within 24 hours.",
+      "error": "Failed to send message",
+      "errorDescription": "Please try again later."
+    },
+    "info": {
+      "title": "Contact Information",
+      "email": {
+        "title": "Email",
+        "support": "230138@astanait.edu.kz",
+        "general": "230138@astanait.edu.kz"
+      },
+      "phone": {
+        "title": "Phone",
+        "number": "+7 705 702 1456",
+        "hours": "Mon-Fri, 9:00 AM - 6:00 PM (GMT+6)"
+      },
+      "address": {
+        "title": "Office Address",
+        "city": "Astana, Kazakhstan",
+        "street": "Mangilik El Ave, 55/11",
+        "postal": "010000"
+      }
+    },
+    "departments": {
+      "title": "Our Departments",
+      "sales": {
+        "title": "Sales Department",
+        "email": "230138@astanait.edu.kz",
+        "description": "Questions about plans and product demo"
+      },
+      "support": {
+        "title": "Technical Support",
+        "email": "230138@astanait.edu.kz",
+        "description": "Help with technical issues 24/7"
+      },
+      "partnership": {
+        "title": "Partnership",
+        "email": "230138@astanait.edu.kz",
+        "description": "Collaboration proposals"
+      },
+      "press": {
+        "title": "Press & Media",
+        "email": "230138@astanait.edu.kz",
+        "description": "Inquiries from journalists"
+      }
+    },
+    "social": {
+      "title": "Follow Us",
+      "description": "Stay updated with the latest news"
+    },
+    "response": {
+      "title": "Response Time",
+      "email": "Email: within 24 hours",
+      "chat": "Chat: 5-10 minutes (business hours)",
+      "phone": "Phone: immediate (business hours)",
+      "critical": "Critical issues: within 2 hours"
+    },
+    "faq": {
+      "title": "Need Quick Answers?",
+      "description": "Check out our FAQ and documentation",
+      "button": "Visit Help Center"
+    },
+    "developers": {
+      "title": "Development Team",
+      "lead": "Kairkhanov Nurasyl",
+      "leadRole": "Lead Developer",
+      "fullstack": "Meirkhanov Akezhan",
+      "fullstackRole": "Full Stack Developer",
+      "email": "230138@astanait.edu.kz"
+    },
+    "backToHome": "Back to Home"
   }
 }

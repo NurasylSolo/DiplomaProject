@@ -1,10 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import {
-  User,
   Mail,
   Calendar,
   MapPin,
@@ -23,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useTranslation } from "@/hooks";
 
 // Mock user data
 const userData = {
@@ -74,17 +73,20 @@ const recentActivity = [
   },
 ];
 
-// Mock stats
-const userStats = [
-  { label: "Projects", value: 5, icon: Briefcase },
-  { label: "Reports Generated", value: 47, icon: FileText },
-  { label: "Mentions Analyzed", value: "12.4K", icon: MessageSquareText },
-  { label: "Insights Created", value: 156, icon: TrendingUp },
-];
-
 export default function ProfilePage() {
+  const { t, currentLanguage } = useTranslation();
+  
+  // Mock stats with translations
+  const userStats = [
+    { label: t("profile.stats.projects"), value: 5, icon: Briefcase },
+    { label: t("profile.stats.reportsGenerated"), value: 47, icon: FileText },
+    { label: t("profile.stats.mentionsAnalyzed"), value: "12.4K", icon: MessageSquareText },
+    { label: t("profile.stats.insightsCreated"), value: 156, icon: TrendingUp },
+  ];
+  
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString("en-US", {
+    const locale = currentLanguage === "ru" ? "ru-RU" : currentLanguage === "kz" ? "kk-KZ" : "en-US";
+    return date.toLocaleDateString(locale, {
       month: "long",
       day: "numeric",
       year: "numeric",
@@ -118,13 +120,13 @@ export default function ProfilePage() {
               <Button variant="outline" size="sm" asChild>
                 <Link href="/profile/settings">
                   <Settings className="h-4 w-4 mr-2" />
-                  Settings
+                  {t("profile.settings")}
                 </Link>
               </Button>
               <Button size="sm" className="glow-sm" asChild>
                 <Link href="/profile/settings">
                   <Edit className="h-4 w-4 mr-2" />
-                  Edit Profile
+                  {t("profile.edit")}
                 </Link>
               </Button>
             </div>
@@ -172,7 +174,7 @@ export default function ProfilePage() {
                 )}
                 <div className="flex items-center gap-1.5">
                   <Calendar className="h-4 w-4" />
-                  Joined {formatDate(userData.joinedAt)}
+                  {t("profile.joined")} {formatDate(userData.joinedAt)}
                 </div>
               </div>
             </div>
@@ -216,14 +218,11 @@ export default function ProfilePage() {
           <Card className="glass h-full">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base font-medium">Recent Activity</CardTitle>
+                <CardTitle className="text-base font-medium">{t("profile.activity.title")}</CardTitle>
                 <Button variant="ghost" size="sm">
-                  View All
+                  {t("common.view")}
                 </Button>
               </div>
-              <CardDescription>
-                Your latest actions and events
-              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -263,25 +262,25 @@ export default function ProfilePage() {
       >
         <Card className="glass">
           <CardHeader>
-            <CardTitle className="text-base font-medium">Quick Actions</CardTitle>
+            <CardTitle className="text-base font-medium">{t("profile.quickActions.title")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid sm:grid-cols-3 gap-4">
               <Button variant="outline" className="h-auto py-4 flex-col gap-2" asChild>
                 <Link href="/dashboard">
                   <BarChart3 className="h-5 w-5" />
-                  <span>Go to Dashboard</span>
+                  <span>{t("profile.quickActions.createProject")}</span>
                 </Link>
               </Button>
               <Button variant="outline" className="h-auto py-4 flex-col gap-2" asChild>
                 <Link href="/profile/settings">
                   <Settings className="h-5 w-5" />
-                  <span>Account Settings</span>
+                  <span>{t("profile.settings")}</span>
                 </Link>
               </Button>
               <Button variant="outline" className="h-auto py-4 flex-col gap-2">
                 <Activity className="h-5 w-5" />
-                <span>Activity Log</span>
+                <span>{t("profile.quickActions.viewInsights")}</span>
               </Button>
             </div>
           </CardContent>

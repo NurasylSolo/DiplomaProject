@@ -35,6 +35,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useMentionsFilterStore } from "@/stores";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { useTranslation } from "@/hooks";
 
 interface MentionsTableProps {
   projectId: string;
@@ -219,6 +220,7 @@ const countryFlags: Record<string, string> = {
 };
 
 export function MentionsTable({ projectId }: MentionsTableProps) {
+  const { t } = useTranslation();
   const { filters } = useMentionsFilterStore();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -330,8 +332,7 @@ export function MentionsTable({ projectId }: MentionsTableProps) {
           {paginatedMentions.length === 0 ? (
             <div className="p-8 text-center">
               <div className="flex flex-col items-center gap-2">
-                <p className="text-muted-foreground">No mentions match your filters</p>
-                <p className="text-sm text-muted-foreground/70">Try adjusting your filter criteria</p>
+                <p className="text-muted-foreground">{t("mentions.table.noMentionsFound")}</p>
               </div>
             </div>
           ) : (
@@ -385,7 +386,7 @@ export function MentionsTable({ projectId }: MentionsTableProps) {
                       </Badge>
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <span className="font-semibold">{mention.influenceScore.toFixed(1)}</span>
-                        <span>influence</span>
+                        <span>{t("mentions.table.influence")}</span>
                       </div>
                       <span className="text-xs font-medium">
                         {formatReach(mention.reach)} reach
@@ -402,32 +403,32 @@ export function MentionsTable({ projectId }: MentionsTableProps) {
                         <DropdownMenuContent align="end" className="w-48">
                           <DropdownMenuItem>
                             <ExternalLink className="h-4 w-4 mr-2" />
-                            Go to source
+                            {t("mentions.actions.goToSource")}
                           </DropdownMenuItem>
                           <DropdownMenuItem>
                             <Eye className="h-4 w-4 mr-2" />
-                            View details
+                            {t("mentions.actions.viewDetails")}
                           </DropdownMenuItem>
                           <DropdownMenuItem>
                             <Tag className="h-4 w-4 mr-2" />
-                            Add tag
+                            {t("mentions.actions.addTag")}
                           </DropdownMenuItem>
                           <DropdownMenuItem>
                             <FileText className="h-4 w-4 mr-2" />
-                            Add to report
+                            {t("mentions.actions.addToReport")}
                           </DropdownMenuItem>
                           <DropdownMenuItem>
                             <Bookmark className="h-4 w-4 mr-2" />
-                            {mention.saved ? "Unsave" : "Save"}
+                            {mention.saved ? t("mentions.actions.unsave") : t("mentions.actions.save")}
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem>
                             <VolumeX className="h-4 w-4 mr-2" />
-                            Mute source
+                            {t("mentions.actions.muteSource")}
                           </DropdownMenuItem>
                           <DropdownMenuItem className="text-destructive">
                             <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
+                            {t("mentions.actions.delete")}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -465,7 +466,7 @@ export function MentionsTable({ projectId }: MentionsTableProps) {
               className="flex-1"
             >
               <ChevronLeft className="h-4 w-4 mr-1" />
-              Previous
+              {t("common.previous")}
             </Button>
             <div className="flex items-center gap-1">
               {Array.from({ length: Math.min(3, totalPages) }, (_, i) => {
@@ -500,7 +501,7 @@ export function MentionsTable({ projectId }: MentionsTableProps) {
               onClick={() => setCurrentPage(p => p + 1)}
               className="flex-1"
             >
-              Next
+              {t("common.next")}
               <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           </div>
@@ -531,19 +532,19 @@ export function MentionsTable({ projectId }: MentionsTableProps) {
               />
             </th>
             <th className="p-4 text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              Mention
+              {t("mentions.table.mention")}
             </th>
             <th className="p-4 text-xs font-medium text-muted-foreground uppercase tracking-wide w-24">
-              Sentiment
+              {t("mentions.table.sentiment")}
             </th>
             <th className="p-4 text-xs font-medium text-muted-foreground uppercase tracking-wide w-20 text-center">
-              Score
+              {t("mentions.table.score")}
             </th>
             <th className="p-4 text-xs font-medium text-muted-foreground uppercase tracking-wide w-24 text-right">
-              Reach
+              {t("mentions.table.reach")}
             </th>
             <th className="p-4 text-xs font-medium text-muted-foreground uppercase tracking-wide w-20 text-center">
-              Location
+              {t("mentions.table.location")}
             </th>
             <th className="p-4 w-12"></th>
           </tr>
@@ -553,8 +554,7 @@ export function MentionsTable({ projectId }: MentionsTableProps) {
             <tr>
               <td colSpan={7} className="p-8 text-center">
                 <div className="flex flex-col items-center gap-2">
-                  <p className="text-muted-foreground">No mentions match your filters</p>
-                  <p className="text-sm text-muted-foreground/70">Try adjusting your filter criteria</p>
+                  <p className="text-muted-foreground">{t("mentions.table.noMentionsFound")}</p>
                 </div>
               </td>
             </tr>
@@ -619,7 +619,7 @@ export function MentionsTable({ projectId }: MentionsTableProps) {
                       {mention.influenceScore.toFixed(1)}
                     </span>
                     <span className="text-[10px] text-muted-foreground">
-                      influence
+                      {t("mentions.table.influence")}
                     </span>
                   </div>
                 </td>
@@ -643,32 +643,32 @@ export function MentionsTable({ projectId }: MentionsTableProps) {
                     <DropdownMenuContent align="end" className="w-48">
                       <DropdownMenuItem>
                         <ExternalLink className="h-4 w-4 mr-2" />
-                        Go to source
+                        {t("mentions.actions.goToSource")}
                       </DropdownMenuItem>
                       <DropdownMenuItem>
                         <Eye className="h-4 w-4 mr-2" />
-                        View details
+                        {t("mentions.actions.viewDetails")}
                       </DropdownMenuItem>
                       <DropdownMenuItem>
                         <Tag className="h-4 w-4 mr-2" />
-                        Add tag
+                        {t("mentions.actions.addTag")}
                       </DropdownMenuItem>
                       <DropdownMenuItem>
                         <FileText className="h-4 w-4 mr-2" />
-                        Add to report
+                        {t("mentions.actions.addToReport")}
                       </DropdownMenuItem>
                       <DropdownMenuItem>
                         <Bookmark className="h-4 w-4 mr-2" />
-                        {mention.saved ? "Unsave" : "Save"}
+                        {mention.saved ? t("mentions.actions.unsave") : t("mentions.actions.save")}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem>
                         <VolumeX className="h-4 w-4 mr-2" />
-                        Mute source
+                        {t("mentions.actions.muteSource")}
                       </DropdownMenuItem>
                       <DropdownMenuItem className="text-destructive">
                         <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
+                        {t("mentions.actions.delete")}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -705,7 +705,7 @@ export function MentionsTable({ projectId }: MentionsTableProps) {
             onClick={() => setCurrentPage(p => p - 1)}
           >
             <ChevronLeft className="h-4 w-4 mr-1" />
-            Previous
+            {t("common.previous")}
           </Button>
           
           {/* Page numbers */}
@@ -742,7 +742,7 @@ export function MentionsTable({ projectId }: MentionsTableProps) {
             disabled={currentPage === totalPages || totalPages === 0}
             onClick={() => setCurrentPage(p => p + 1)}
           >
-            Next
+            {t("common.next")}
             <ChevronRight className="h-4 w-4 ml-1" />
           </Button>
         </div>

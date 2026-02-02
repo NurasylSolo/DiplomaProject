@@ -51,6 +51,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/hooks";
 
 // Mock user data
 const initialUserData = {
@@ -119,6 +120,7 @@ const timezones = [
 ];
 
 export default function ProfileSettingsPage() {
+  const { t } = useTranslation();
   const [userData, setUserData] = useState(initialUserData);
   const [notifications, setNotifications] = useState(initialNotifications);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
@@ -161,10 +163,10 @@ export default function ProfileSettingsPage() {
           </Button>
           <div>
             <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight">
-              Account Settings
+              {t("profileSettings.title")}
             </h1>
             <p className="text-muted-foreground mt-1">
-              Manage your account preferences and security
+              {t("profileSettings.subtitle")}
             </p>
           </div>
         </div>
@@ -172,12 +174,12 @@ export default function ProfileSettingsPage() {
           {isSaving ? (
             <>
               <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
-              Saving...
+              {t("common.loading")}
             </>
           ) : (
             <>
               <Save className="h-4 w-4 mr-2" />
-              Save Changes
+              {t("common.save")}
             </>
           )}
         </Button>
@@ -187,19 +189,19 @@ export default function ProfileSettingsPage() {
         <TabsList className="glass">
           <TabsTrigger value="profile" className="gap-2">
             <User className="h-4 w-4" />
-            Profile
+            {t("profileSettings.tabs.profile")}
           </TabsTrigger>
           <TabsTrigger value="security" className="gap-2">
             <Lock className="h-4 w-4" />
-            Security
+            {t("profileSettings.tabs.security")}
           </TabsTrigger>
           <TabsTrigger value="notifications" className="gap-2">
             <Bell className="h-4 w-4" />
-            Notifications
+            {t("profileSettings.tabs.notifications")}
           </TabsTrigger>
           <TabsTrigger value="preferences" className="gap-2">
             <Globe className="h-4 w-4" />
-            Preferences
+            {t("profileSettings.tabs.preferences")}
           </TabsTrigger>
         </TabsList>
 

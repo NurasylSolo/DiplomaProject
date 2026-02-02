@@ -24,6 +24,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/hooks";
 
 interface SettingsPageProps {
   params: Promise<{ projectId: string }>;
@@ -40,6 +41,7 @@ const accentColors = [
 
 export default function SettingsPage({ params }: SettingsPageProps) {
   const { projectId } = use(params);
+  const { t } = useTranslation();
   const [projectName, setProjectName] = useState("Tech Brand Monitor");
   const [projectDescription, setProjectDescription] = useState(
     "Monitoring technology brand mentions across news, social media, and web sources."
@@ -76,15 +78,15 @@ export default function SettingsPage({ params }: SettingsPageProps) {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight">
-            Project Settings
+            {t("settings.title")}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Configure your project preferences and monitoring rules
+            {t("settings.subtitle")}
           </p>
         </div>
         <Button className="glow-sm">
           <Save className="h-4 w-4 mr-2" />
-          Save Changes
+          {t("settings.save")}
         </Button>
       </div>
       
@@ -92,23 +94,23 @@ export default function SettingsPage({ params }: SettingsPageProps) {
         <TabsList className="glass">
           <TabsTrigger value="general" className="gap-2">
             <FileText className="h-4 w-4" />
-            General
+            {t("settings.tabs.general")}
           </TabsTrigger>
           <TabsTrigger value="keywords" className="gap-2">
             <Key className="h-4 w-4" />
-            Keywords
+            {t("settings.tabs.keywords")}
           </TabsTrigger>
           <TabsTrigger value="sources" className="gap-2">
             <Globe className="h-4 w-4" />
-            Sources
+            {t("settings.tabs.sources")}
           </TabsTrigger>
           <TabsTrigger value="notifications" className="gap-2">
             <Bell className="h-4 w-4" />
-            Notifications
+            {t("settings.tabs.notifications")}
           </TabsTrigger>
           <TabsTrigger value="team" className="gap-2">
             <Users className="h-4 w-4" />
-            Team
+            {t("settings.tabs.team")}
           </TabsTrigger>
         </TabsList>
         
@@ -120,14 +122,14 @@ export default function SettingsPage({ params }: SettingsPageProps) {
           >
             <Card className="glass">
               <CardHeader>
-                <CardTitle>Project Information</CardTitle>
+                <CardTitle>{t("settings.general.title")}</CardTitle>
                 <CardDescription>
-                  Basic information about your monitoring project
+                  {t("settings.general.subtitle")}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Project Name</Label>
+                  <Label htmlFor="name">{t("settings.general.name")}</Label>
                   <Input
                     id="name"
                     value={projectName}
@@ -137,7 +139,7 @@ export default function SettingsPage({ params }: SettingsPageProps) {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
+                  <Label htmlFor="description">{t("settings.general.description")}</Label>
                   <Textarea
                     id="description"
                     value={projectDescription}
@@ -148,13 +150,13 @@ export default function SettingsPage({ params }: SettingsPageProps) {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label>Project Logo</Label>
+                  <Label>{t("settings.general.logo")}</Label>
                   <div className="flex items-center gap-4">
                     <div className="w-20 h-20 rounded-xl bg-primary/10 flex items-center justify-center border-2 border-dashed border-border hover:border-primary/50 transition-colors cursor-pointer">
                       <Upload className="h-6 w-6 text-muted-foreground" />
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      <p>Upload a logo for your project</p>
+                      <p>{t("settings.general.logoHint")}</p>
                       <p className="text-xs">PNG, JPG up to 2MB</p>
                     </div>
                   </div>
@@ -163,7 +165,7 @@ export default function SettingsPage({ params }: SettingsPageProps) {
                 <Separator />
                 
                 <div className="space-y-3">
-                  <Label>Accent Color</Label>
+                  <Label>{t("settings.general.accentColor")}</Label>
                   <div className="flex items-center gap-3">
                     {accentColors.map((color) => (
                       <button
@@ -193,9 +195,9 @@ export default function SettingsPage({ params }: SettingsPageProps) {
           >
             <Card className="glass">
               <CardHeader>
-                <CardTitle>Required Keywords</CardTitle>
+                <CardTitle>{t("settings.keywords.required.title")}</CardTitle>
                 <CardDescription>
-                  Mentions must contain at least one of these keywords
+                  {t("settings.keywords.required.subtitle")}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -219,7 +221,7 @@ export default function SettingsPage({ params }: SettingsPageProps) {
                 
                 <div className="flex gap-2 max-w-md">
                   <Input
-                    placeholder="Add keyword..."
+                    placeholder={t("settings.keywords.addPlaceholder")}
                     value={newKeyword}
                     onChange={(e) => setNewKeyword(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && addKeyword("required")}
@@ -239,9 +241,9 @@ export default function SettingsPage({ params }: SettingsPageProps) {
           >
             <Card className="glass">
               <CardHeader>
-                <CardTitle>Excluded Keywords</CardTitle>
+                <CardTitle>{t("settings.keywords.excluded.title")}</CardTitle>
                 <CardDescription>
-                  Mentions containing these keywords will be filtered out
+                  {t("settings.keywords.excluded.subtitle")}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -265,7 +267,7 @@ export default function SettingsPage({ params }: SettingsPageProps) {
                 
                 <div className="flex gap-2 max-w-md">
                   <Input
-                    placeholder="Add excluded keyword..."
+                    placeholder={t("settings.keywords.addPlaceholder")}
                     value={newKeyword}
                     onChange={(e) => setNewKeyword(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && addKeyword("excluded")}
@@ -325,17 +327,17 @@ export default function SettingsPage({ params }: SettingsPageProps) {
           >
             <Card className="glass">
               <CardHeader>
-                <CardTitle>Notification Preferences</CardTitle>
+                <CardTitle>{t("settings.notifications.title")}</CardTitle>
                 <CardDescription>
-                  Configure how you want to be notified about important events
+                  {t("settings.notifications.subtitle")}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium">Email Notifications</p>
+                    <p className="font-medium">{t("settings.notifications.email")}</p>
                     <p className="text-sm text-muted-foreground">
-                      Receive email alerts for important mentions
+                      {t("settings.notifications.emailDesc")}
                     </p>
                   </div>
                   <Switch
@@ -347,9 +349,9 @@ export default function SettingsPage({ params }: SettingsPageProps) {
                 <Separator />
                 
                 <div className="space-y-3">
-                  <Label>Alert Threshold</Label>
+                  <Label>{t("settings.notifications.threshold")}</Label>
                   <p className="text-sm text-muted-foreground">
-                    Only notify for mentions above this importance level
+                    {t("settings.notifications.thresholdDesc")}
                   </p>
                   <div className="flex gap-2">
                     {["low", "medium", "high"].map((level) => (
@@ -360,7 +362,7 @@ export default function SettingsPage({ params }: SettingsPageProps) {
                         onClick={() => setAlertThreshold(level)}
                         className="capitalize"
                       >
-                        {level}
+                        {t(`insights.severity.${level}`)}
                       </Button>
                     ))}
                   </div>
@@ -369,14 +371,14 @@ export default function SettingsPage({ params }: SettingsPageProps) {
                 <Separator />
                 
                 <div className="space-y-2">
-                  <Label htmlFor="webhook">Webhook URL</Label>
+                  <Label htmlFor="webhook">{t("settings.notifications.webhook")}</Label>
                   <Input
                     id="webhook"
                     placeholder="https://your-webhook-url.com/endpoint"
                     className="max-w-md"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Receive real-time notifications via webhook
+                    {t("settings.notifications.webhookDesc")}
                   </p>
                 </div>
               </CardContent>
@@ -392,9 +394,9 @@ export default function SettingsPage({ params }: SettingsPageProps) {
           >
             <Card className="glass">
               <CardHeader>
-                <CardTitle>Team Members</CardTitle>
+                <CardTitle>{t("settings.team.title")}</CardTitle>
                 <CardDescription>
-                  Manage who has access to this project
+                  {t("settings.team.subtitle")}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -422,7 +424,7 @@ export default function SettingsPage({ params }: SettingsPageProps) {
                 
                 <Button variant="outline" className="w-full">
                   <Plus className="h-4 w-4 mr-2" />
-                  Invite Team Member
+                  {t("settings.team.invite")}
                 </Button>
               </CardContent>
             </Card>

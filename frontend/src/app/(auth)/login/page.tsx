@@ -7,11 +7,19 @@ import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, Loader2, Globe, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useTranslation } from "@/hooks";
+import { supportedLanguages } from "@/lib/i18n";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -23,6 +31,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const router = useRouter();
+  const { t, changeLanguage, currentLanguage } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
@@ -78,6 +87,33 @@ export default function LoginPage() {
       animate="visible"
       className="space-y-8"
     >
+      {/* Language Selector */}
+      <div className="absolute top-4 right-4">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="relative">
+              <Globe className="h-5 w-5" />
+              <span className="sr-only">{t("header.language")}</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            {supportedLanguages.map((lang) => (
+              <DropdownMenuItem
+                key={lang.code}
+                onClick={() => changeLanguage(lang.code)}
+                className="flex items-center gap-2 cursor-pointer"
+              >
+                <span className="text-lg">{lang.flag}</span>
+                <span>{lang.name}</span>
+                {currentLanguage === lang.code && (
+                  <Check className="h-4 w-4 ml-auto" />
+                )}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+      
       {/* Header */}
       <motion.div variants={itemVariants} className="space-y-2">
         {/* Mobile logo */}
@@ -112,17 +148,17 @@ export default function LoginPage() {
         </div>
         
         <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight">
-          Welcome back
+          {t("auth.login.title")}
         </h1>
         <p className="text-muted-foreground">
-          Enter your credentials to access your account
+          {t("auth.login.subtitle")}
         </p>
       </motion.div>
       
       {/* Form */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <motion.div variants={itemVariants} className="space-y-2">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">{t("auth.login.email")}</Label>
           <Input
             id="email"
             type="email"
@@ -139,19 +175,19 @@ export default function LoginPage() {
         
         <motion.div variants={itemVariants} className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">{t("auth.login.password")}</Label>
             <Link 
               href="/forgot-password" 
               className="text-sm text-primary hover:text-primary/80 transition-colors"
             >
-              Forgot password?
+              {t("auth.login.forgotPassword")}
             </Link>
           </div>
           <div className="relative">
             <Input
               id="password"
               type={showPassword ? "text" : "password"}
-              placeholder="Enter your password"
+              placeholder="••••••••"
               autoComplete="current-password"
               disabled={isLoading}
               className="h-12 pr-12"
@@ -183,7 +219,7 @@ export default function LoginPage() {
             disabled={isLoading}
           />
           <Label htmlFor="rememberMe" className="text-sm font-normal cursor-pointer">
-            Keep me signed in for 30 days
+            {t("auth.login.rememberMe")}
           </Label>
         </motion.div>
         
@@ -196,11 +232,11 @@ export default function LoginPage() {
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Signing in...
+                {t("auth.login.submitting")}
               </>
             ) : (
               <>
-                Sign In
+                {t("auth.login.submit")}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </>
             )}
@@ -215,7 +251,7 @@ export default function LoginPage() {
         </div>
         <div className="relative flex justify-center text-xs uppercase">
           <span className="bg-background px-2 text-muted-foreground">
-            Or continue with
+            {t("auth.login.orContinueWith")}
           </span>
         </div>
       </motion.div>
@@ -246,7 +282,7 @@ export default function LoginPage() {
               d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
             />
           </svg>
-          Continue with Google
+          {t("auth.login.google")}
         </Button>
       </motion.div>
       
@@ -255,12 +291,12 @@ export default function LoginPage() {
         variants={itemVariants}
         className="text-center text-sm text-muted-foreground"
       >
-        Don&apos;t have an account?{" "}
+        {t("auth.login.noAccount")}{" "}
         <Link 
           href="/register" 
           className="text-primary hover:text-primary/80 font-medium transition-colors"
         >
-          Create account
+          {t("auth.login.createAccount")}
         </Link>
       </motion.p>
     </motion.div>

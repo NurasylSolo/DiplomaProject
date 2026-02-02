@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/hooks";
 
 interface EmotionAnalysisPageProps {
   params: Promise<{ projectId: string }>;
@@ -48,6 +49,7 @@ const emotionsByTopic = [
 
 export default function EmotionAnalysisPage({ params }: EmotionAnalysisPageProps) {
   const { projectId } = use(params);
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const isDark = theme === "dark";
   
@@ -121,10 +123,10 @@ export default function EmotionAnalysisPage({ params }: EmotionAnalysisPageProps
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
             <Heart className="h-7 w-7 text-primary" />
-            Emotion Analysis
+            {t("emotions.title")}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Fine-grained emotion detection in your mentions
+            {t("emotions.subtitle")}
           </p>
         </div>
         

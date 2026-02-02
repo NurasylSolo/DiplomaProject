@@ -1,10 +1,22 @@
+"use client";
+
 import { FloatingShapes, GridPattern } from "@/components/ui/floating-shapes";
+import { useTranslation } from "@/hooks";
 
 export default function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const { t } = useTranslation();
+  
+  const features = [
+    t("landing.hero.trust.realtime", { defaultValue: "Real-time monitoring across 150+ countries" }),
+    t("landing.features.items.sentiment.title", { defaultValue: "AI-powered sentiment & emotion analysis" }),
+    t("landing.features.items.reports.title", { defaultValue: "Automated reports and alerts" }),
+    t("landing.hero.trust.multilang", { defaultValue: "Multi-language support (EN, RU, KZ)" }),
+  ];
+  
   return (
     <div className="relative min-h-screen flex">
       {/* Left side - Decorative */}
@@ -53,25 +65,19 @@ export default function AuthLayout({
             </div>
             
             <h1 className="font-display text-4xl xl:text-5xl font-bold mb-4 tracking-tight">
-              Media Intelligence
+              {t("app.tagline", { defaultValue: "Media Intelligence" })}
               <br />
-              <span className="text-primary">Reimagined</span>
+              <span className="text-primary">{t("landing.features.titleHighlight", { defaultValue: "Reimagined" })}</span>
             </h1>
             
             <p className="text-muted-foreground text-lg max-w-md">
-              Track brand mentions, analyze sentiment, and gain actionable insights 
-              from news and social media in real-time.
+              {t("landing.hero.subtitle")}
             </p>
           </div>
           
           {/* Features list */}
           <div className="space-y-4">
-            {[
-              "Real-time monitoring across 150+ countries",
-              "AI-powered sentiment & emotion analysis",
-              "Automated reports and alerts",
-              "Multi-language support (EN, RU, KZ)",
-            ].map((feature, index) => (
+            {features.map((feature, index) => (
               <div key={index} className="flex items-center gap-3">
                 <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
                   <svg className="w-3 h-3 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -86,8 +92,8 @@ export default function AuthLayout({
           {/* Testimonial */}
           <div className="mt-12 p-6 glass rounded-2xl max-w-md">
             <p className="text-sm italic text-muted-foreground mb-4">
-              "Senti News transformed how we monitor our brand reputation. 
-              The AI insights are incredibly accurate and save us hours every week."
+              &ldquo;Senti News transformed how we monitor our brand reputation. 
+              The AI insights are incredibly accurate and save us hours every week.&rdquo;
             </p>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent" />
@@ -102,7 +108,7 @@ export default function AuthLayout({
       
       {/* Right side - Auth form */}
       <div className="flex-1 flex items-center justify-center p-6 sm:p-12">
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-md relative">
           {children}
         </div>
       </div>

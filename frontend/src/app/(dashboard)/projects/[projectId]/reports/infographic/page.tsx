@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/hooks";
 
 interface InfographicPageProps {
   params: Promise<{ projectId: string }>;
@@ -51,6 +52,7 @@ const infographicData = {
 
 export default function InfographicPage({ params }: InfographicPageProps) {
   const { projectId } = use(params);
+  const { t } = useTranslation();
   const [isGenerating, setIsGenerating] = useState(false);
   
   const handleRegenerate = async () => {
@@ -66,25 +68,25 @@ export default function InfographicPage({ params }: InfographicPageProps) {
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
             <Image className="h-7 w-7 text-primary" />
-            Infographic
+            {t("reports.infographic.title")}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Auto-generated visual summary of your media data
+            {t("reports.infographic.subtitle")}
           </p>
         </div>
         
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleRegenerate} disabled={isGenerating}>
             <RefreshCw className={cn("h-4 w-4 mr-2", isGenerating && "animate-spin")} />
-            Regenerate
+            {t("reports.infographic.regenerate")}
           </Button>
           <Button variant="outline" size="sm">
             <Share2 className="h-4 w-4 mr-2" />
-            Share
+            {t("reports.infographic.share")}
           </Button>
           <Button className="glow-sm">
             <Download className="h-4 w-4 mr-2" />
-            Export PNG
+            {t("reports.infographic.exportPng")}
           </Button>
         </div>
       </div>
