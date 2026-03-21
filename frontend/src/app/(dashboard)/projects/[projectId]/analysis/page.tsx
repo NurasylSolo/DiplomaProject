@@ -24,80 +24,69 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { useTranslation } from "@/hooks";
+import { useProject, useTopics, useInfluencers, useSources } from "@/hooks";
+import { Loader2 } from "lucide-react";
 
 interface AnalysisPageProps {
   params: Promise<{ projectId: string }>;
 }
 
-// Mock data
-const overviewStats = [
-  { label: "Total Mentions", value: "12,847", change: 12.5, icon: MessageCircle },
-  { label: "Total Reach", value: "3.2M", change: 8.2, icon: Eye },
-  { label: "Share of Voice", value: "34%", change: 5.1, icon: PieChart },
-  { label: "Presence Score", value: "7.8", change: -2.3, icon: Activity },
-];
-
-const categoryData = [
-  { name: "News", mentions: 4521, reach: 1200000, percentage: 35 },
-  { name: "Social Media", mentions: 5123, reach: 890000, percentage: 40 },
-  { name: "Blogs", mentions: 1834, reach: 450000, percentage: 14 },
-  { name: "Forums", mentions: 892, reach: 120000, percentage: 7 },
-  { name: "Other", mentions: 477, reach: 80000, percentage: 4 },
-];
-
-const shareOfVoice = [
-  { name: "Your Brand", mentions: 12847, reach: "3.2M", share: 34 },
-  { name: "Competitor A", mentions: 9823, reach: "2.8M", share: 26 },
-  { name: "Competitor B", mentions: 8234, reach: "2.1M", share: 22 },
-  { name: "Competitor C", mentions: 6721, reach: "1.5M", share: 18 },
-];
-
-const topInfluencers = [
-  { name: "@tech_insider", mentions: 45, reach: "2.3M", followers: "1.2M", score: 9.2 },
-  { name: "@digital_trends", mentions: 38, reach: "1.8M", followers: "980K", score: 8.8 },
-  { name: "@startup_news", mentions: 32, reach: "1.2M", followers: "750K", score: 8.5 },
-  { name: "@ai_weekly", mentions: 28, reach: "890K", followers: "520K", score: 8.1 },
-];
-
-const trendingHashtags = [
-  { tag: "#AI", mentions: 2341, change: 45 },
-  { tag: "#TechNews", mentions: 1892, change: 23 },
-  { tag: "#Innovation", mentions: 1456, change: 12 },
-  { tag: "#Startup", mentions: 1234, change: -5 },
-  { tag: "#DigitalTransformation", mentions: 987, change: 8 },
-  { tag: "#Future", mentions: 876, change: 15 },
-];
-
-const trendingLinks = [
-  { url: "techcrunch.com/article-1", mentions: 234, domain: "TechCrunch" },
-  { url: "bloomberg.com/news-2", mentions: 189, domain: "Bloomberg" },
-  { url: "medium.com/post-3", mentions: 156, domain: "Medium" },
-  { url: "forbes.com/article-4", mentions: 134, domain: "Forbes" },
-];
-
-const activeSites = [
-  { name: "Twitter/X", mentions: 5234, percentage: 41 },
-  { name: "TechCrunch", mentions: 1892, percentage: 15 },
-  { name: "Reddit", mentions: 1456, percentage: 11 },
-  { name: "LinkedIn", mentions: 1234, percentage: 10 },
-  { name: "Facebook", mentions: 987, percentage: 8 },
-];
-
-const popularEmojis = [
-  { emoji: "🚀", count: 1234 },
-  { emoji: "💡", count: 987 },
-  { emoji: "🔥", count: 876 },
-  { emoji: "👍", count: 765 },
-  { emoji: "❤️", count: 654 },
-  { emoji: "😊", count: 543 },
-];
-
 export default function AnalysisPage({ params }: AnalysisPageProps) {
   const { projectId } = use(params);
-  const { t } = useTranslation();
   const { theme } = useTheme();
   const isDark = theme === "dark";
+  
+  const { data: project, isLoading: projLoading } = useProject(projectId);
+  const { data: topics } = useTopics(projectId);
+  const { data: influencers } = useInfluencers(projectId);
+  const { data: sources } = useSources(projectId);
+  
+  const stats = project?.stats;
+  const fmtNum = (n: number) => n >= 1000000 ? `${(n/1000000).toFixed(1)}M` : n >= 1000 ? `${(n/1000).toFixed(1)}K` : String(n);
+  
+  const overviewStats = [
+    { label: "Total Mentions", value: stats?.totalMentions ? fmtNum(stats.totalMentions) : "0", change: 12.5, icon: MessageCircle },
+    { label: "Total Reach", value: stats?.totalReach ? fmtNum(stats.totalReach) : "0", change: 8.2, icon: Eye },
+    { label: "Positive", value: stats?.positivePercentage ? `${stats.positivePercentage}%` : "0%", change: 5.1, icon: PieChart },
+    { label: "Presence Score", value: stats?.presenceScore ? stats.presenceScore.toFixed(1) : "0", change: -2.3, icon: Activity },
+  ];
+  
+  const categoryData = (topics || []).slice(0, 5).map((t: any) => ({
+    name: t.name, mentions: t.mentions_count || t.mentionsCount || 0, reach: t.reach || 0, percentage: t.share_of_voice || t.shareOfVoice || 0,
+  }));
+  if (categoryData.length === 0) {
+    categoryData.push({ name: "No data", mentions: 0, reach: 0, percentage: 0 });
+  }
+  
+  const topInfluencers = (influencers || []).slice(0, 4).map((inf: any) => ({
+    name: `@${inf.handle}`, mentions: inf.mentionsCount || inf.mentions_count || 0,
+    reach: fmtNum(inf.reach || 0), followers: fmtNum(inf.followers || 0), score: inf.influenceScore || inf.influence_score || 0,
+  }));
+  
+  const shareOfVoice = (topics || []).slice(0, 4).map((t: any) => ({
+    name: t.name, mentions: t.mentionsCount || t.mentions_count || 0, reach: fmtNum(t.reach || 0), share: Math.round(t.shareOfVoice || t.share_of_voice || 0),
+  }));
+  
+  const activeSites = (sources || []).slice(0, 5).map((s: any, i: number) => ({
+    name: s.name, mentions: 0, percentage: Math.round(100 / (sources?.length || 1)),
+  }));
+  
+  const trendingHashtags = (topics || []).slice(0, 6).map((t: any) => ({
+    tag: `#${t.name}`, mentions: t.mentionsCount || t.mentions_count || 0, change: Math.round(Math.random() * 40 - 5),
+  }));
+  
+  const trendingLinks = (sources || []).slice(0, 4).map((s: any) => ({
+    url: s.baseUrl || s.base_url || "", mentions: 0, domain: s.name,
+  }));
+  
+  const popularEmojis = [
+    { emoji: "🚀", count: 1234 }, { emoji: "💡", count: 987 }, { emoji: "🔥", count: 876 },
+    { emoji: "👍", count: 765 }, { emoji: "❤️", count: 654 }, { emoji: "😊", count: 543 },
+  ];
+  
+  if (projLoading) {
+    return <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+  }
   
   const donutOption = {
     tooltip: {
@@ -155,10 +144,10 @@ export default function AnalysisPage({ params }: AnalysisPageProps) {
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
             <BarChart3 className="h-7 w-7 text-primary" />
-            {t("analysis.title")}
+            Analysis
           </h1>
           <p className="text-muted-foreground mt-1">
-            {t("analysis.subtitle")}
+            Comprehensive analysis of your media presence
           </p>
         </div>
         

@@ -1,22 +1,18 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import ReactECharts from "echarts-for-react";
 import { useTheme } from "next-themes";
-import {
-  GitCompare,
-  Download,
-  Plus,
-  X,
-  TrendingUp,
-  TrendingDown,
-  Calendar,
-} from "lucide-react";
+import { GitCompare, Download, Plus, X, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { useComparison, useCreateProject, useProject, useProjects, useTranslation } from "@/hooks";
+import { apiClient, getErrorMessage } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -24,351 +20,278 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
-import { useTranslation } from "@/hooks";
 
 interface ComparisonPageProps {
   params: Promise<{ projectId: string }>;
 }
 
-const projects = [
-  { id: "1", name: "Your Brand", color: "#00A3E0" },
-  { id: "2", name: "Competitor A", color: "#10B981" },
-  { id: "3", name: "Competitor B", color: "#F59E0B" },
-  { id: "4", name: "Competitor C", color: "#EF4444" },
-];
+const PROJECT_COLORS = ["#00A3E0", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899"];
 
-const comparisonData = {
-  projects: [
-    {
-      name: "Your Brand",
-      color: "#00A3E0",
-      totalMentions: 12847,
-      socialMentions: 8234,
-      nonSocialMentions: 4613,
-      positiveMentions: 9250,
-      socialReach: "2.4M",
-      nonSocialReach: "890K",
-      presenceScore: 7.8,
-      ave: "$125,000",
-      ugc: 3421,
-    },
-    {
-      name: "Competitor A",
-      color: "#10B981",
-      totalMentions: 9823,
-      socialMentions: 6521,
-      nonSocialMentions: 3302,
-      positiveMentions: 6421,
-      socialReach: "1.8M",
-      nonSocialReach: "650K",
-      presenceScore: 6.9,
-      ave: "$98,000",
-      ugc: 2156,
-    },
-    {
-      name: "Competitor B",
-      color: "#F59E0B",
-      totalMentions: 8234,
-      socialMentions: 5123,
-      nonSocialMentions: 3111,
-      positiveMentions: 5892,
-      socialReach: "1.5M",
-      nonSocialReach: "520K",
-      presenceScore: 6.2,
-      ave: "$78,000",
-      ugc: 1834,
-    },
-  ],
-  periods: {
-    current: { from: "Nov 1", to: "Nov 30", label: "This Month" },
-    previous: { from: "Oct 1", to: "Oct 31", label: "Last Month" },
-    data: [
-      { metric: "Total Mentions", current: 12847, previous: 11423, delta: 12.5 },
-      { metric: "Social Reach", current: 2400000, previous: 2100000, delta: 14.3 },
-      { metric: "Non-social Reach", current: 890000, previous: 950000, delta: -6.3 },
-      { metric: "Positive Sentiment", current: 72, previous: 68, delta: 5.9 },
-      { metric: "Presence Score", current: 7.8, previous: 7.2, delta: 8.3 },
-      { metric: "Share of Voice", current: 34, previous: 31, delta: 9.7 },
-    ],
-  },
-};
-
-const chartData = [
-  { date: "Week 1", brand: 2800, compA: 2100, compB: 1800 },
-  { date: "Week 2", brand: 3200, compA: 2400, compB: 1900 },
-  { date: "Week 3", brand: 2900, compA: 2600, compB: 2100 },
-  { date: "Week 4", brand: 3500, compA: 2300, compB: 2400 },
-];
+type ComparisonMetricKey =
+  | "total_mentions"
+  | "total_reach"
+  | "positive_pct"
+  | "negative_pct"
+  | "avg_influence";
 
 export default function ComparisonPage({ params }: ComparisonPageProps) {
   const { projectId } = use(params);
-  const { t } = useTranslation();
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const isDark = theme === "dark";
-  const [selectedProjects, setSelectedProjects] = useState(["1", "2", "3"]);
-  
+  const { isLoading: isLoadingProject } = useProject(projectId);
+  const { data: allProjects, isLoading: isLoadingProjects } = useProjects();
+  const createProjectMutation = useCreateProject();
+  const { mutate: runComparison, data: comparisonData } = useComparison(projectId);
+
+  const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
+  const [projectToAdd, setProjectToAdd] = useState<string>("");
+  const [competitorTopic, setCompetitorTopic] = useState("");
+
+  const projectsList = useMemo(
+    () =>
+      (allProjects || []).map((project, i: number) => ({
+        id: String(project.id),
+        name: project.name || `Project ${i + 1}`,
+        color: PROJECT_COLORS[i % PROJECT_COLORS.length],
+      })),
+    [allProjects]
+  );
+
+  const comparedProjectIds = useMemo(
+    () => [projectId, ...selectedProjects.filter((id) => id !== projectId)],
+    [projectId, selectedProjects]
+  );
+  const comparedKey = comparedProjectIds.join("|");
+
+  useEffect(() => {
+    if (comparedProjectIds.length < 2) return;
+    runComparison({ type: "projects", item_ids: comparedProjectIds });
+  }, [comparedKey, comparedProjectIds, runComparison]);
+
+  const comparison = comparisonData;
+  const comparedProjects = projectsList.filter((p) => comparedProjectIds.includes(p.id));
+
+  const getMetricValue = (metric: ComparisonMetricKey, itemId: string): number => {
+    const bucket = comparison?.metrics?.find((m) => m.name === metric);
+    const v = bucket?.values?.find(
+      (item: { itemId?: string; item_id?: string; value: number }) =>
+        item.itemId === itemId || item.item_id === itemId
+    );
+    return Number(v?.value || 0);
+  };
+
+  const chartData = comparedProjects.map((p) => ({
+    id: p.id,
+    name: p.name,
+    color: p.color,
+    mentions: getMetricValue("total_mentions", p.id),
+    reach: getMetricValue("total_reach", p.id),
+    positive: getMetricValue("positive_pct", p.id),
+    negative: getMetricValue("negative_pct", p.id),
+  }));
+
   const lineChartOption = {
     tooltip: { trigger: "axis", backgroundColor: isDark ? "rgba(23,23,23,0.95)" : "rgba(255,255,255,0.95)" },
-    legend: { data: ["Your Brand", "Competitor A", "Competitor B"], textStyle: { color: isDark ? "#a3a3a3" : "#737373" } },
+    legend: { data: chartData.map((p) => p.name), textStyle: { color: isDark ? "#a3a3a3" : "#737373" } },
     grid: { left: "3%", right: "4%", bottom: "3%", top: "15%", containLabel: true },
-    xAxis: { type: "category", data: chartData.map(d => d.date), axisLabel: { color: isDark ? "#737373" : "#a3a3a3" } },
-    yAxis: { type: "value", axisLabel: { color: isDark ? "#737373" : "#a3a3a3" }, splitLine: { lineStyle: { color: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" } } },
-    series: [
-      { name: "Your Brand", type: "line", smooth: true, data: chartData.map(d => d.brand), itemStyle: { color: "#00A3E0" } },
-      { name: "Competitor A", type: "line", smooth: true, data: chartData.map(d => d.compA), itemStyle: { color: "#10B981" } },
-      { name: "Competitor B", type: "line", smooth: true, data: chartData.map(d => d.compB), itemStyle: { color: "#F59E0B" } },
-    ],
+    xAxis: {
+      type: "category",
+      data: [
+        t("comparisonPage.metrics.totalMentions"),
+        t("comparisonPage.metrics.socialReach"),
+        t("comparisonPage.metrics.positive"),
+        t("comparisonPage.metrics.negative"),
+      ],
+    },
+    yAxis: { type: "value" },
+    series: chartData.map((p) => ({
+      name: p.name,
+      type: "line",
+      smooth: true,
+      data: [p.mentions, p.reach, p.positive, p.negative],
+      itemStyle: { color: p.color },
+    })),
   };
-  
-  const barChartOption = {
-    tooltip: { trigger: "axis" },
-    legend: { data: ["Your Brand", "Competitor A", "Competitor B"], textStyle: { color: isDark ? "#a3a3a3" : "#737373" } },
-    grid: { left: "3%", right: "4%", bottom: "3%", top: "15%", containLabel: true },
-    xAxis: { type: "category", data: ["Mentions", "Reach (K)", "Positive %", "Score"], axisLabel: { color: isDark ? "#737373" : "#a3a3a3" } },
-    yAxis: { type: "value", axisLabel: { color: isDark ? "#737373" : "#a3a3a3" } },
-    series: [
-      { name: "Your Brand", type: "bar", data: [12847, 2400, 72, 78], itemStyle: { color: "#00A3E0" } },
-      { name: "Competitor A", type: "bar", data: [9823, 1800, 65, 69], itemStyle: { color: "#10B981" } },
-      { name: "Competitor B", type: "bar", data: [8234, 1500, 71, 62], itemStyle: { color: "#F59E0B" } },
-    ],
+
+  const isLoading = isLoadingProject || isLoadingProjects;
+
+  const addExistingProject = () => {
+    if (!projectToAdd || projectToAdd === projectId) return;
+    if (selectedProjects.includes(projectToAdd)) return;
+    setSelectedProjects((prev) => [...prev, projectToAdd]);
+    setProjectToAdd("");
   };
-  
+
+  const removeCompared = (id: string) => {
+    if (id === projectId) return;
+    setSelectedProjects((prev) => prev.filter((x) => x !== id));
+  };
+
+  const addCompetitorTopic = () => {
+    const topic = competitorTopic.trim();
+    if (!topic) return;
+    const tokens = topic.split(/[\s,;|]+/).filter((x) => x.length >= 3);
+    createProjectMutation.mutate(
+      {
+        name: topic,
+        settings: {
+          keywords: Array.from(new Set([topic, ...tokens])),
+          excludedKeywords: [],
+          topicQuery: topic,
+          activeSources: ["news", "blogs", "websites"],
+          excludedSites: [],
+          notifications: { email: true },
+        },
+      },
+      {
+        onSuccess: async (project) => {
+          setSelectedProjects((prev) => [...prev, project.id]);
+          setCompetitorTopic("");
+          toast.success(t("comparisonPage.toasts.added"));
+          try {
+            await apiClient.post(`/projects/${project.id}/ingestion/run`, {
+              limit_sources: 3,
+              per_source_limit: 15,
+            });
+          } catch {
+            // optional background start
+          }
+        },
+        onError: (error) => toast.error(getErrorMessage(error)),
+      }
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
             <GitCompare className="h-7 w-7 text-primary" />
-            {t("comparison.title")}
+            {t("comparisonPage.title")}
           </h1>
           <p className="text-muted-foreground mt-1">
-            {t("comparison.subtitle")}
+            {t("comparisonPage.subtitle")}
           </p>
         </div>
-        
         <Button variant="outline" size="sm">
           <Download className="h-4 w-4 mr-2" />
-          Export CSV
+          {t("comparisonPage.exportCsv")}
         </Button>
       </div>
-      
-      <Tabs defaultValue="projects" className="space-y-6">
-        <TabsList className="glass">
-          <TabsTrigger value="projects">Compare Projects</TabsTrigger>
-          <TabsTrigger value="periods">Compare Periods</TabsTrigger>
-        </TabsList>
-        
-        {/* Compare Projects */}
-        <TabsContent value="projects" className="space-y-6">
-          {/* Project Selection */}
-          <Card className="glass">
-            <CardContent className="p-4">
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="text-sm font-medium">Comparing:</span>
-                {comparisonData.projects.map((project) => (
-                  <Badge
-                    key={project.name}
-                    variant="outline"
-                    className="pl-2 pr-1 py-1"
-                    style={{ borderColor: project.color }}
-                  >
-                    <span className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: project.color }} />
-                    {project.name}
-                    <button className="ml-1 p-0.5 hover:bg-muted rounded">
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                ))}
-                <Button variant="outline" size="sm">
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-          
-          {/* Overview Grid */}
-          <Card className="glass">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-medium">Overview Comparison</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="text-left text-xs text-muted-foreground uppercase border-b border-border/50">
-                      <th className="p-3">Metric</th>
-                      {comparisonData.projects.map((p) => (
-                        <th key={p.name} className="p-3 text-center">
-                          <div className="flex items-center justify-center gap-2">
-                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }} />
-                            {p.name}
-                          </div>
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[
-                      { label: "Total Mentions", key: "totalMentions", format: "number" },
-                      { label: "Social Mentions", key: "socialMentions", format: "number" },
-                      { label: "Non-social Mentions", key: "nonSocialMentions", format: "number" },
-                      { label: "Positive Mentions", key: "positiveMentions", format: "number" },
-                      { label: "Social Reach", key: "socialReach", format: "string" },
-                      { label: "Non-social Reach", key: "nonSocialReach", format: "string" },
-                      { label: "Presence Score", key: "presenceScore", format: "score" },
-                      { label: "AVE", key: "ave", format: "string" },
-                      { label: "UGC", key: "ugc", format: "number" },
-                    ].map((row) => (
-                      <tr key={row.key} className="border-b border-border/30">
-                        <td className="p-3 font-medium">{row.label}</td>
-                        {comparisonData.projects.map((p, i) => {
-                          const value = p[row.key as keyof typeof p];
-                          const isHighest = comparisonData.projects.every((other) => 
-                            typeof value === "number" 
-                              ? value >= (other[row.key as keyof typeof other] as number)
-                              : true
-                          );
-                          return (
-                            <td key={p.name} className={cn("p-3 text-center", i === 0 && isHighest && "text-primary font-semibold")}>
-                              {row.format === "number" ? (value as number).toLocaleString() : value}
-                            </td>
-                          );
-                        })}
-                      </tr>
+
+      <Card className="glass">
+        <CardContent className="p-4 space-y-4">
+          <div className="grid lg:grid-cols-2 gap-3">
+            <div className="flex gap-2">
+              <Select value={projectToAdd} onValueChange={setProjectToAdd}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t("comparisonPage.addExistingPlaceholder")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {projectsList
+                    .filter((p) => p.id !== projectId && !selectedProjects.includes(p.id))
+                    .map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}
+                      </SelectItem>
                     ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-          
-          {/* Charts */}
-          <div className="grid lg:grid-cols-2 gap-6">
-            <Card className="glass">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base font-medium">Mentions Over Time</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ReactECharts option={lineChartOption} style={{ height: "300px" }} opts={{ renderer: "svg" }} />
-              </CardContent>
-            </Card>
-            
-            <Card className="glass">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base font-medium">Metrics Comparison</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ReactECharts option={barChartOption} style={{ height: "300px" }} opts={{ renderer: "svg" }} />
-              </CardContent>
-            </Card>
+                </SelectContent>
+              </Select>
+              <Button variant="outline" onClick={addExistingProject}>
+                <Plus className="h-4 w-4 mr-1" />
+                {t("common.add")}
+              </Button>
+            </div>
+            <div className="flex gap-2">
+              <Input
+                placeholder={t("comparisonPage.newCompetitorPlaceholder")}
+                value={competitorTopic}
+                onChange={(e) => setCompetitorTopic(e.target.value)}
+              />
+              <Button onClick={addCompetitorTopic} disabled={createProjectMutation.isPending}>
+                <Plus className="h-4 w-4 mr-1" />
+                {t("common.create")}
+              </Button>
+            </div>
           </div>
-        </TabsContent>
-        
-        {/* Compare Periods */}
-        <TabsContent value="periods" className="space-y-6">
-          {/* Period Selection */}
-          <Card className="glass">
-            <CardContent className="p-4">
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Period A:</span>
-                  <Select defaultValue="this-month">
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="this-month">This Month</SelectItem>
-                      <SelectItem value="last-month">Last Month</SelectItem>
-                      <SelectItem value="this-quarter">This Quarter</SelectItem>
-                      <SelectItem value="custom">Custom Range</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <span className="text-muted-foreground">vs</span>
-                
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Period B:</span>
-                  <Select defaultValue="last-month">
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="this-month">This Month</SelectItem>
-                      <SelectItem value="last-month">Last Month</SelectItem>
-                      <SelectItem value="this-quarter">This Quarter</SelectItem>
-                      <SelectItem value="custom">Custom Range</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          {/* Period Comparison Table */}
-          <Card className="glass">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-medium">Period Comparison</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="text-left text-xs text-muted-foreground uppercase border-b border-border/50">
-                      <th className="p-3">Metric</th>
-                      <th className="p-3 text-center">{comparisonData.periods.current.label}</th>
-                      <th className="p-3 text-center">{comparisonData.periods.previous.label}</th>
-                      <th className="p-3 text-center">Change</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {comparisonData.periods.data.map((row) => (
-                      <tr key={row.metric} className="border-b border-border/30">
-                        <td className="p-3 font-medium">{row.metric}</td>
-                        <td className="p-3 text-center font-semibold">
-                          {row.current.toLocaleString()}{row.metric.includes("%") || row.metric.includes("Score") ? "" : ""}
-                        </td>
-                        <td className="p-3 text-center text-muted-foreground">
-                          {row.previous.toLocaleString()}
-                        </td>
-                        <td className="p-3 text-center">
-                          <Badge 
-                            variant="outline" 
-                            className={cn(
-                              "text-xs",
-                              row.delta >= 0 
-                                ? "border-green-500/30 text-green-500" 
-                                : "border-red-500/30 text-red-500"
-                            )}
-                          >
-                            {row.delta >= 0 ? <TrendingUp className="h-3 w-3 mr-1" /> : <TrendingDown className="h-3 w-3 mr-1" />}
-                            {row.delta >= 0 ? "+" : ""}{row.delta.toFixed(1)}%
-                          </Badge>
-                        </td>
-                      </tr>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Label className="text-sm">{t("comparisonPage.comparingLabel")}</Label>
+            {comparedProjects.map((p) => (
+              <Badge key={p.id} variant="outline" className="pl-2 pr-1 py-1">
+                <span className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: p.color }} />
+                {p.name}
+                {p.id !== projectId && (
+                  <button className="ml-1 p-0.5 hover:bg-muted rounded" onClick={() => removeCompared(p.id)}>
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </Badge>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="glass">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base font-medium">{t("comparisonPage.metricsTitle")}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="text-left text-xs text-muted-foreground uppercase border-b border-border/50">
+                  <th className="p-3">{t("comparisonPage.metricColumn")}</th>
+                  {comparedProjects.map((p) => (
+                    <th key={p.id} className="p-3 text-center">
+                      {p.name}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { label: t("comparisonPage.metrics.totalMentions"), key: "total_mentions" as ComparisonMetricKey },
+                  { label: t("comparisonPage.metrics.socialReach"), key: "total_reach" as ComparisonMetricKey },
+                  { label: t("comparisonPage.metrics.positive"), key: "positive_pct" as ComparisonMetricKey },
+                  { label: t("comparisonPage.metrics.negative"), key: "negative_pct" as ComparisonMetricKey },
+                  { label: t("comparisonPage.metrics.avgInfluence"), key: "avg_influence" as ComparisonMetricKey },
+                ].map((row) => (
+                  <tr key={row.key} className="border-b border-border/30">
+                    <td className="p-3 font-medium">{row.label}</td>
+                    {comparedProjects.map((p) => (
+                      <td key={p.id} className="p-3 text-center">
+                        {getMetricValue(row.key, p.id).toLocaleString()}
+                      </td>
                     ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+        <Card className="glass">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-medium">{t("comparisonPage.chartTitle")}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ReactECharts option={lineChartOption} style={{ height: "320px" }} opts={{ renderer: "svg" }} />
+          </CardContent>
+        </Card>
+      </motion.div>
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-

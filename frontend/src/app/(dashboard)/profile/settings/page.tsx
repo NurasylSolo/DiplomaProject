@@ -1,19 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Save,
-  Upload,
   User,
-  Mail,
   Lock,
-  Bell,
-  Shield,
   Globe,
-  CreditCard,
   Trash2,
   Eye,
   EyeOff,
@@ -21,24 +16,17 @@ import {
   X,
   Smartphone,
   LogOut,
+  Loader2,
 } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -51,109 +39,132 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
-import { useTranslation } from "@/hooks";
-
-// Mock user data
-const initialUserData = {
-  name: "Nurasyl Kairkhanov",
-  email: "nurasyl@example.com",
-  phone: "+7 777 123 4567",
-  company: "Astana IT University",
-  location: "Taraz, Kazakhstan",
-  website: "https://example.com",
-  bio: "Media monitoring specialist focused on brand analytics and sentiment analysis.",
-  language: "en",
-  timezone: "Asia/Astana",
-  twoFactorEnabled: false,
-};
-
-// Mock notification preferences
-const initialNotifications = {
-  emailAlerts: true,
-  emailReports: true,
-  emailNewsletter: false,
-  pushMentions: true,
-  pushAlerts: true,
-  pushReports: false,
-};
-
-// Mock active sessions
-const activeSessions = [
-  {
-    id: "1",
-    device: "Chrome on Windows",
-    location: "Almaty, Kazakhstan",
-    ip: "192.168.1.100",
-    lastActive: "Now",
-    current: true,
-  },
-  {
-    id: "2",
-    device: "Safari on iPhone",
-    location: "Almaty, Kazakhstan",
-    ip: "192.168.1.101",
-    lastActive: "2 hours ago",
-    current: false,
-  },
-  {
-    id: "3",
-    device: "Firefox on MacOS",
-    location: "Astana, Kazakhstan",
-    ip: "10.0.0.50",
-    lastActive: "3 days ago",
-    current: false,
-  },
-];
-
-const languages = [
-  { value: "en", label: "English" },
-  { value: "ru", label: "Русский" },
-  { value: "kz", label: "Қазақша" },
-];
-
-const timezones = [
-  { value: "Asia/Almaty", label: "Almaty (UTC+5)" },
-  { value: "Asia/Astana", label: "Astana (UTC+5)" },
-  { value: "Europe/Moscow", label: "Moscow (UTC+3)" },
-  { value: "Europe/London", label: "London (UTC+0)" },
-  { value: "America/New_York", label: "New York (UTC-5)" },
-];
+import { tokenManager, getErrorMessage } from "@/lib/api";
+import { authApi } from "@/lib/api/services";
+import { useLogout, useTranslation, useUser } from "@/hooks";
 
 export default function ProfileSettingsPage() {
   const { t } = useTranslation();
-  const [userData, setUserData] = useState(initialUserData);
-  const [notifications, setNotifications] = useState(initialNotifications);
+  const router = useRouter();
+  const languages = [
+    { value: "en", label: t("languages.en") },
+    { value: "ru", label: t("languages.ru") },
+    { value: "kz", label: t("languages.kz") },
+  ];
+
+  const timezones = [
+    { value: "Asia/Almaty", label: t("accountSettingsPage.timezones.almaty") },
+    { value: "Asia/Astana", label: t("accountSettingsPage.timezones.astana") },
+    { value: "Europe/Moscow", label: t("accountSettingsPage.timezones.moscow") },
+    { value: "Europe/London", label: t("accountSettingsPage.timezones.london") },
+    { value: "America/New_York", label: t("accountSettingsPage.timezones.newYork") },
+  ];
+
+  const queryClient = useQueryClient();
+  const logoutMutation = useLogout();
+  const { data: apiUser, isLoading: isUserLoading } = useUser();
+  const [nameDraft, setNameDraft] = useState<string | null>(null);
+  const [localeDraft, setLocaleDraft] = useState<string | null>(null);
+  const [timezoneDraft, setTimezoneDraft] = useState<string | null>(null);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
 
-  const handleSave = async () => {
-    setIsSaving(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setIsSaving(false);
+  const currentRefreshToken = tokenManager.getRefreshToken() || "";
+
+  const sessionsQuery = useQuery({
+    queryKey: ["user", "sessions"],
+    queryFn: () => authApi.getSessions(currentRefreshToken),
+    enabled: !!apiUser,
+  });
+
+  const profileDraft = {
+    name: nameDraft ?? apiUser?.name ?? "",
+    locale: localeDraft ?? apiUser?.locale ?? "ru",
+    timezone: timezoneDraft ?? apiUser?.timezone ?? "Asia/Almaty",
   };
 
-  const passwordStrength = (password: string) => {
-    if (!password) return { score: 0, label: "" };
+  const updateProfileMutation = useMutation({
+    mutationFn: () => authApi.updateSettings(profileDraft),
+    onSuccess: async () => {
+      toast.success(t("accountSettingsPage.toasts.profileUpdated"));
+      await queryClient.invalidateQueries({ queryKey: ["user"] });
+    },
+    onError: (error) => toast.error(getErrorMessage(error)),
+  });
+
+  const changePasswordMutation = useMutation({
+    mutationFn: () => authApi.changePassword(currentPassword, newPassword),
+    onSuccess: async () => {
+      toast.success(t("accountSettingsPage.toasts.passwordUpdated"));
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      await queryClient.invalidateQueries({ queryKey: ["user", "sessions"] });
+    },
+    onError: (error) => toast.error(getErrorMessage(error)),
+  });
+
+  const revokeSessionMutation = useMutation({
+    mutationFn: (sessionId: string) => authApi.revokeSession(sessionId),
+    onSuccess: async () => {
+      toast.success(t("accountSettingsPage.toasts.sessionRevoked"));
+      await queryClient.invalidateQueries({ queryKey: ["user", "sessions"] });
+    },
+    onError: (error) => toast.error(getErrorMessage(error)),
+  });
+
+  const revokeOthersMutation = useMutation({
+    mutationFn: () => authApi.revokeOtherSessions(currentRefreshToken),
+    onSuccess: async () => {
+      toast.success(t("accountSettingsPage.toasts.otherSessionsRevoked"));
+      await queryClient.invalidateQueries({ queryKey: ["user", "sessions"] });
+    },
+    onError: (error) => toast.error(getErrorMessage(error)),
+  });
+
+  const deleteAccountMutation = useMutation({
+    mutationFn: () => authApi.deleteAccount(deletePassword),
+    onSuccess: async () => {
+      toast.success(t("accountSettingsPage.toasts.accountDeleted"));
+      await logoutMutation.mutateAsync();
+      router.push("/login");
+    },
+    onError: (error) => toast.error(getErrorMessage(error)),
+  });
+
+  const passwordStrength = useMemo(() => {
+    if (!newPassword) return { score: 0, label: "" };
     let score = 0;
-    if (password.length >= 8) score++;
-    if (/[A-Z]/.test(password)) score++;
-    if (/[a-z]/.test(password)) score++;
-    if (/[0-9]/.test(password)) score++;
-    if (/[^A-Za-z0-9]/.test(password)) score++;
-
-    const labels = ["", "Weak", "Fair", "Good", "Strong", "Excellent"];
+    if (newPassword.length >= 8) score++;
+    if (/[A-Z]/.test(newPassword)) score++;
+    if (/[a-z]/.test(newPassword)) score++;
+    if (/[0-9]/.test(newPassword)) score++;
+    if (/[^A-Za-z0-9]/.test(newPassword)) score++;
+    const labels = [
+      "",
+      t("accountSettingsPage.passwordStrength.weak"),
+      t("accountSettingsPage.passwordStrength.fair"),
+      t("accountSettingsPage.passwordStrength.good"),
+      t("accountSettingsPage.passwordStrength.strong"),
+      t("accountSettingsPage.passwordStrength.excellent"),
+    ];
     return { score, label: labels[score] };
-  };
+  }, [newPassword, t]);
 
-  const strength = passwordStrength(newPassword);
+  if (isUserLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
@@ -162,619 +173,195 @@ export default function ProfileSettingsPage() {
             </Link>
           </Button>
           <div>
-            <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight">
-              {t("profileSettings.title")}
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              {t("profileSettings.subtitle")}
-            </p>
+            <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight">{t("accountSettingsPage.title")}</h1>
+            <p className="text-muted-foreground mt-1">{t("accountSettingsPage.subtitle")}</p>
           </div>
         </div>
-        <Button className="glow-sm" onClick={handleSave} disabled={isSaving}>
-          {isSaving ? (
-            <>
-              <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
-              {t("common.loading")}
-            </>
-          ) : (
-            <>
-              <Save className="h-4 w-4 mr-2" />
-              {t("common.save")}
-            </>
-          )}
-        </Button>
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
         <TabsList className="glass">
-          <TabsTrigger value="profile" className="gap-2">
-            <User className="h-4 w-4" />
-            {t("profileSettings.tabs.profile")}
-          </TabsTrigger>
-          <TabsTrigger value="security" className="gap-2">
-            <Lock className="h-4 w-4" />
-            {t("profileSettings.tabs.security")}
-          </TabsTrigger>
-          <TabsTrigger value="notifications" className="gap-2">
-            <Bell className="h-4 w-4" />
-            {t("profileSettings.tabs.notifications")}
-          </TabsTrigger>
-          <TabsTrigger value="preferences" className="gap-2">
-            <Globe className="h-4 w-4" />
-            {t("profileSettings.tabs.preferences")}
-          </TabsTrigger>
+          <TabsTrigger value="profile" className="gap-2"><User className="h-4 w-4" />{t("accountSettingsPage.tabs.profile")}</TabsTrigger>
+          <TabsTrigger value="security" className="gap-2"><Lock className="h-4 w-4" />{t("accountSettingsPage.tabs.security")}</TabsTrigger>
+          <TabsTrigger value="sessions" className="gap-2"><Smartphone className="h-4 w-4" />{t("accountSettingsPage.tabs.sessions")}</TabsTrigger>
+          <TabsTrigger value="danger" className="gap-2"><Globe className="h-4 w-4" />{t("accountSettingsPage.tabs.danger")}</TabsTrigger>
         </TabsList>
 
-        {/* Profile Tab */}
-        <TabsContent value="profile" className="space-y-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <Card className="glass">
-              <CardHeader>
-                <CardTitle>Profile Picture</CardTitle>
-                <CardDescription>
-                  Upload a new avatar or remove the current one
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-6">
-                  <Avatar className="h-24 w-24">
-                    <AvatarImage src={undefined} />
-                    <AvatarFallback className="text-2xl font-bold bg-primary/10">
-                      {userData.name.split(" ").map((n) => n[0]).join("")}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="space-y-2">
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm">
-                        <Upload className="h-4 w-4 mr-2" />
-                        Upload
-                      </Button>
-                      <Button variant="ghost" size="sm" className="text-destructive">
-                        Remove
-                      </Button>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      JPG, PNG or GIF. Max size 2MB.
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            <Card className="glass">
-              <CardHeader>
-                <CardTitle>Personal Information</CardTitle>
-                <CardDescription>
-                  Update your personal details
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Full Name</Label>
-                    <Input
-                      id="name"
-                      value={userData.name}
-                      onChange={(e) =>
-                        setUserData({ ...userData, name: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email Address</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={userData.email}
-                      onChange={(e) =>
-                        setUserData({ ...userData, email: e.target.value })
-                      }
-                    />
-                  </div>
-                </div>
-
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number</Label>
-                    <Input
-                      id="phone"
-                      value={userData.phone}
-                      onChange={(e) =>
-                        setUserData({ ...userData, phone: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="company">Company</Label>
-                    <Input
-                      id="company"
-                      value={userData.company}
-                      onChange={(e) =>
-                        setUserData({ ...userData, company: e.target.value })
-                      }
-                    />
-                  </div>
-                </div>
-
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="location">Location</Label>
-                    <Input
-                      id="location"
-                      value={userData.location}
-                      onChange={(e) =>
-                        setUserData({ ...userData, location: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="website">Website</Label>
-                    <Input
-                      id="website"
-                      value={userData.website}
-                      onChange={(e) =>
-                        setUserData({ ...userData, website: e.target.value })
-                      }
-                    />
-                  </div>
-                </div>
-
+        <TabsContent value="profile">
+          <Card className="glass">
+            <CardHeader>
+              <CardTitle>{t("accountSettingsPage.profile.title")}</CardTitle>
+              <CardDescription>{t("accountSettingsPage.profile.description")}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="bio">Bio</Label>
-                  <Textarea
-                    id="bio"
-                    value={userData.bio}
-                    onChange={(e) =>
-                      setUserData({ ...userData, bio: e.target.value })
-                    }
-                    rows={3}
-                    className="resize-none"
-                  />
+                  <Label>{t("accountSettingsPage.profile.fullName")}</Label>
+                  <Input value={profileDraft.name} onChange={(e) => setNameDraft(e.target.value)} />
                 </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+                <div className="space-y-2">
+                  <Label>{t("accountSettingsPage.profile.email")}</Label>
+                  <Input value={apiUser?.email || ""} disabled />
+                </div>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{t("accountSettingsPage.profile.language")}</Label>
+                  <Select value={profileDraft.locale} onValueChange={setLocaleDraft}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {languages.map((lang) => <SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>{t("accountSettingsPage.profile.timezone")}</Label>
+                  <Select value={profileDraft.timezone} onValueChange={setTimezoneDraft}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {timezones.map((tz) => <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <Button onClick={() => updateProfileMutation.mutate()} disabled={updateProfileMutation.isPending}>
+                <Save className="h-4 w-4 mr-2" />
+                {updateProfileMutation.isPending ? t("accountSettingsPage.actions.saving") : t("accountSettingsPage.actions.saveChanges")}
+              </Button>
+            </CardContent>
+          </Card>
         </TabsContent>
 
-        {/* Security Tab */}
-        <TabsContent value="security" className="space-y-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <Card className="glass">
-              <CardHeader>
-                <CardTitle>Change Password</CardTitle>
-                <CardDescription>
-                  Update your password to keep your account secure
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="current-password">Current Password</Label>
-                  <div className="relative">
-                    <Input
-                      id="current-password"
-                      type={showCurrentPassword ? "text" : "password"}
-                      value={currentPassword}
-                      onChange={(e) => setCurrentPassword(e.target.value)}
-                      className="pr-10"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      {showCurrentPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                    </button>
-                  </div>
+        <TabsContent value="security">
+          <Card className="glass">
+            <CardHeader>
+              <CardTitle>{t("accountSettingsPage.security.title")}</CardTitle>
+              <CardDescription>{t("accountSettingsPage.security.description")}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>{t("accountSettingsPage.security.currentPassword")}</Label>
+                <div className="relative">
+                  <Input type={showCurrentPassword ? "text" : "password"} value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="pr-10" />
+                  <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2" onClick={() => setShowCurrentPassword((v) => !v)}>
+                    {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="new-password">New Password</Label>
-                  <div className="relative">
-                    <Input
-                      id="new-password"
-                      type={showNewPassword ? "text" : "password"}
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      className="pr-10"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowNewPassword(!showNewPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      {showNewPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                    </button>
-                  </div>
-                  {newPassword && (
-                    <div className="flex items-center gap-2 mt-2">
-                      <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
-                        <div
-                          className={cn(
-                            "h-full transition-all",
-                            strength.score <= 1 && "w-1/5 bg-red-500",
-                            strength.score === 2 && "w-2/5 bg-orange-500",
-                            strength.score === 3 && "w-3/5 bg-yellow-500",
-                            strength.score === 4 && "w-4/5 bg-green-500",
-                            strength.score === 5 && "w-full bg-green-600"
-                          )}
-                        />
-                      </div>
-                      <span
-                        className={cn(
-                          "text-xs font-medium",
-                          strength.score <= 1 && "text-red-500",
-                          strength.score === 2 && "text-orange-500",
-                          strength.score === 3 && "text-yellow-500",
-                          strength.score >= 4 && "text-green-500"
-                        )}
-                      >
-                        {strength.label}
-                      </span>
+              </div>
+              <div className="space-y-2">
+                <Label>{t("accountSettingsPage.security.newPassword")}</Label>
+                <div className="relative">
+                  <Input type={showNewPassword ? "text" : "password"} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="pr-10" />
+                  <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2" onClick={() => setShowNewPassword((v) => !v)}>
+                    {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                {newPassword && (
+                  <div className="flex items-center gap-2 mt-2">
+                    <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                      <div className={cn("h-full transition-all", passwordStrength.score <= 1 && "w-1/5 bg-red-500", passwordStrength.score === 2 && "w-2/5 bg-orange-500", passwordStrength.score === 3 && "w-3/5 bg-yellow-500", passwordStrength.score === 4 && "w-4/5 bg-green-500", passwordStrength.score === 5 && "w-full bg-green-600")} />
                     </div>
-                  )}
-                </div>
+                    <span className="text-xs font-medium">{passwordStrength.label}</span>
+                  </div>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>{t("accountSettingsPage.security.confirmPassword")}</Label>
+                <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+                {confirmPassword && newPassword !== confirmPassword && (
+                  <p className="text-xs text-destructive flex items-center gap-1"><X className="h-3 w-3" />{t("accountSettingsPage.security.passwordsNotMatch")}</p>
+                )}
+                {confirmPassword && newPassword === confirmPassword && (
+                  <p className="text-xs text-green-500 flex items-center gap-1"><Check className="h-3 w-3" />{t("accountSettingsPage.security.passwordsMatch")}</p>
+                )}
+              </div>
+              <Button
+                onClick={() => changePasswordMutation.mutate()}
+                disabled={!currentPassword || !newPassword || newPassword !== confirmPassword || changePasswordMutation.isPending}
+              >
+                {changePasswordMutation.isPending ? t("accountSettingsPage.actions.updating") : t("accountSettingsPage.actions.updatePassword")}
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-                <div className="space-y-2">
-                  <Label htmlFor="confirm-password">Confirm New Password</Label>
-                  <Input
-                    id="confirm-password"
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                  />
-                  {confirmPassword && newPassword !== confirmPassword && (
-                    <p className="text-xs text-destructive flex items-center gap-1">
-                      <X className="h-3 w-3" />
-                      Passwords do not match
-                    </p>
-                  )}
-                  {confirmPassword && newPassword === confirmPassword && (
-                    <p className="text-xs text-green-500 flex items-center gap-1">
-                      <Check className="h-3 w-3" />
-                      Passwords match
-                    </p>
-                  )}
-                </div>
-
-                <Button
-                  disabled={
-                    !currentPassword ||
-                    !newPassword ||
-                    newPassword !== confirmPassword
-                  }
-                >
-                  Update Password
-                </Button>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            <Card className="glass">
-              <CardHeader>
-                <CardTitle>Two-Factor Authentication</CardTitle>
-                <CardDescription>
-                  Add an extra layer of security to your account
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
+        <TabsContent value="sessions">
+          <Card className="glass">
+            <CardHeader>
+              <CardTitle>{t("accountSettingsPage.sessions.title")}</CardTitle>
+              <CardDescription>{t("accountSettingsPage.sessions.description")}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {sessionsQuery.isLoading && <Loader2 className="h-5 w-5 animate-spin text-primary" />}
+              {(sessionsQuery.data || []).map((session) => (
+                <div key={session.id} className="flex items-center justify-between p-4 rounded-lg bg-muted/30">
                   <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-xl bg-primary/10">
-                      <Shield className="h-6 w-6 text-primary" />
+                    <div className="p-2 rounded-lg bg-background">
+                      <Smartphone className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <div>
-                      <p className="font-medium">
-                        {userData.twoFactorEnabled
-                          ? "2FA is enabled"
-                          : "2FA is disabled"}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium">{session.device}</p>
+                        {session.current && <Badge variant="secondary" className="text-xs">{t("accountSettingsPage.sessions.current")}</Badge>}
+                      </div>
                       <p className="text-sm text-muted-foreground">
-                        {userData.twoFactorEnabled
-                          ? "Your account is protected with 2FA"
-                          : "Enable 2FA for enhanced security"}
+                        {session.location} - {session.ip} - {new Date(session.last_active).toLocaleString()}
                       </p>
                     </div>
                   </div>
-                  <Switch
-                    checked={userData.twoFactorEnabled}
-                    onCheckedChange={(checked) =>
-                      setUserData({ ...userData, twoFactorEnabled: checked })
-                    }
-                  />
+                  {!session.current && (
+                    <Button variant="ghost" size="sm" className="text-destructive" onClick={() => revokeSessionMutation.mutate(session.id)}>
+                      <LogOut className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <Card className="glass">
-              <CardHeader>
-                <CardTitle>Active Sessions</CardTitle>
-                <CardDescription>
-                  Manage your active sessions across devices
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {activeSessions.map((session) => (
-                  <div
-                    key={session.id}
-                    className="flex items-center justify-between p-4 rounded-lg bg-muted/30"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="p-2 rounded-lg bg-background">
-                        <Smartphone className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium">{session.device}</p>
-                          {session.current && (
-                            <Badge variant="secondary" className="text-xs">
-                              Current
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          {session.location} • {session.ip} • {session.lastActive}
-                        </p>
-                      </div>
-                    </div>
-                    {!session.current && (
-                      <Button variant="ghost" size="sm" className="text-destructive">
-                        <LogOut className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
-                <Button variant="outline" className="w-full">
-                  Sign out all other sessions
-                </Button>
-              </CardContent>
-            </Card>
-          </motion.div>
+              ))}
+              <Button variant="outline" className="w-full" onClick={() => revokeOthersMutation.mutate()} disabled={revokeOthersMutation.isPending}>
+                {revokeOthersMutation.isPending ? t("accountSettingsPage.actions.signingOut") : t("accountSettingsPage.sessions.signOutOthers")}
+              </Button>
+            </CardContent>
+          </Card>
         </TabsContent>
 
-        {/* Notifications Tab */}
-        <TabsContent value="notifications" className="space-y-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <Card className="glass">
-              <CardHeader>
-                <CardTitle>Email Notifications</CardTitle>
-                <CardDescription>
-                  Configure which emails you want to receive
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {[
-                  {
-                    key: "emailAlerts",
-                    title: "Alert Notifications",
-                    description: "Receive emails for important mentions and alerts",
-                  },
-                  {
-                    key: "emailReports",
-                    title: "Report Deliveries",
-                    description: "Receive scheduled reports via email",
-                  },
-                  {
-                    key: "emailNewsletter",
-                    title: "Product Updates",
-                    description: "News about new features and improvements",
-                  },
-                ].map((item) => (
-                  <div
-                    key={item.key}
-                    className="flex items-center justify-between p-4 rounded-lg bg-muted/30"
-                  >
-                    <div>
-                      <p className="font-medium">{item.title}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {item.description}
-                      </p>
-                    </div>
-                    <Switch
-                      checked={notifications[item.key as keyof typeof notifications]}
-                      onCheckedChange={(checked) =>
-                        setNotifications({ ...notifications, [item.key]: checked })
-                      }
-                    />
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            <Card className="glass">
-              <CardHeader>
-                <CardTitle>Push Notifications</CardTitle>
-                <CardDescription>
-                  Configure push notifications for the web app
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {[
-                  {
-                    key: "pushMentions",
-                    title: "New Mentions",
-                    description: "Get notified when new mentions are detected",
-                  },
-                  {
-                    key: "pushAlerts",
-                    title: "Alerts & Spikes",
-                    description: "Get notified about unusual activity",
-                  },
-                  {
-                    key: "pushReports",
-                    title: "Report Ready",
-                    description: "Get notified when reports are generated",
-                  },
-                ].map((item) => (
-                  <div
-                    key={item.key}
-                    className="flex items-center justify-between p-4 rounded-lg bg-muted/30"
-                  >
-                    <div>
-                      <p className="font-medium">{item.title}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {item.description}
-                      </p>
-                    </div>
-                    <Switch
-                      checked={notifications[item.key as keyof typeof notifications]}
-                      onCheckedChange={(checked) =>
-                        setNotifications({ ...notifications, [item.key]: checked })
-                      }
-                    />
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </motion.div>
-        </TabsContent>
-
-        {/* Preferences Tab */}
-        <TabsContent value="preferences" className="space-y-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <Card className="glass">
-              <CardHeader>
-                <CardTitle>Language & Region</CardTitle>
-                <CardDescription>
-                  Set your preferred language and timezone
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Language</Label>
-                    <Select
-                      value={userData.language}
-                      onValueChange={(value) =>
-                        setUserData({ ...userData, language: value })
-                      }
+        <TabsContent value="danger">
+          <Card className="glass border-destructive/20">
+            <CardHeader>
+              <CardTitle className="text-destructive">{t("accountSettingsPage.danger.title")}</CardTitle>
+              <CardDescription>{t("accountSettingsPage.danger.description")}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Label>{t("accountSettingsPage.danger.enterPassword")}</Label>
+              <Input type="password" value={deletePassword} onChange={(e) => setDeletePassword(e.target.value)} />
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm" disabled={!deletePassword || deleteAccountMutation.isPending}>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    {t("accountSettingsPage.danger.deleteButton")}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>{t("accountSettingsPage.danger.dialogTitle")}</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {t("accountSettingsPage.danger.dialogDescription")}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        deleteAccountMutation.mutate();
+                      }}
                     >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {languages.map((lang) => (
-                          <SelectItem key={lang.value} value={lang.value}>
-                            {lang.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Timezone</Label>
-                    <Select
-                      value={userData.timezone}
-                      onValueChange={(value) =>
-                        setUserData({ ...userData, timezone: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {timezones.map((tz) => (
-                          <SelectItem key={tz.value} value={tz.value}>
-                            {tz.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            <Card className="glass border-destructive/20">
-              <CardHeader>
-                <CardTitle className="text-destructive">Danger Zone</CardTitle>
-                <CardDescription>
-                  Irreversible actions for your account
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-4 rounded-lg bg-destructive/5 border border-destructive/20">
-                  <div>
-                    <p className="font-medium">Delete Account</p>
-                    <p className="text-sm text-muted-foreground">
-                      Permanently delete your account and all data
-                    </p>
-                  </div>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="destructive" size="sm">
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This action cannot be undone. This will permanently delete
-                          your account and remove all your data from our servers.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                          Delete Account
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+                      {t("accountSettingsPage.danger.confirmDelete")}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

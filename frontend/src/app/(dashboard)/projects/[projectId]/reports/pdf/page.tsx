@@ -10,6 +10,7 @@ import {
   Palette,
   ChevronDown,
   ChevronUp,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,7 +31,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { useTranslation } from "@/hooks";
+import { useCreatePdfReport, useDownloadReport } from "@/hooks";
+import { toast } from "sonner";
 
 interface PDFReportPageProps {
   params: Promise<{ projectId: string }>;
@@ -64,13 +66,15 @@ const accentColors = [
 
 export default function PDFReportPage({ params }: PDFReportPageProps) {
   const { projectId } = use(params);
-  const { t } = useTranslation();
   const [sections, setSections] = useState(
     reportSections.map(s => ({ ...s, checked: s.defaultChecked }))
   );
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [selectedColor, setSelectedColor] = useState("#00A3E0");
-  const [isGenerating, setIsGenerating] = useState(false);
+  const createPdfReport = useCreatePdfReport(projectId);
+  const downloadReport = useDownloadReport(projectId);
+
+  const isGenerating = createPdfReport.isPending || downloadReport.isPending;
   
   const toggleSection = (id: string) => {
     setSections(sections.map(s => 
@@ -79,9 +83,18 @@ export default function PDFReportPage({ params }: PDFReportPageProps) {
   };
   
   const handleGenerate = async () => {
-    setIsGenerating(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsGenerating(false);
+    try {
+      const report = await createPdfReport.mutateAsync({
+        config: {
+          sections: sections.filter(s => s.checked).map(s => s.id),
+          accent_color: selectedColor,
+        },
+      });
+      await downloadReport.mutateAsync(report.id);
+      toast.success("PDF report downloaded successfully");
+    } catch {
+      toast.error("Failed to generate PDF report");
+    }
   };
   
   return (
@@ -91,25 +104,34 @@ export default function PDFReportPage({ params }: PDFReportPageProps) {
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
             <FileText className="h-7 w-7 text-primary" />
-            {t("reports.pdf.title")}
+            PDF Report
           </h1>
           <p className="text-muted-foreground mt-1">
-            {t("reports.pdf.subtitle")}
+            Configure and generate a customized PDF report
           </p>
         </div>
         
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm">
             <Eye className="h-4 w-4 mr-2" />
-            {t("reports.pdf.preview")}
+            Preview
           </Button>
           <Button 
             className="glow-sm" 
             onClick={handleGenerate}
             disabled={isGenerating}
           >
-            <Download className="h-4 w-4 mr-2" />
-            {isGenerating ? t("reports.pdf.generating") : t("reports.pdf.generateDownload")}
+            {isGenerating ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Download className="h-4 w-4 mr-2" />
+                Generate &amp; Download
+              </>
+            )}
           </Button>
         </div>
       </div>

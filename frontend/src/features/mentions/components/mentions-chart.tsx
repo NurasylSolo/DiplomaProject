@@ -3,31 +3,34 @@
 import { useMemo } from "react";
 import ReactECharts from "echarts-for-react";
 import { useTheme } from "next-themes";
-
-// Generate mock data for last 30 days
-const generateMockData = () => {
-  const data = [];
-  const now = new Date();
-  
-  for (let i = 29; i >= 0; i--) {
-    const date = new Date(now);
-    date.setDate(date.getDate() - i);
-    
-    data.push({
-      date: date.toISOString().split("T")[0],
-      mentions: Math.floor(Math.random() * 500) + 200,
-      reach: Math.floor(Math.random() * 100000) + 50000,
-    });
-  }
-  
-  return data;
-};
+import { useTimeSeries } from "@/hooks";
+import { useParams } from "next/navigation";
 
 export function MentionsChart() {
   const { theme } = useTheme();
   const isDark = theme === "dark";
+  const params = useParams();
+  const projectId = params?.projectId as string;
   
-  const data = useMemo(() => generateMockData(), []);
+  const { data: apiData } = useTimeSeries(projectId, 30);
+  
+  const data = useMemo(() => {
+    if (apiData && apiData.length > 0) {
+      return apiData.map((d: { date: string; mentions: number; reach: number }) => ({
+        date: d.date,
+        mentions: d.mentions,
+        reach: d.reach,
+      }));
+    }
+    const fallback = [];
+    const now = new Date();
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(date.getDate() - i);
+      fallback.push({ date: date.toISOString().split("T")[0], mentions: 0, reach: 0 });
+    }
+    return fallback;
+  }, [apiData]);
   
   const option = useMemo(() => ({
     tooltip: {

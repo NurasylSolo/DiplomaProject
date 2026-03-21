@@ -16,7 +16,9 @@ import {
   Twitter,
   Youtube,
   Instagram,
+  Loader2,
 } from "lucide-react";
+import { useInfluencers } from "@/hooks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -44,7 +46,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { useTranslation } from "@/hooks";
 
 interface InfluencersPageProps {
   params: Promise<{ projectId: string }>;
@@ -56,112 +57,57 @@ const platformIcons: Record<string, React.ComponentType<{ className?: string }>>
   instagram: Instagram,
 };
 
-const influencersData = [
-  {
-    id: "1",
-    name: "Alex Tech Reviews",
-    handle: "@alextech",
-    platform: "twitter",
-    avatar: "",
-    mentions: 45,
-    reach: "2.3M",
-    followers: "1.2M",
-    shareOfVoice: 8.5,
-    influenceScore: 9.2,
-    sentiment: { positive: 85, neutral: 12, negative: 3 },
-    recentPosts: [
-      { content: "Just tested the new AI features - absolutely game-changing! 🚀", date: "2 days ago", engagement: "12.5K" },
-      { content: "Detailed review coming soon. Spoiler: impressed with the performance.", date: "5 days ago", engagement: "8.2K" },
-    ],
-  },
-  {
-    id: "2",
-    name: "Digital Trends",
-    handle: "@digitaltrends",
-    platform: "twitter",
-    avatar: "",
-    mentions: 38,
-    reach: "1.8M",
-    followers: "980K",
-    shareOfVoice: 6.2,
-    influenceScore: 8.8,
-    sentiment: { positive: 72, neutral: 20, negative: 8 },
-    recentPosts: [
-      { content: "Comparing the top solutions in the market - here's our take.", date: "1 day ago", engagement: "9.8K" },
-    ],
-  },
-  {
-    id: "3",
-    name: "Tech Insider",
-    handle: "@techinsider",
-    platform: "youtube",
-    avatar: "",
-    mentions: 32,
-    reach: "1.2M",
-    followers: "750K",
-    shareOfVoice: 5.1,
-    influenceScore: 8.5,
-    sentiment: { positive: 68, neutral: 25, negative: 7 },
-    recentPosts: [],
-  },
-  {
-    id: "4",
-    name: "AI Weekly",
-    handle: "@aiweekly",
-    platform: "twitter",
-    avatar: "",
-    mentions: 28,
-    reach: "890K",
-    followers: "520K",
-    shareOfVoice: 4.3,
-    influenceScore: 8.1,
-    sentiment: { positive: 92, neutral: 6, negative: 2 },
-    recentPosts: [],
-  },
-  {
-    id: "5",
-    name: "Startup Stories",
-    handle: "@startupstories",
-    platform: "instagram",
-    avatar: "",
-    mentions: 24,
-    reach: "650K",
-    followers: "380K",
-    shareOfVoice: 3.8,
-    influenceScore: 7.6,
-    sentiment: { positive: 78, neutral: 18, negative: 4 },
-    recentPosts: [],
-  },
-  {
-    id: "6",
-    name: "Product Hunt Daily",
-    handle: "@producthunt",
-    platform: "twitter",
-    avatar: "",
-    mentions: 21,
-    reach: "450K",
-    followers: "290K",
-    shareOfVoice: 3.2,
-    influenceScore: 7.2,
-    sentiment: { positive: 88, neutral: 10, negative: 2 },
-    recentPosts: [],
-  },
-];
+function formatNumber(num: number): string {
+  if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
+  if (num >= 1_000) return `${(num / 1_000).toFixed(0)}K`;
+  return String(num);
+}
 
 export default function InfluencersPage({ params }: InfluencersPageProps) {
   const { projectId } = use(params);
-  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [platformFilter, setPlatformFilter] = useState("all");
+  const { data: apiInfluencers, isLoading } = useInfluencers(projectId);
+
+  const influencersData = (apiInfluencers || []).map((inf: any) => {
+    const sd = inf.sentimentDistribution || inf.sentiment_distribution || {};
+    return {
+      id: String(inf.id || ""),
+      name: inf.displayName || inf.display_name || inf.handle || "",
+      handle: inf.handle || "",
+      platform: (inf.platform || "twitter").toLowerCase(),
+      avatar: inf.avatar || "",
+      mentions: inf.mentionsCount || inf.mentions_count || inf.mentions || 0,
+      reach: typeof inf.reach === "number" ? formatNumber(inf.reach) : (inf.reach || "0"),
+      followers: typeof inf.followers === "number" ? formatNumber(inf.followers) : (inf.followers || "0"),
+      shareOfVoice: inf.shareOfVoice || inf.share_of_voice || 0,
+      influenceScore: inf.influenceScore || inf.influence_score || 0,
+      sentiment: {
+        positive: sd.positive || 0,
+        neutral: sd.neutral || 0,
+        negative: sd.negative || 0,
+      },
+      recentPosts: inf.recentPosts || inf.recent_posts || [],
+    };
+  });
+
   const [selectedInfluencer, setSelectedInfluencer] = useState<typeof influencersData[0] | null>(null);
-  
-  const filteredInfluencers = influencersData.filter((inf) => {
+
+  const filteredInfluencers = influencersData.filter((inf: any) => {
     const matchesSearch = inf.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           inf.handle.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesPlatform = platformFilter === "all" || inf.platform === platformFilter;
     return matchesSearch && matchesPlatform;
   });
   
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -169,16 +115,16 @@ export default function InfluencersPage({ params }: InfluencersPageProps) {
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
             <Users className="h-7 w-7 text-primary" />
-            {t("influencers.title")}
+            Influencers
           </h1>
           <p className="text-muted-foreground mt-1">
-            {t("influencers.subtitle")}
+            Track and manage influencers mentioning your brand
           </p>
         </div>
         
         <Button variant="outline" size="sm">
           <Download className="h-4 w-4 mr-2" />
-          {t("common.export")}
+          Export
         </Button>
       </div>
       
@@ -354,7 +300,7 @@ export default function InfluencersPage({ params }: InfluencersPageProps) {
                                   <div>
                                     <h4 className="font-medium mb-3">Recent Posts</h4>
                                     <div className="space-y-3">
-                                      {selectedInfluencer.recentPosts.map((post, i) => (
+                                      {selectedInfluencer.recentPosts.map((post: any, i: number) => (
                                         <div key={i} className="p-3 rounded-lg bg-muted/30">
                                           <p className="text-sm">{post.content}</p>
                                           <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">

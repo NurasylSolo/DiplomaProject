@@ -16,9 +16,10 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Progress } from "@/components/ui/progress";
+
 import { cn } from "@/lib/utils";
-import { useTranslation } from "@/hooks";
+import { useCreateExcelReport, useDownloadReport } from "@/hooks";
+import { toast } from "sonner";
 
 interface ExcelExportPageProps {
   params: Promise<{ projectId: string }>;
@@ -59,33 +60,33 @@ const sheetOptions = [
 
 export default function ExcelExportPage({ params }: ExcelExportPageProps) {
   const { projectId } = use(params);
-  const { t } = useTranslation();
   const [selectedOption, setSelectedOption] = useState("current");
   const [sheets, setSheets] = useState(sheetOptions);
-  const [isExporting, setIsExporting] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
+  const createExcelReport = useCreateExcelReport(projectId);
+  const downloadReport = useDownloadReport(projectId);
+
+  const isExporting = createExcelReport.isPending || downloadReport.isPending;
   
   const toggleSheet = (id: string) => {
     setSheets(sheets.map(s => s.id === id ? { ...s, checked: !s.checked } : s));
   };
   
   const handleExport = async () => {
-    setIsExporting(true);
-    setProgress(0);
     setIsComplete(false);
-    
-    // Simulate export progress
-    for (let i = 0; i <= 100; i += 10) {
-      await new Promise(resolve => setTimeout(resolve, 200));
-      setProgress(i);
+    try {
+      const report = await createExcelReport.mutateAsync({
+        config: {
+          sections: sheets.filter(s => s.checked).map(s => s.id),
+        },
+      });
+      await downloadReport.mutateAsync(report.id);
+      setIsComplete(true);
+      toast.success("Excel report downloaded successfully");
+      setTimeout(() => setIsComplete(false), 3000);
+    } catch {
+      toast.error("Failed to export Excel report");
     }
-    
-    setIsExporting(false);
-    setIsComplete(true);
-    
-    // Reset after 3 seconds
-    setTimeout(() => setIsComplete(false), 3000);
   };
   
   return (
@@ -95,10 +96,10 @@ export default function ExcelExportPage({ params }: ExcelExportPageProps) {
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
             <FileSpreadsheet className="h-7 w-7 text-primary" />
-            {t("reports.excel.title")}
+            Excel Export
           </h1>
           <p className="text-muted-foreground mt-1">
-            {t("reports.excel.subtitle")}
+            Export your data to Microsoft Excel format
           </p>
         </div>
       </div>
@@ -206,10 +207,10 @@ export default function ExcelExportPage({ params }: ExcelExportPageProps) {
             </p>
             
             {isExporting && (
-              <div className="w-full max-w-xs mb-4">
-                <Progress value={progress} className="h-2" />
+              <div className="mb-4">
+                <Loader2 className="h-6 w-6 animate-spin text-primary mx-auto" />
                 <p className="text-xs text-muted-foreground mt-2">
-                  Exporting... {progress}%
+                  Exporting...
                 </p>
               </div>
             )}

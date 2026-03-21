@@ -13,53 +13,63 @@ import {
   Globe,
   Hash,
   ThumbsUp,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { useTranslation } from "@/hooks";
+import { useProject, useTopics, useInfluencers } from "@/hooks";
 
 interface InfographicPageProps {
   params: Promise<{ projectId: string }>;
 }
 
-const infographicData = {
-  period: "December 2024",
-  totalMentions: 12847,
-  sentiment: { positive: 72, neutral: 18, negative: 10 },
-  topTopics: [
-    { name: "Product Launch", percentage: 35 },
-    { name: "AI Features", percentage: 28 },
-    { name: "Customer Reviews", percentage: 22 },
-    { name: "Industry News", percentage: 15 },
-  ],
-  topInfluencers: [
-    { name: "@techreviewer", followers: "1.2M" },
-    { name: "@digitaltrends", followers: "980K" },
-    { name: "@startupnews", followers: "750K" },
-  ],
-  topCountries: [
-    { name: "USA", percentage: 45 },
-    { name: "UK", percentage: 20 },
-    { name: "Germany", percentage: 15 },
-    { name: "Kazakhstan", percentage: 10 },
-  ],
-  topHashtags: ["#TechNews", "#AI", "#Innovation", "#Startup", "#Digital"],
-  reach: "3.2M",
-  engagement: "156K",
-};
+function formatCompact(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return n.toString();
+}
 
 export default function InfographicPage({ params }: InfographicPageProps) {
   const { projectId } = use(params);
-  const { t } = useTranslation();
+  const { data: project, isLoading: isProjectLoading } = useProject(projectId);
+  const { data: topics, isLoading: isTopicsLoading } = useTopics(projectId);
+  const { data: influencers, isLoading: isInfluencersLoading } = useInfluencers(projectId);
   const [isGenerating, setIsGenerating] = useState(false);
+
+  const isLoading = isProjectLoading || isTopicsLoading || isInfluencersLoading;
+
+  const stats = project?.stats as Record<string, number> | undefined;
+  const totalMentions = stats?.total_mentions ?? stats?.totalMentions ?? 0;
+  const reach = stats?.total_reach ?? stats?.totalReach ?? 0;
+  const positivePercent = stats?.positive_percentage ?? stats?.positivePercentage ?? 0;
+  const negativePercent = stats?.negative_percentage ?? stats?.negativePercentage ?? 0;
+  const neutralPercent = Math.max(0, 100 - positivePercent - negativePercent);
+
+  const topTopics = (topics ?? []).slice(0, 4).map(t => ({
+    name: t.name,
+    percentage: Math.round(t.shareOfVoice * 100),
+  }));
+
+  const topInfluencers = (influencers ?? []).slice(0, 3).map(inf => ({
+    name: inf.handle || inf.displayName,
+    followers: formatCompact(inf.followers),
+  }));
   
   const handleRegenerate = async () => {
     setIsGenerating(true);
     await new Promise(resolve => setTimeout(resolve, 1500));
     setIsGenerating(false);
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
   
   return (
     <div className="space-y-6">
@@ -68,25 +78,25 @@ export default function InfographicPage({ params }: InfographicPageProps) {
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
             <Image className="h-7 w-7 text-primary" />
-            {t("reports.infographic.title")}
+            Infographic
           </h1>
           <p className="text-muted-foreground mt-1">
-            {t("reports.infographic.subtitle")}
+            Auto-generated visual summary of your media data
           </p>
         </div>
         
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleRegenerate} disabled={isGenerating}>
             <RefreshCw className={cn("h-4 w-4 mr-2", isGenerating && "animate-spin")} />
-            {t("reports.infographic.regenerate")}
+            Regenerate
           </Button>
           <Button variant="outline" size="sm">
             <Share2 className="h-4 w-4 mr-2" />
-            {t("reports.infographic.share")}
+            Share
           </Button>
           <Button className="glow-sm">
             <Download className="h-4 w-4 mr-2" />
-            {t("reports.infographic.exportPng")}
+            Export PNG
           </Button>
         </div>
       </div>
@@ -106,7 +116,7 @@ export default function InfographicPage({ params }: InfographicPageProps) {
                 <h2 className="font-display text-3xl font-bold mb-2">
                   Media Monitoring Report
                 </h2>
-                <p className="text-muted-foreground">{infographicData.period}</p>
+                <p className="text-muted-foreground">{new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}</p>
               </motion.div>
               
               {/* Key Metrics */}
@@ -117,10 +127,10 @@ export default function InfographicPage({ params }: InfographicPageProps) {
                 className="grid grid-cols-4 gap-4"
               >
                 {[
-                  { icon: MessageSquare, label: "Mentions", value: infographicData.totalMentions.toLocaleString() },
-                  { icon: Users, label: "Reach", value: infographicData.reach },
-                  { icon: TrendingUp, label: "Engagement", value: infographicData.engagement },
-                  { icon: ThumbsUp, label: "Positive", value: `${infographicData.sentiment.positive}%` },
+                  { icon: MessageSquare, label: "Mentions", value: totalMentions.toLocaleString() },
+                  { icon: Users, label: "Reach", value: formatCompact(reach) },
+                  { icon: TrendingUp, label: "Score", value: `${stats?.presence_score ?? stats?.presenceScore ?? 0}` },
+                  { icon: ThumbsUp, label: "Positive", value: `${positivePercent}%` },
                 ].map((stat, i) => (
                   <div key={stat.label} className="text-center p-4 rounded-xl bg-card/50 backdrop-blur">
                     <stat.icon className="h-6 w-6 mx-auto mb-2 text-primary" />
@@ -139,14 +149,14 @@ export default function InfographicPage({ params }: InfographicPageProps) {
               >
                 <h3 className="font-semibold mb-4 text-center">Sentiment Distribution</h3>
                 <div className="flex h-8 rounded-full overflow-hidden mb-4">
-                  <div className="bg-green-500 flex items-center justify-center text-white text-sm font-medium" style={{ width: `${infographicData.sentiment.positive}%` }}>
-                    {infographicData.sentiment.positive}%
+                  <div className="bg-green-500 flex items-center justify-center text-white text-sm font-medium" style={{ width: `${positivePercent}%` }}>
+                    {positivePercent}%
                   </div>
-                  <div className="bg-gray-400 flex items-center justify-center text-white text-sm font-medium" style={{ width: `${infographicData.sentiment.neutral}%` }}>
-                    {infographicData.sentiment.neutral}%
+                  <div className="bg-gray-400 flex items-center justify-center text-white text-sm font-medium" style={{ width: `${neutralPercent}%` }}>
+                    {neutralPercent}%
                   </div>
-                  <div className="bg-red-500 flex items-center justify-center text-white text-sm font-medium" style={{ width: `${infographicData.sentiment.negative}%` }}>
-                    {infographicData.sentiment.negative}%
+                  <div className="bg-red-500 flex items-center justify-center text-white text-sm font-medium" style={{ width: `${negativePercent}%` }}>
+                    {negativePercent}%
                   </div>
                 </div>
                 <div className="flex justify-center gap-6 text-sm">
@@ -169,7 +179,7 @@ export default function InfographicPage({ params }: InfographicPageProps) {
                     Top Topics
                   </h3>
                   <div className="space-y-3">
-                    {infographicData.topTopics.map((topic, i) => (
+                    {topTopics.map((topic) => (
                       <div key={topic.name}>
                         <div className="flex justify-between text-sm mb-1">
                           <span>{topic.name}</span>
@@ -197,21 +207,8 @@ export default function InfographicPage({ params }: InfographicPageProps) {
                     <Globe className="h-4 w-4 text-primary" />
                     Top Countries
                   </h3>
-                  <div className="space-y-3">
-                    {infographicData.topCountries.map((country) => (
-                      <div key={country.name}>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span>{country.name}</span>
-                          <span className="font-medium">{country.percentage}%</span>
-                        </div>
-                        <div className="h-2 bg-muted rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-accent rounded-full" 
-                            style={{ width: `${country.percentage}%` }} 
-                          />
-                        </div>
-                      </div>
-                    ))}
+                  <div className="space-y-3 text-sm text-muted-foreground">
+                    <p>No geographic data available yet.</p>
                   </div>
                 </motion.div>
               </div>
@@ -229,7 +226,7 @@ export default function InfographicPage({ params }: InfographicPageProps) {
                     Top Influencers
                   </h3>
                   <div className="space-y-3">
-                    {infographicData.topInfluencers.map((inf, i) => (
+                    {topInfluencers.map((inf, i) => (
                       <div key={inf.name} className="flex items-center justify-between p-2 rounded-lg bg-muted/30">
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold">
@@ -255,9 +252,9 @@ export default function InfographicPage({ params }: InfographicPageProps) {
                     Trending Hashtags
                   </h3>
                   <div className="flex flex-wrap gap-2">
-                    {infographicData.topHashtags.map((tag) => (
-                      <Badge key={tag} variant="outline" className="text-sm px-3 py-1">
-                        {tag}
+                    {(topics ?? []).slice(0, 5).map((t) => (
+                      <Badge key={t.id} variant="outline" className="text-sm px-3 py-1">
+                        #{t.name}
                       </Badge>
                     ))}
                   </div>

@@ -37,6 +37,8 @@ export interface Project {
   updatedAt: string;
   settings: ProjectSettings;
   stats?: ProjectStats;
+  ingestionJobId?: string;
+  ingestionTaskId?: string;
 }
 
 export interface ProjectSettings {

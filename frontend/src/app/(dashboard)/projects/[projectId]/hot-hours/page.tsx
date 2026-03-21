@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Clock,
@@ -9,12 +9,13 @@ import {
   MessageSquare,
   Lightbulb,
   Calendar,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { useTranslation } from "@/hooks";
+import { useHotHours } from "@/hooks";
 
 interface HotHoursPageProps {
   params: Promise<{ projectId: string }>;
@@ -22,24 +23,6 @@ interface HotHoursPageProps {
 
 const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const hours = Array.from({ length: 24 }, (_, i) => i);
-
-// Generate mock heatmap data
-function generateHeatmapData(): number[][] {
-  return days.map(() => 
-    hours.map(() => Math.floor(Math.random() * 100))
-  );
-}
-
-const heatmapData = generateHeatmapData();
-
-// Find top hours
-const flatData: { day: number; hour: number; value: number }[] = [];
-heatmapData.forEach((dayData, dayIndex) => {
-  dayData.forEach((value, hourIndex) => {
-    flatData.push({ day: dayIndex, hour: hourIndex, value });
-  });
-});
-const topHours = flatData.sort((a, b) => b.value - a.value).slice(0, 5);
 
 const suggestedTimes = [
   { day: "Tuesday", time: "10:00 AM - 12:00 PM", reason: "Peak engagement window" },
@@ -64,12 +47,47 @@ function formatHour(hour: number): string {
 
 export default function HotHoursPage({ params }: HotHoursPageProps) {
   const { projectId } = use(params);
-  const { t } = useTranslation();
+  const { data: hotHoursData, isLoading } = useHotHours(projectId);
   const [selectedCell, setSelectedCell] = useState<{ day: number; hour: number } | null>(null);
-  
+
+  const heatmapData = useMemo(() => {
+    const grid: number[][] = days.map(() => new Array(24).fill(0));
+    if (!hotHoursData) return grid;
+    for (const item of hotHoursData) {
+      const pageDay = (item.day + 6) % 7; // API: 0=Sun → page: 6=Sun
+      grid[pageDay][item.hour] = item.mentions;
+    }
+    return grid;
+  }, [hotHoursData]);
+
+  const topHours = useMemo(() => {
+    const flat: { day: number; hour: number; value: number }[] = [];
+    heatmapData.forEach((dayData, dayIndex) => {
+      dayData.forEach((value, hourIndex) => {
+        flat.push({ day: dayIndex, hour: hourIndex, value });
+      });
+    });
+    return flat.sort((a, b) => b.value - a.value).slice(0, 5);
+  }, [heatmapData]);
+
+  const totalMentions = useMemo(
+    () => heatmapData.flat().reduce((sum, v) => sum + v, 0),
+    [heatmapData]
+  );
+
+  const peakEntry = topHours[0];
+
   const selectedValue = selectedCell 
     ? heatmapData[selectedCell.day][selectedCell.hour] 
     : null;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
   
   return (
     <div className="space-y-6">
@@ -78,16 +96,16 @@ export default function HotHoursPage({ params }: HotHoursPageProps) {
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
             <Clock className="h-7 w-7 text-primary" />
-            {t("hotHours.title")}
+            Hot Hours
           </h1>
           <p className="text-muted-foreground mt-1">
-            {t("hotHours.subtitle")}
+            Discover when your brand is mentioned most
           </p>
         </div>
         
         <Button variant="outline" size="sm">
           <Download className="h-4 w-4 mr-2" />
-          {t("hotHours.exportData")}
+          Export Data
         </Button>
       </div>
       
@@ -99,7 +117,7 @@ export default function HotHoursPage({ params }: HotHoursPageProps) {
               <TrendingUp className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="text-xl font-bold">Tuesday 10AM</p>
+              <p className="text-xl font-bold">{peakEntry ? `${days[peakEntry.day]} ${formatHour(peakEntry.hour)}` : "—"}</p>
               <p className="text-xs text-muted-foreground">Peak Hour</p>
             </div>
           </CardContent>
@@ -110,7 +128,7 @@ export default function HotHoursPage({ params }: HotHoursPageProps) {
               <MessageSquare className="h-5 w-5 text-green-500" />
             </div>
             <div>
-              <p className="text-xl font-bold">2,847</p>
+              <p className="text-xl font-bold">{totalMentions.toLocaleString()}</p>
               <p className="text-xs text-muted-foreground">Total Weekly Mentions</p>
             </div>
           </CardContent>

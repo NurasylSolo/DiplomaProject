@@ -1,23 +1,17 @@
 "use client";
 
-import { use, useState } from "react";
-import { motion } from "framer-motion";
+import { use, useMemo, useState } from "react";
 import {
   Mail,
   Plus,
-  Calendar,
-  Clock,
   Users,
-  Edit,
-  Trash2,
   Play,
-  Pause,
+  Trash2,
   MoreHorizontal,
   Send,
-  FileText,
-  BarChart3,
-  MessageSquare,
+  Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -45,63 +39,58 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
-import { useTranslation } from "@/hooks";
+import {
+  useCreateEmailSchedule,
+  useDeleteEmailSchedule,
+  useEmailSchedules,
+  useSendEmailScheduleNow,
+  useUpdateEmailSchedule,
+} from "@/hooks";
 
 interface EmailReportsPageProps {
   params: Promise<{ projectId: string }>;
 }
 
-const scheduledReports = [
-  {
-    id: "1",
-    name: "Weekly Summary",
-    recipients: ["team@company.com", "marketing@company.com"],
-    frequency: "Weekly",
-    nextSend: "Monday, 9:00 AM",
-    active: true,
-    lastSent: "Dec 18, 2024",
-    contents: ["summary", "mentions", "sentiment"],
-  },
-  {
-    id: "2",
-    name: "Daily Alerts",
-    recipients: ["alerts@company.com"],
-    frequency: "Daily",
-    nextSend: "Tomorrow, 8:00 AM",
-    active: true,
-    lastSent: "Dec 24, 2024",
-    contents: ["alerts", "mentions"],
-  },
-  {
-    id: "3",
-    name: "Monthly Report",
-    recipients: ["executives@company.com", "pr@company.com"],
-    frequency: "Monthly",
-    nextSend: "Jan 1, 2025",
-    active: false,
-    lastSent: "Dec 1, 2024",
-    contents: ["summary", "mentions", "sentiment", "trends", "influencers"],
-  },
-];
+interface EmailScheduleUi {
+  id: string;
+  recipients: string[];
+  frequency: string;
+  config?: { sections?: string[] };
+  send_time: string;
+  timezone: string;
+  active: boolean;
+}
 
 const contentOptions = [
-  { id: "summary", label: "Executive Summary", icon: FileText },
-  { id: "mentions", label: "Recent Mentions", icon: MessageSquare },
-  { id: "sentiment", label: "Sentiment Analysis", icon: BarChart3 },
-  { id: "trends", label: "Trending Topics", icon: BarChart3 },
-  { id: "influencers", label: "Top Influencers", icon: Users },
-  { id: "alerts", label: "Important Alerts", icon: Mail },
+  { id: "summary", label: "Executive Summary" },
+  { id: "mentions", label: "Recent Mentions" },
+  { id: "sentiment", label: "Sentiment Analysis" },
+  { id: "trends", label: "Trending Topics" },
+  { id: "influencers", label: "Top Influencers" },
+  { id: "alerts", label: "Important Alerts" },
 ];
 
 export default function EmailReportsPage({ params }: EmailReportsPageProps) {
   const { projectId } = use(params);
-  const { t } = useTranslation();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [reports, setReports] = useState(scheduledReports);
-  
-  const toggleActive = (id: string) => {
-    setReports(reports.map(r => r.id === id ? { ...r, active: !r.active } : r));
+  const schedulesQuery = useEmailSchedules(projectId);
+  const createSchedule = useCreateEmailSchedule(projectId);
+  const updateSchedule = useUpdateEmailSchedule(projectId);
+  const deleteSchedule = useDeleteEmailSchedule(projectId);
+  const sendNow = useSendEmailScheduleNow(projectId);
+
+  const reports = useMemo<EmailScheduleUi[]>(
+    () => ((schedulesQuery.data || []) as EmailScheduleUi[]),
+    [schedulesQuery.data]
+  );
+
+  const toggleActive = (id: string, active: boolean) => {
+    updateSchedule.mutate(
+      { scheduleId: id, data: { active } },
+      {
+        onError: () => toast.error("Failed to update schedule"),
+      }
+    );
   };
   
   return (
@@ -111,10 +100,10 @@ export default function EmailReportsPage({ params }: EmailReportsPageProps) {
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
             <Mail className="h-7 w-7 text-primary" />
-            {t("reports.email.title")}
+            Email Reports
           </h1>
           <p className="text-muted-foreground mt-1">
-            {t("reports.email.subtitle")}
+            Schedule automated email reports for your team
           </p>
         </div>
         
@@ -122,14 +111,26 @@ export default function EmailReportsPage({ params }: EmailReportsPageProps) {
           <DialogTrigger asChild>
             <Button className="glow-sm">
               <Plus className="h-4 w-4 mr-2" />
-              {t("reports.email.create")}
+              Create Schedule
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>{t("reports.email.createScheduledReport")}</DialogTitle>
+              <DialogTitle>Create Scheduled Report</DialogTitle>
             </DialogHeader>
-            <CreateReportForm onClose={() => setIsCreateOpen(false)} />
+            <CreateReportForm
+              onCreate={(payload) => {
+                createSchedule.mutate(payload, {
+                  onSuccess: () => {
+                    toast.success("Schedule created");
+                    setIsCreateOpen(false);
+                  },
+                  onError: () => toast.error("Failed to create schedule"),
+                });
+              }}
+              isSubmitting={createSchedule.isPending}
+              onClose={() => setIsCreateOpen(false)}
+            />
           </DialogContent>
         </Dialog>
       </div>
@@ -143,7 +144,7 @@ export default function EmailReportsPage({ params }: EmailReportsPageProps) {
             </div>
             <div>
               <p className="text-2xl font-bold">{reports.length}</p>
-              <p className="text-xs text-muted-foreground">{t("reports.email.scheduledReports")}</p>
+              <p className="text-xs text-muted-foreground">Scheduled Reports</p>
             </div>
           </CardContent>
         </Card>
@@ -153,8 +154,8 @@ export default function EmailReportsPage({ params }: EmailReportsPageProps) {
               <Play className="h-5 w-5 text-green-500" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{reports.filter(r => r.active).length}</p>
-              <p className="text-xs text-muted-foreground">{t("reports.email.active")}</p>
+              <p className="text-2xl font-bold">{reports.filter((r) => r.active).length}</p>
+              <p className="text-xs text-muted-foreground">Active</p>
             </div>
           </CardContent>
         </Card>
@@ -164,8 +165,8 @@ export default function EmailReportsPage({ params }: EmailReportsPageProps) {
               <Users className="h-5 w-5 text-blue-500" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{new Set(reports.flatMap(r => r.recipients)).size}</p>
-              <p className="text-xs text-muted-foreground">{t("reports.email.recipients")}</p>
+              <p className="text-2xl font-bold">{new Set(reports.flatMap((r) => r.recipients)).size}</p>
+              <p className="text-xs text-muted-foreground">Recipients</p>
             </div>
           </CardContent>
         </Card>
@@ -174,36 +175,31 @@ export default function EmailReportsPage({ params }: EmailReportsPageProps) {
       {/* Scheduled Reports */}
       <Card className="glass">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base font-medium">{t("reports.email.scheduledReports")}</CardTitle>
+          <CardTitle className="text-base font-medium">Scheduled Reports</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
+          {schedulesQuery.isLoading && (
+            <div className="p-4 flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading schedules...
+            </div>
+          )}
           <div className="divide-y divide-border/30">
-            {reports.map((report, index) => (
-              <motion.div
-                key={report.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                className="p-4 hover:bg-muted/30 transition-colors"
-              >
+            {reports.map((report: EmailScheduleUi) => (
+              <div key={report.id} className="p-4 hover:bg-muted/30 transition-colors">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold">{report.name}</h3>
+                      <h3 className="font-semibold">{report.frequency} report</h3>
                       <Badge variant={report.active ? "default" : "secondary"} className="text-xs">
                         {report.active ? "Active" : "Paused"}
                       </Badge>
                     </div>
                     
                     <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-3.5 w-3.5" />
-                        {report.frequency}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-3.5 w-3.5" />
-                        Next: {report.nextSend}
-                      </div>
+                      <div>{report.frequency}</div>
+                      <div>Send time: {report.send_time}</div>
+                      <div>Timezone: {report.timezone}</div>
                       <div className="flex items-center gap-1">
                         <Users className="h-3.5 w-3.5" />
                         {report.recipients.length} recipients
@@ -211,7 +207,7 @@ export default function EmailReportsPage({ params }: EmailReportsPageProps) {
                     </div>
                     
                     <div className="flex flex-wrap gap-1 mt-2">
-                      {report.contents.map((content) => (
+                      {(report.config?.sections || []).map((content: string) => (
                         <Badge key={content} variant="outline" className="text-xs">
                           {content}
                         </Badge>
@@ -222,7 +218,7 @@ export default function EmailReportsPage({ params }: EmailReportsPageProps) {
                   <div className="flex items-center gap-2">
                     <Switch
                       checked={report.active}
-                      onCheckedChange={() => toggleActive(report.id)}
+                      onCheckedChange={(checked) => toggleActive(report.id, checked)}
                     />
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -231,15 +227,26 @@ export default function EmailReportsPage({ params }: EmailReportsPageProps) {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() =>
+                            sendNow.mutate(report.id, {
+                              onSuccess: () => toast.success("Report generated"),
+                              onError: () => toast.error("Failed to generate report"),
+                            })
+                          }
+                        >
                           <Send className="h-4 w-4 mr-2" />
                           Send Now
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">
+                        <DropdownMenuItem
+                          className="text-destructive"
+                          onClick={() =>
+                            deleteSchedule.mutate(report.id, {
+                              onSuccess: () => toast.success("Schedule deleted"),
+                              onError: () => toast.error("Failed to delete schedule"),
+                            })
+                          }
+                        >
                           <Trash2 className="h-4 w-4 mr-2" />
                           Delete
                         </DropdownMenuItem>
@@ -247,7 +254,7 @@ export default function EmailReportsPage({ params }: EmailReportsPageProps) {
                     </DropdownMenu>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
         </CardContent>
@@ -256,10 +263,28 @@ export default function EmailReportsPage({ params }: EmailReportsPageProps) {
   );
 }
 
-function CreateReportForm({ onClose }: { onClose: () => void }) {
+function CreateReportForm({
+  onCreate,
+  isSubmitting,
+  onClose,
+}: {
+  onCreate: (payload: {
+    recipients: string[];
+    frequency: string;
+    send_time: string;
+    timezone: string;
+    config: { sections: string[]; language: string };
+    active: boolean;
+  }) => void;
+  isSubmitting: boolean;
+  onClose: () => void;
+}) {
   const [recipients, setRecipients] = useState<string[]>([]);
   const [newRecipient, setNewRecipient] = useState("");
   const [selectedContents, setSelectedContents] = useState<string[]>(["summary", "mentions"]);
+  const [frequency, setFrequency] = useState("weekly");
+  const [sendTime, setSendTime] = useState("09:00");
+  const [language, setLanguage] = useState("en");
   
   const addRecipient = () => {
     if (newRecipient && !recipients.includes(newRecipient)) {
@@ -267,15 +292,21 @@ function CreateReportForm({ onClose }: { onClose: () => void }) {
       setNewRecipient("");
     }
   };
+
+  const submit = () => {
+    if (!recipients.length) return;
+    onCreate({
+      recipients,
+      frequency,
+      send_time: sendTime,
+      timezone: "Asia/Almaty",
+      config: { sections: selectedContents, language },
+      active: true,
+    });
+  };
   
   return (
     <div className="space-y-6 mt-4">
-      {/* Name */}
-      <div className="space-y-2">
-        <Label>Report Name</Label>
-        <Input placeholder="e.g., Weekly Summary" />
-      </div>
-      
       {/* Recipients */}
       <div className="space-y-2">
         <Label>Recipients</Label>
@@ -309,7 +340,7 @@ function CreateReportForm({ onClose }: { onClose: () => void }) {
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Frequency</Label>
-          <Select defaultValue="weekly">
+          <Select value={frequency} onValueChange={setFrequency}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -323,15 +354,15 @@ function CreateReportForm({ onClose }: { onClose: () => void }) {
         </div>
         <div className="space-y-2">
           <Label>Send Time</Label>
-          <Select defaultValue="9am">
+          <Select value={sendTime} onValueChange={setSendTime}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="6am">6:00 AM</SelectItem>
-              <SelectItem value="9am">9:00 AM</SelectItem>
-              <SelectItem value="12pm">12:00 PM</SelectItem>
-              <SelectItem value="6pm">6:00 PM</SelectItem>
+              <SelectItem value="06:00">6:00 AM</SelectItem>
+              <SelectItem value="09:00">9:00 AM</SelectItem>
+              <SelectItem value="12:00">12:00 PM</SelectItem>
+              <SelectItem value="18:00">6:00 PM</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -348,7 +379,7 @@ function CreateReportForm({ onClose }: { onClose: () => void }) {
             >
               <Checkbox
                 checked={selectedContents.includes(option.id)}
-                onCheckedChange={(checked) => {
+                onCheckedChange={(checked: boolean | "indeterminate") => {
                   if (checked) {
                     setSelectedContents([...selectedContents, option.id]);
                   } else {
@@ -356,7 +387,6 @@ function CreateReportForm({ onClose }: { onClose: () => void }) {
                   }
                 }}
               />
-              <option.icon className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm">{option.label}</span>
             </label>
           ))}
@@ -366,7 +396,7 @@ function CreateReportForm({ onClose }: { onClose: () => void }) {
       {/* Language */}
       <div className="space-y-2">
         <Label>Report Language</Label>
-        <Select defaultValue="en">
+        <Select value={language} onValueChange={setLanguage}>
           <SelectTrigger className="w-[200px]">
             <SelectValue />
           </SelectTrigger>
@@ -381,7 +411,9 @@ function CreateReportForm({ onClose }: { onClose: () => void }) {
       {/* Actions */}
       <div className="flex justify-end gap-2 pt-4">
         <Button variant="outline" onClick={onClose}>Cancel</Button>
-        <Button className="glow-sm" onClick={onClose}>Create Schedule</Button>
+        <Button className="glow-sm" onClick={submit} disabled={isSubmitting || recipients.length === 0}>
+          {isSubmitting ? "Creating..." : "Create Schedule"}
+        </Button>
       </div>
     </div>
   );

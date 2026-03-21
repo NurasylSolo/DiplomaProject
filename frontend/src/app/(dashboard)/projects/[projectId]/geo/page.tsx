@@ -12,7 +12,9 @@ import {
   TrendingUp,
   TrendingDown,
   ChevronDown,
+  Loader2,
 } from "lucide-react";
+import { useGeoData } from "@/hooks";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,69 +25,53 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { useTranslation } from "@/hooks";
 
 interface GeoAnalysisPageProps {
   params: Promise<{ projectId: string }>;
 }
 
-const countriesData = [
-  { code: "US", name: "United States", mentions: 4521, reach: "1.2M", sentiment: 75, change: 12 },
-  { code: "GB", name: "United Kingdom", mentions: 2156, reach: "650K", sentiment: 68, change: 8 },
-  { code: "DE", name: "Germany", mentions: 1892, reach: "520K", sentiment: 72, change: -5 },
-  { code: "FR", name: "France", mentions: 1234, reach: "380K", sentiment: 65, change: 15 },
-  { code: "KZ", name: "Kazakhstan", mentions: 987, reach: "290K", sentiment: 85, change: 42 },
-  { code: "RU", name: "Russia", mentions: 756, reach: "210K", sentiment: 58, change: -12 },
-  { code: "CA", name: "Canada", mentions: 654, reach: "180K", sentiment: 78, change: 5 },
-  { code: "AU", name: "Australia", mentions: 543, reach: "150K", sentiment: 82, change: 18 },
-  { code: "JP", name: "Japan", mentions: 432, reach: "120K", sentiment: 70, change: 3 },
-  { code: "IN", name: "India", mentions: 321, reach: "95K", sentiment: 62, change: 25 },
-  { code: "BR", name: "Brazil", mentions: 289, reach: "85K", sentiment: 71, change: 8 },
-  { code: "CN", name: "China", mentions: 567, reach: "160K", sentiment: 55, change: -8 },
-  { code: "MX", name: "Mexico", mentions: 198, reach: "52K", sentiment: 68, change: 12 },
-  { code: "IT", name: "Italy", mentions: 312, reach: "78K", sentiment: 74, change: 5 },
-  { code: "ES", name: "Spain", mentions: 267, reach: "65K", sentiment: 69, change: 3 },
-  { code: "NL", name: "Netherlands", mentions: 189, reach: "48K", sentiment: 77, change: 15 },
-  { code: "SE", name: "Sweden", mentions: 145, reach: "38K", sentiment: 81, change: 10 },
-  { code: "PL", name: "Poland", mentions: 178, reach: "42K", sentiment: 66, change: -2 },
-  { code: "TR", name: "Turkey", mentions: 234, reach: "58K", sentiment: 54, change: -15 },
-  { code: "UA", name: "Ukraine", mentions: 156, reach: "35K", sentiment: 63, change: 20 },
-];
+function formatReach(num: number): string {
+  if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
+  if (num >= 1_000) return `${(num / 1_000).toFixed(0)}K`;
+  return String(num);
+}
 
-// Mapping country codes to ECharts country names
-const countryCodeToName: Record<string, string> = {
-  US: "United States",
-  GB: "United Kingdom",
-  DE: "Germany",
-  FR: "France",
-  KZ: "Kazakhstan",
-  RU: "Russia",
-  CA: "Canada",
-  AU: "Australia",
-  JP: "Japan",
-  IN: "India",
-  BR: "Brazil",
-  CN: "China",
-  MX: "Mexico",
-  IT: "Italy",
-  ES: "Spain",
-  NL: "Netherlands",
-  SE: "Sweden",
-  PL: "Poland",
-  TR: "Turkey",
-  UA: "Ukraine",
+const countryCodeToEChartsName: Record<string, string> = {
+  US: "United States", GB: "United Kingdom", DE: "Germany", FR: "France",
+  KZ: "Kazakhstan", RU: "Russia", CA: "Canada", AU: "Australia",
+  JP: "Japan", IN: "India", BR: "Brazil", CN: "China", MX: "Mexico",
+  IT: "Italy", ES: "Spain", NL: "Netherlands", SE: "Sweden", PL: "Poland",
+  TR: "Turkey", UA: "Ukraine", KR: "South Korea", ZA: "South Africa",
+  AR: "Argentina", EG: "Egypt", SA: "Saudi Arabia", AE: "United Arab Emirates",
+  TH: "Thailand", ID: "Indonesia", NG: "Nigeria", CO: "Colombia",
 };
 
 export default function GeoAnalysisPage({ params }: GeoAnalysisPageProps) {
   const { projectId } = use(params);
-  const { t } = useTranslation();
   const { theme } = useTheme();
   const isDark = theme === "dark";
   const [excludedCountries, setExcludedCountries] = useState<string[]>([]);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState(false);
-  
-  // Load world map
+  const { data: geoApiData, isLoading } = useGeoData(projectId);
+
+  const countriesData = (geoApiData || []).map((g: any) => {
+    const sent = g.sentiment || {};
+    const positive = sent.positive || 0;
+    const neutral = sent.neutral || 0;
+    const negative = sent.negative || 0;
+    const total = positive + neutral + negative;
+    const sentimentScore = total > 0 ? Math.round((positive / total) * 100) : 50;
+    return {
+      code: g.country_code || "",
+      name: g.country || "",
+      mentions: g.mentions || 0,
+      reach: typeof g.reach === "number" ? formatReach(g.reach) : (g.reach || "0"),
+      sentiment: sentimentScore,
+      change: 0,
+    };
+  });
+
   useEffect(() => {
     const loadMap = async () => {
       try {
@@ -138,7 +124,7 @@ export default function GeoAnalysisPage({ params }: GeoAnalysisPageProps) {
   };
   
   const mapData = filteredCountries.map((country) => ({
-    name: countryCodeToName[country.code] || country.name,
+    name: countryCodeToEChartsName[country.code] || country.name,
     value: country.mentions,
     sentiment: country.sentiment,
   }));
@@ -196,6 +182,14 @@ export default function GeoAnalysisPage({ params }: GeoAnalysisPageProps) {
     ],
   };
   
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -203,10 +197,10 @@ export default function GeoAnalysisPage({ params }: GeoAnalysisPageProps) {
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
             <Globe className="h-7 w-7 text-primary" />
-            {t("geo.title")}
+            Geo Analysis
           </h1>
           <p className="text-muted-foreground mt-1">
-            {t("geo.subtitle")}
+            Geographic distribution of your media mentions
           </p>
         </div>
         

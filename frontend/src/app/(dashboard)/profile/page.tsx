@@ -3,11 +3,9 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import {
+  User,
   Mail,
   Calendar,
-  MapPin,
-  Briefcase,
-  Link as LinkIcon,
   Edit,
   Settings,
   Activity,
@@ -15,29 +13,15 @@ import {
   MessageSquareText,
   TrendingUp,
   FileText,
-  ExternalLink,
+  Loader2,
+  Briefcase,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useTranslation } from "@/hooks";
+import { useUser } from "@/hooks";
 
-// Mock user data
-const userData = {
-  id: "1",
-  name: "Nurasyl Kairkhanov",
-  email: "nurasyl@example.com",
-  avatar: null,
-  role: "User",
-  company: "Tech Company",
-  location: "Almaty, Kazakhstan",
-  website: "https://example.com",
-  joinedAt: new Date("2024-06-15"),
-  bio: "Media monitoring specialist focused on brand analytics and sentiment analysis. Passionate about leveraging AI for actionable insights.",
-};
-
-// Mock activity data
 const recentActivity = [
   {
     id: "1",
@@ -73,25 +57,31 @@ const recentActivity = [
   },
 ];
 
+const userStats = [
+  { label: "Projects", value: "—", icon: Briefcase },
+  { label: "Reports Generated", value: "—", icon: FileText },
+  { label: "Mentions Analyzed", value: "—", icon: MessageSquareText },
+  { label: "Insights Created", value: "—", icon: TrendingUp },
+];
+
 export default function ProfilePage() {
-  const { t, currentLanguage } = useTranslation();
-  
-  // Mock stats with translations
-  const userStats = [
-    { label: t("profile.stats.projects"), value: 5, icon: Briefcase },
-    { label: t("profile.stats.reportsGenerated"), value: 47, icon: FileText },
-    { label: t("profile.stats.mentionsAnalyzed"), value: "12.4K", icon: MessageSquareText },
-    { label: t("profile.stats.insightsCreated"), value: 156, icon: TrendingUp },
-  ];
-  
-  const formatDate = (date: Date) => {
-    const locale = currentLanguage === "ru" ? "ru-RU" : currentLanguage === "kz" ? "kk-KZ" : "en-US";
-    return date.toLocaleDateString(locale, {
+  const { data: user, isLoading } = useUser();
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString("en-US", {
       month: "long",
       day: "numeric",
       year: "numeric",
     });
   };
+
+  if (isLoading || !user) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
@@ -108,9 +98,9 @@ export default function ProfilePage() {
             {/* Avatar */}
             <div className="absolute -top-16 left-6">
               <Avatar className="h-32 w-32 border-4 border-background shadow-xl">
-                <AvatarImage src={userData.avatar || undefined} />
+                <AvatarImage src={user.avatar || undefined} />
                 <AvatarFallback className="text-3xl font-bold bg-primary/10">
-                  {userData.name.split(" ").map((n) => n[0]).join("")}
+                  {user.name.split(" ").map((n) => n[0]).join("")}
                 </AvatarFallback>
               </Avatar>
             </div>
@@ -120,13 +110,13 @@ export default function ProfilePage() {
               <Button variant="outline" size="sm" asChild>
                 <Link href="/profile/settings">
                   <Settings className="h-4 w-4 mr-2" />
-                  {t("profile.settings")}
+                  Settings
                 </Link>
               </Button>
               <Button size="sm" className="glow-sm" asChild>
                 <Link href="/profile/settings">
                   <Edit className="h-4 w-4 mr-2" />
-                  {t("profile.edit")}
+                  Edit Profile
                 </Link>
               </Button>
             </div>
@@ -135,46 +125,21 @@ export default function ProfilePage() {
             <div className="mt-4 space-y-4">
               <div>
                 <div className="flex items-center gap-3">
-                  <h1 className="font-display text-2xl font-bold">{userData.name}</h1>
-                  <Badge variant="secondary" className="font-medium">
-                    {userData.role}
+                  <h1 className="font-display text-2xl font-bold">{user.name}</h1>
+                  <Badge variant="secondary" className="font-medium capitalize">
+                    {user.role}
                   </Badge>
                 </div>
-                <p className="text-muted-foreground mt-1">{userData.bio}</p>
               </div>
               
               <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                 <div className="flex items-center gap-1.5">
                   <Mail className="h-4 w-4" />
-                  {userData.email}
+                  {user.email}
                 </div>
-                {userData.company && (
-                  <div className="flex items-center gap-1.5">
-                    <Briefcase className="h-4 w-4" />
-                    {userData.company}
-                  </div>
-                )}
-                {userData.location && (
-                  <div className="flex items-center gap-1.5">
-                    <MapPin className="h-4 w-4" />
-                    {userData.location}
-                  </div>
-                )}
-                {userData.website && (
-                  <a
-                    href={userData.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 hover:text-primary transition-colors"
-                  >
-                    <LinkIcon className="h-4 w-4" />
-                    {userData.website.replace(/^https?:\/\//, "")}
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
-                )}
                 <div className="flex items-center gap-1.5">
                   <Calendar className="h-4 w-4" />
-                  {t("profile.joined")} {formatDate(userData.joinedAt)}
+                  Joined {formatDate(user.createdAt)}
                 </div>
               </div>
             </div>
@@ -218,11 +183,14 @@ export default function ProfilePage() {
           <Card className="glass h-full">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base font-medium">{t("profile.activity.title")}</CardTitle>
+                <CardTitle className="text-base font-medium">Recent Activity</CardTitle>
                 <Button variant="ghost" size="sm">
-                  {t("common.view")}
+                  View All
                 </Button>
               </div>
+              <CardDescription>
+                Your latest actions and events
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -262,25 +230,25 @@ export default function ProfilePage() {
       >
         <Card className="glass">
           <CardHeader>
-            <CardTitle className="text-base font-medium">{t("profile.quickActions.title")}</CardTitle>
+            <CardTitle className="text-base font-medium">Quick Actions</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid sm:grid-cols-3 gap-4">
               <Button variant="outline" className="h-auto py-4 flex-col gap-2" asChild>
                 <Link href="/dashboard">
                   <BarChart3 className="h-5 w-5" />
-                  <span>{t("profile.quickActions.createProject")}</span>
+                  <span>Go to Dashboard</span>
                 </Link>
               </Button>
               <Button variant="outline" className="h-auto py-4 flex-col gap-2" asChild>
                 <Link href="/profile/settings">
                   <Settings className="h-5 w-5" />
-                  <span>{t("profile.settings")}</span>
+                  <span>Account Settings</span>
                 </Link>
               </Button>
               <Button variant="outline" className="h-auto py-4 flex-col gap-2">
                 <Activity className="h-5 w-5" />
-                <span>{t("profile.quickActions.viewInsights")}</span>
+                <span>Activity Log</span>
               </Button>
             </div>
           </CardContent>

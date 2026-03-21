@@ -14,7 +14,9 @@ import {
   Trash2,
   ExternalLink,
   BarChart3,
+  Loader2,
 } from "lucide-react";
+import { useTopics } from "@/hooks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -35,80 +37,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { useTranslation } from "@/hooks";
 
 interface TopicsPageProps {
   params: Promise<{ projectId: string }>;
 }
 
-const topicsData = [
-  {
-    id: "1",
-    name: "Product Launch",
-    description: "Discussions about new product releases and features",
-    mentions: 3421,
-    reach: "1.2M",
-    shareOfVoice: 28,
-    sentiment: { positive: 72, neutral: 18, negative: 10 },
-    trend: [30, 45, 38, 52, 48, 65, 72],
-    change: 15,
-  },
-  {
-    id: "2",
-    name: "Customer Support",
-    description: "Mentions related to customer service and support",
-    mentions: 2156,
-    reach: "890K",
-    shareOfVoice: 18,
-    sentiment: { positive: 45, neutral: 35, negative: 20 },
-    trend: [40, 38, 42, 35, 48, 52, 45],
-    change: -5,
-  },
-  {
-    id: "3",
-    name: "AI Features",
-    description: "Discussions about artificial intelligence capabilities",
-    mentions: 1892,
-    reach: "750K",
-    shareOfVoice: 15,
-    sentiment: { positive: 85, neutral: 12, negative: 3 },
-    trend: [20, 35, 45, 55, 68, 82, 95],
-    change: 42,
-  },
-  {
-    id: "4",
-    name: "Pricing",
-    description: "Conversations about pricing and value",
-    mentions: 1234,
-    reach: "450K",
-    shareOfVoice: 10,
-    sentiment: { positive: 38, neutral: 42, negative: 20 },
-    trend: [50, 48, 52, 45, 42, 38, 35],
-    change: -12,
-  },
-  {
-    id: "5",
-    name: "Competitor Comparison",
-    description: "Mentions comparing with competitors",
-    mentions: 987,
-    reach: "320K",
-    shareOfVoice: 8,
-    sentiment: { positive: 55, neutral: 30, negative: 15 },
-    trend: [25, 30, 35, 42, 38, 45, 50],
-    change: 8,
-  },
-  {
-    id: "6",
-    name: "Integration",
-    description: "Discussions about third-party integrations",
-    mentions: 756,
-    reach: "280K",
-    shareOfVoice: 6,
-    sentiment: { positive: 68, neutral: 25, negative: 7 },
-    trend: [35, 40, 38, 45, 50, 55, 60],
-    change: 18,
-  },
-];
+function formatReach(num: number): string {
+  if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
+  if (num >= 1_000) return `${(num / 1_000).toFixed(0)}K`;
+  return String(num);
+}
 
 const topMentions = [
   { title: "New AI feature revolutionizes workflow", source: "TechCrunch", sentiment: "positive" },
@@ -124,15 +62,43 @@ const topSources = [
 
 export default function TopicsPage({ params }: TopicsPageProps) {
   const { projectId } = use(params);
-  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
+  const { data: apiTopics, isLoading } = useTopics(projectId);
+
+  const topicsData = (apiTopics || []).map((t: any) => {
+    const sd = t.sentimentDistribution || t.sentiment_distribution || {};
+    return {
+      id: String(t.id || ""),
+      name: t.name || "",
+      description: t.description || "",
+      mentions: t.mentionsCount || t.mentions_count || t.mentions || 0,
+      reach: typeof t.reach === "number" ? formatReach(t.reach) : (t.reach || "0"),
+      shareOfVoice: t.shareOfVoice || t.share_of_voice || 0,
+      sentiment: {
+        positive: sd.positive || 0,
+        neutral: sd.neutral || 0,
+        negative: sd.negative || 0,
+      },
+      trend: t.trend || [30, 35, 40, 45, 50, 55, 60],
+      change: t.change || 0,
+    };
+  });
+
   const [selectedTopic, setSelectedTopic] = useState<typeof topicsData[0] | null>(null);
   
-  const filteredTopics = topicsData.filter((topic) =>
+  const filteredTopics = topicsData.filter((topic: any) =>
     topic.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     topic.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -140,16 +106,16 @@ export default function TopicsPage({ params }: TopicsPageProps) {
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
             <Tags className="h-7 w-7 text-primary" />
-            {t("topics.title")}
+            AI Topic Analysis
           </h1>
           <p className="text-muted-foreground mt-1">
-            {t("topics.subtitle")}
+            AI-detected topics from your media mentions
           </p>
         </div>
         
         <Button size="sm" className="glow-sm">
           <Plus className="h-4 w-4 mr-2" />
-          {t("topics.extract")}
+          Create Topic
         </Button>
       </div>
       
@@ -230,7 +196,7 @@ export default function TopicsPage({ params }: TopicsPageProps) {
                         fill="none"
                         stroke="oklch(0.70 0.15 195)"
                         strokeWidth="2"
-                        points={topic.trend.map((v, i) => `${i * (100 / (topic.trend.length - 1))},${40 - (v / 100) * 40}`).join(" ")}
+                        points={topic.trend.map((v: number, i: number) => `${i * (100 / (topic.trend.length - 1))},${40 - (v / 100) * 40}`).join(" ")}
                       />
                     </svg>
                   </div>
@@ -301,7 +267,7 @@ export default function TopicsPage({ params }: TopicsPageProps) {
                           <div>
                             <h4 className="font-medium mb-3">Trend (Last 7 days)</h4>
                             <div className="h-32 flex items-end gap-1">
-                              {selectedTopic.trend.map((value, i) => (
+                              {selectedTopic.trend.map((value: number, i: number) => (
                                 <div
                                   key={i}
                                   className="flex-1 bg-primary/20 hover:bg-primary/40 transition-colors rounded-t"

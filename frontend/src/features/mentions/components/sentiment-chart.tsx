@@ -3,16 +3,26 @@
 import { useMemo } from "react";
 import ReactECharts from "echarts-for-react";
 import { useTheme } from "next-themes";
-
-const sentimentData = [
-  { name: "Positive", value: 72, color: "oklch(0.65 0.17 155)" },
-  { name: "Neutral", value: 18, color: "oklch(0.55 0.02 260)" },
-  { name: "Negative", value: 10, color: "oklch(0.60 0.22 25)" },
-];
+import { useParams } from "next/navigation";
+import { useProject } from "@/hooks";
 
 export function SentimentChart() {
   const { theme } = useTheme();
   const isDark = theme === "dark";
+  const params = useParams();
+  const projectId = params?.projectId as string;
+  const { data: project } = useProject(projectId);
+  
+  const stats = project?.stats;
+  const positive = stats?.positivePercentage || 0;
+  const negative = stats?.negativePercentage || 0;
+  const neutral = Math.max(0, 100 - positive - negative);
+  
+  const sentimentData = [
+    { name: "Positive", value: positive, color: "oklch(0.65 0.17 155)" },
+    { name: "Neutral", value: neutral, color: "oklch(0.55 0.02 260)" },
+    { name: "Negative", value: negative, color: "oklch(0.60 0.22 25)" },
+  ];
   
   const option = useMemo(() => ({
     tooltip: {
@@ -74,7 +84,7 @@ export function SentimentChart() {
         left: "center",
         top: "38%",
         style: {
-          text: "72%",
+          text: `${positive}%`,
           fontSize: 28,
           fontWeight: "bold",
           fill: isDark ? "#e5e5e5" : "#171717",
@@ -93,7 +103,7 @@ export function SentimentChart() {
         },
       },
     ],
-  }), [isDark]);
+  }), [isDark, sentimentData, positive]);
   
   return (
     <div className="space-y-4">

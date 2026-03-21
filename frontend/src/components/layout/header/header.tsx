@@ -21,25 +21,32 @@ import {
   Check,
   Trash2,
   AlertTriangle,
-  TrendingUp,
   MessageSquare,
   Users,
   Clock,
-  Filter,
-  X,
   Globe,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
-import { useSidebarStore } from "@/stores";
-import { useTranslation } from "@/hooks";
+import { getErrorMessage } from "@/lib/api";
+import { useSidebarStore, useAuthStore } from "@/stores";
+import {
+  useTranslation,
+  useProjects,
+  useLogout,
+  useAlertEvents,
+  useMarkAlertRead,
+  useDeleteProject,
+  useDeletePreviousProjects,
+} from "@/hooks";
+import { toast } from "sonner";
 import { supportedLanguages } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -68,12 +75,7 @@ interface HeaderProps {
   projectId: string;
 }
 
-// Mock data - replace with real data
-const projects = [
-  { id: "1", name: "Tech Brand Monitor", color: "#3B82F6" },
-  { id: "2", name: "Competitor Analysis", color: "#10B981" },
-  { id: "3", name: "Product Launch", color: "#F59E0B" },
-];
+const PROJECT_COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", "#EF4444", "#06B6D4"];
 
 interface Notification {
   id: string;
@@ -84,19 +86,6 @@ interface Notification {
   type: "alert" | "report" | "mention" | "influencer" | "system";
   project?: string;
 }
-
-const allNotifications: Notification[] = [
-  { id: "1", title: "Spike in negative mentions", description: "Negative sentiment increased by 42% in the last 24 hours", time: "5m ago", unread: true, type: "alert", project: "Tech Brand Monitor" },
-  { id: "2", title: "Weekly report ready", description: "Your scheduled weekly report has been generated", time: "1h ago", unread: true, type: "report", project: "Tech Brand Monitor" },
-  { id: "3", title: "New influencer detected", description: "@techreviewer mentioned your brand with 50K reach", time: "3h ago", unread: false, type: "influencer", project: "Tech Brand Monitor" },
-  { id: "4", title: "Trending topic alert", description: "Your brand is trending in #TechNews discussions", time: "5h ago", unread: false, type: "mention", project: "Competitor Analysis" },
-  { id: "5", title: "Monthly report available", description: "December 2024 analysis is ready for download", time: "1d ago", unread: false, type: "report", project: "Tech Brand Monitor" },
-  { id: "6", title: "New competitor mention", description: "Competitor A was mentioned 234 times today", time: "1d ago", unread: false, type: "mention", project: "Competitor Analysis" },
-  { id: "7", title: "Sentiment improvement", description: "Positive mentions up 15% this week", time: "2d ago", unread: false, type: "alert", project: "Tech Brand Monitor" },
-  { id: "8", title: "System maintenance", description: "Scheduled maintenance on Dec 28, 2024", time: "3d ago", unread: false, type: "system" },
-  { id: "9", title: "New source added", description: "LinkedIn monitoring is now active", time: "4d ago", unread: false, type: "system" },
-  { id: "10", title: "Product launch coverage", description: "Your launch received 1.2K mentions", time: "5d ago", unread: false, type: "mention", project: "Product Launch" },
-];
 
 const notificationIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   alert: AlertTriangle,
@@ -120,23 +109,96 @@ export function Header({ projectId }: HeaderProps) {
   const { isCollapsed, toggleMobileOpen } = useSidebarStore();
   const { t, changeLanguage, currentLanguage } = useTranslation();
   const [searchFocused, setSearchFocused] = useState(false);
-  const [notifications, setNotifications] = useState(allNotifications);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
   
-  const currentProject = projects.find(p => p.id === projectId) || projects[0];
-  const unreadCount = notifications.filter(n => n.unread).length;
+  const { user } = useAuthStore();
+  const { data: projectsList } = useProjects();
+  const alertsQuery = useAlertEvents(projectId, 100);
+  const markReadMutation = useMarkAlertRead(projectId);
+  const logoutMutation = useLogout();
+  const deleteProjectMutation = useDeleteProject();
+  const deletePreviousProjectsMutation = useDeletePreviousProjects();
+  
+  const projects = (projectsList || []).map((p, i) => ({
+    id: p.id,
+    name: p.name,
+    color: p.accentColor || PROJECT_COLORS[i % PROJECT_COLORS.length],
+  }));
+  
+  const currentProject = projects.find(p => p.id === projectId) || projects[0] || { id: "1", name: "Project", color: "#3B82F6" };
+  const notifications: Notification[] = (alertsQuery.data || []).map((item) => ({
+    id: item.id,
+    title: item.title,
+    description: item.description || "",
+    time: formatRelativeTime(item.created_at),
+    unread: item.unread,
+    type:
+      item.type === "negative_spike" || item.type === "mention_spike"
+        ? "alert"
+        : item.type.includes("report")
+          ? "report"
+          : "system",
+  }));
+  const unreadCount = notifications.filter((n) => n.unread).length;
+  
+  const userInitials = user?.name?.split(" ").map(n => n[0]).join("").toUpperCase() || "U";
   
   const markAllRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, unread: false })));
+    notifications
+      .filter((n) => n.unread)
+      .forEach((n) => markReadMutation.mutate(n.id));
   };
   
   const markAsRead = (id: string) => {
-    setNotifications(notifications.map(n => n.id === id ? { ...n, unread: false } : n));
+    markReadMutation.mutate(id);
   };
   
   const deleteNotification = (id: string) => {
-    setNotifications(notifications.filter(n => n.id !== id));
+    markReadMutation.mutate(id);
+  };
+
+  const handleDeleteCurrentProject = () => {
+    const ok = window.confirm(
+      t("header.confirmDeleteCurrentProject", {
+        defaultValue: "Delete current project?",
+      })
+    );
+    if (!ok) return;
+    deleteProjectMutation.mutate(currentProject.id, {
+      onSuccess: () => {
+        const next = projects.find((p) => p.id !== currentProject.id);
+        toast.success(
+          t("header.projectDeleted", {
+            defaultValue: "Project deleted",
+          })
+        );
+        if (next) {
+          router.push(`/projects/${next.id}/mentions`);
+          return;
+        }
+        router.push("/projects/new");
+      },
+      onError: (error) => toast.error(getErrorMessage(error)),
+    });
+  };
+
+  const handleDeletePreviousProjects = () => {
+    const ok = window.confirm(
+      t("header.confirmDeletePreviousProjects", {
+        defaultValue: "Delete all previous projects and keep only current one?",
+      })
+    );
+    if (!ok) return;
+    deletePreviousProjectsMutation.mutate(currentProject.id, {
+      onSuccess: () =>
+        toast.success(
+          t("header.previousProjectsDeleted", {
+            defaultValue: "Previous projects deleted",
+          })
+        ),
+      onError: (error) => toast.error(getErrorMessage(error)),
+    });
   };
   
   const filteredNotifications = activeTab === "all" 
@@ -151,19 +213,17 @@ export function Header({ projectId }: HeaderProps) {
         "fixed top-0 right-0 z-30 h-16",
         "bg-background/80 backdrop-blur-xl border-b border-border/50",
         "transition-all duration-300",
-        "left-0 lg:left-[72px]",
-        isCollapsed && "lg:left-[72px]",
-        !isCollapsed && "lg:left-[260px]"
+        isCollapsed ? "left-[72px]" : "left-[260px]"
       )}
     >
-      <div className="flex items-center justify-between h-full px-3 sm:px-4 lg:px-6">
+      <div className="flex items-center justify-between h-full px-4 lg:px-6">
         {/* Left side */}
-        <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
+        <div className="flex items-center gap-4">
           {/* Mobile menu button */}
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden flex-shrink-0"
+            className="lg:hidden"
             onClick={toggleMobileOpen}
           >
             <Menu className="h-5 w-5" />
@@ -174,13 +234,13 @@ export function Header({ projectId }: HeaderProps) {
             value={currentProject.id} 
             onValueChange={(value) => router.push(`/projects/${value}/mentions`)}
           >
-            <SelectTrigger className="w-[140px] sm:w-[180px] lg:w-[200px] h-9 border-0 bg-muted/50 hover:bg-muted flex-shrink-0">
-              <div className="flex items-center gap-2 min-w-0">
+            <SelectTrigger className="w-[200px] h-9 border-0 bg-muted/50 hover:bg-muted">
+              <div className="flex items-center gap-2">
                 <div 
-                  className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                  className="w-2.5 h-2.5 rounded-full"
                   style={{ backgroundColor: currentProject.color }}
                 />
-                <SelectValue className="truncate">{currentProject.name}</SelectValue>
+                <SelectValue>{currentProject.name}</SelectValue>
               </div>
             </SelectTrigger>
             <SelectContent>
@@ -207,9 +267,18 @@ export function Header({ projectId }: HeaderProps) {
               </Button>
             </SelectContent>
           </Select>
+          <Button
+            variant="ghost"
+            size="icon"
+            title={t("header.deleteCurrentProject", { defaultValue: "Delete current project" })}
+            onClick={handleDeleteCurrentProject}
+            disabled={deleteProjectMutation.isPending || projects.length === 0}
+          >
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </Button>
           
           {/* Search */}
-          <div className="hidden md:block relative flex-1 max-w-[320px]">
+          <div className="hidden sm:block relative">
             <motion.div
               animate={{ width: searchFocused ? 320 : 240 }}
               className="relative"
@@ -217,11 +286,11 @@ export function Header({ projectId }: HeaderProps) {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder={t("header.search")}
-                className="pl-9 pr-20 h-9 bg-muted/50 border-0 focus-visible:ring-1"
+                className="pl-9 h-9 bg-muted/50 border-0 focus-visible:ring-1"
                 onFocus={() => setSearchFocused(true)}
                 onBlur={() => setSearchFocused(false)}
               />
-              <kbd className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none hidden lg:inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+              <kbd className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
                 ⌘K
               </kbd>
             </motion.div>
@@ -229,14 +298,14 @@ export function Header({ projectId }: HeaderProps) {
         </div>
         
         {/* Right side */}
-        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+        <div className="flex items-center gap-2">
           {/* Quick Actions */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="gap-1 sm:gap-2">
+              <Button variant="ghost" size="sm" className="gap-2">
                 <Plus className="h-4 w-4" />
-                <span className="hidden lg:inline">{t("header.quickActions")}</span>
-                <ChevronDown className="h-3 w-3 hidden sm:inline" />
+                <span className="hidden sm:inline">{t("header.quickActions")}</span>
+                <ChevronDown className="h-3 w-3" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
@@ -251,6 +320,15 @@ export function Header({ projectId }: HeaderProps) {
               <DropdownMenuItem>
                 <Mail className="h-4 w-4 mr-2" />
                 {t("header.scheduleReport")}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive"
+                onClick={handleDeletePreviousProjects}
+                disabled={deletePreviousProjectsMutation.isPending || projects.length <= 1}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                {t("header.deleteOldProjects", { defaultValue: "Delete old projects" })}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -476,25 +554,25 @@ export function Header({ projectId }: HeaderProps) {
           {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="gap-1 sm:gap-2 pl-1 sm:pl-2">
-                <Avatar className="h-7 w-7 flex-shrink-0">
-                  <AvatarImage src="" />
+              <Button variant="ghost" size="sm" className="gap-2 pl-2">
+                <Avatar className="h-7 w-7">
+                  <AvatarImage src={user?.avatar || ""} />
                   <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                    JD
+                    {userInitials}
                   </AvatarFallback>
                 </Avatar>
-                <div className="hidden md:flex flex-col items-start">
-                  <span className="text-sm font-medium">John Doe</span>
+                <div className="hidden sm:flex flex-col items-start">
+                  <span className="text-sm font-medium">{user?.name || "User"}</span>
                 </div>
-                <ChevronDown className="h-3 w-3 text-muted-foreground hidden sm:inline" />
+                <ChevronDown className="h-3 w-3 text-muted-foreground" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>
                 <div className="flex flex-col">
-                  <span>John Doe</span>
+                  <span>{user?.name || "User"}</span>
                   <span className="text-xs font-normal text-muted-foreground">
-                    john@company.com
+                    {user?.email || ""}
                   </span>
                 </div>
               </DropdownMenuLabel>
@@ -512,7 +590,7 @@ export function Header({ projectId }: HeaderProps) {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive">
+              <DropdownMenuItem className="text-destructive" onClick={() => logoutMutation.mutate()}>
                 <LogOut className="h-4 w-4 mr-2" />
                 {t("header.logout")}
               </DropdownMenuItem>
@@ -522,4 +600,17 @@ export function Header({ projectId }: HeaderProps) {
       </div>
     </header>
   );
+}
+
+function formatRelativeTime(value: string): string {
+  const date = new Date(value);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return "now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
 }

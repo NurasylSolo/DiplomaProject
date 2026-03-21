@@ -35,7 +35,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { useTranslation } from "@/hooks";
+import { useAiChat } from "@/hooks";
 
 interface AssistantPageProps {
   params: Promise<{ projectId: string }>;
@@ -46,6 +46,10 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
+  metadata?: {
+    sources?: string[];
+    source_ids?: string[];
+  };
 }
 
 interface Chat {
@@ -72,43 +76,18 @@ const suggestedPrompts = [
   "Summarize competitor mentions",
 ];
 
-// Mock initial data
-const initialChats: Chat[] = [
-  {
-    id: "1",
-    title: "Weekly Summary Analysis",
-    lastMessage: "Based on the data, here are the key takeaways...",
-    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    messages: [
-      { id: "1", role: "user", content: "Give me a summary of this week's media coverage", timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000) },
-      { id: "2", role: "assistant", content: "Based on the data from this week, here are the key takeaways:\n\n📊 **Overview**\n- Total mentions: 2,847 (+12% vs last week)\n- Social reach: 1.2M impressions\n- Sentiment: 72% positive, 18% neutral, 10% negative\n\n🔥 **Top Stories**\n1. Product launch coverage on TechCrunch drove 40% of mentions\n2. CEO interview on Bloomberg reached 500K viewers\n3. Community discussion on Reddit about new features\n\n⚠️ **Areas of Concern**\n- Minor complaints about pricing on Twitter\n- Some users reporting bugs in v2.0 release\n\nWould you like me to dive deeper into any of these areas?", timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000) },
-    ],
-  },
-  {
-    id: "2",
-    title: "Competitor Analysis",
-    lastMessage: "Competitor A has seen a 15% increase...",
-    timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000),
-    messages: [],
-  },
-  {
-    id: "3",
-    title: "Sentiment Breakdown",
-    lastMessage: "The negative sentiment is mainly coming from...",
-    timestamp: new Date(Date.now() - 48 * 60 * 60 * 1000),
-    messages: [],
-  },
-];
-
 export default function AssistantPage({ params }: AssistantPageProps) {
   const { projectId } = use(params);
-  const { t } = useTranslation();
-  const [chats, setChats] = useState<Chat[]>(initialChats);
-  const [activeChat, setActiveChat] = useState<Chat>(initialChats[0]);
+  const [chats, setChats] = useState<Chat[]>([
+    { id: "1", title: "New Chat", lastMessage: "", timestamp: new Date(), messages: [] },
+  ]);
+  const [activeChat, setActiveChat] = useState<Chat>(chats[0]);
   const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  const aiChat = useAiChat(projectId);
+  const isLoading = aiChat.isPending;
   
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -136,29 +115,53 @@ export default function AssistantPage({ params }: AssistantPageProps) {
     };
     
     setActiveChat(updatedChat);
-    setChats(chats.map(c => c.id === activeChat.id ? updatedChat : c));
+    setChats(prev => prev.map(c => c.id === activeChat.id ? updatedChat : c));
     setInput("");
-    setIsLoading(true);
     
-    // Simulate AI response
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    const aiResponse: Message = {
-      id: (Date.now() + 1).toString(),
-      role: "assistant",
-      content: generateMockResponse(input),
-      timestamp: new Date(),
-    };
-    
-    const finalChat = {
-      ...updatedChat,
-      messages: [...updatedChat.messages, aiResponse],
-      lastMessage: aiResponse.content.slice(0, 50) + "...",
-    };
-    
-    setActiveChat(finalChat);
-    setChats(chats.map(c => c.id === activeChat.id ? finalChat : c));
-    setIsLoading(false);
+    try {
+      const response = await aiChat.mutateAsync({
+        message: input,
+        chat_id: activeChat.id.length > 10 ? activeChat.id : undefined,
+      });
+      
+      const aiResponse: Message = {
+        id: response.id,
+        role: "assistant",
+        content: response.content,
+        timestamp: new Date(response.timestamp || Date.now()),
+        metadata: {
+          sources: Array.isArray(response?.metadata?.sources)
+            ? (response.metadata.sources as string[])
+            : [],
+          source_ids: Array.isArray(response?.metadata?.source_ids)
+            ? (response.metadata.source_ids as string[])
+            : [],
+        },
+      };
+      
+      const finalChat = {
+        ...updatedChat,
+        id: response.chat_id || updatedChat.id,
+        messages: [...updatedChat.messages, aiResponse],
+        lastMessage: response.content.slice(0, 50) + "...",
+      };
+      
+      setActiveChat(finalChat);
+      setChats(prev => prev.map(c => c.id === activeChat.id ? finalChat : c));
+    } catch {
+      const errorMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: "Sorry, I encountered an error. Please try again.",
+        timestamp: new Date(),
+      };
+      const errorChat = {
+        ...updatedChat,
+        messages: [...updatedChat.messages, errorMsg],
+      };
+      setActiveChat(errorChat);
+      setChats(prev => prev.map(c => c.id === activeChat.id ? errorChat : c));
+    }
   };
   
   const handleQuickPrompt = (prompt: string) => {
@@ -350,6 +353,21 @@ export default function AssistantPage({ params }: AssistantPageProps) {
                           : "bg-muted/50 rounded-tl-sm"
                       )}>
                         <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                        {message.role === "assistant" && message.metadata?.sources?.length ? (
+                          <div className="mt-2 space-y-1">
+                            {message.metadata.sources.slice(0, 3).map((url) => (
+                              <a
+                                key={url}
+                                href={url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="block text-xs text-primary underline break-all"
+                              >
+                                {url}
+                              </a>
+                            ))}
+                          </div>
+                        ) : null}
                       </div>
                       <div className="flex items-center gap-2 px-1">
                         <span className="text-xs text-muted-foreground">{formatTime(message.timestamp)}</span>
@@ -443,15 +461,6 @@ export default function AssistantPage({ params }: AssistantPageProps) {
   );
 }
 
-function generateMockResponse(input: string): string {
-  const responses = [
-    "Based on your media data analysis, I found several key insights:\n\n📊 **Key Findings**\n- Sentiment has improved 5% over the past week\n- Most discussions are happening on Twitter and tech blogs\n- Your brand was mentioned 234 times in the last 24 hours\n\n💡 **Recommendations**\n1. Engage with the positive mentions on social media\n2. Address the pricing concerns mentioned in forums\n3. Consider a press release for the upcoming feature\n\nWould you like me to elaborate on any of these points?",
-    "I've analyzed the data and here's what I found:\n\n🔍 **Analysis Summary**\n- Total reach: 1.2M impressions\n- Peak engagement: Tuesday 2-4 PM\n- Top influencer mentions: 12\n\n📈 **Trends**\n- AI-related discussions are up 40%\n- Competitor mentions decreased by 15%\n- User sentiment is predominantly positive (78%)\n\nIs there a specific area you'd like me to focus on?",
-    "Here's my assessment:\n\n⚡ **Quick Stats**\n- 847 new mentions today\n- Sentiment score: 7.2/10\n- Share of voice: 34%\n\n🎯 **Action Items**\n1. The viral tweet about your product reached 50K impressions - consider amplifying\n2. A tech blogger wrote a detailed review - engage in comments\n3. Competitor launched a new feature - monitor reactions\n\nLet me know if you need more details!",
-  ];
-  
-  return responses[Math.floor(Math.random() * responses.length)];
-}
 
 
 

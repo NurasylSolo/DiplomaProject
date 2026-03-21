@@ -2,38 +2,30 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Eye, EyeOff, ArrowRight, Loader2, Globe, Check } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useTranslation } from "@/hooks";
-import { supportedLanguages } from "@/lib/i18n";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { useLogin } from "@/hooks";
+import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/api";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
   rememberMe: z.boolean().optional(),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
-  const router = useRouter();
-  const { t, changeLanguage, currentLanguage } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const loginMutation = useLogin();
   
   const {
     register,
@@ -51,18 +43,17 @@ export default function LoginPage() {
   });
   
   const rememberMe = watch("rememberMe");
+  const isLoading = loginMutation.isPending;
   
   const onSubmit = async (data: LoginFormData) => {
-    setIsLoading(true);
-    
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    
-    console.log("Login data:", data);
-    
-    // TODO: Implement actual login logic
-    // For now, redirect to dashboard
-    router.push("/dashboard");
+    loginMutation.mutate(
+      { email: data.email, password: data.password, remember_me: !!data.rememberMe },
+      {
+        onError: (error) => {
+          toast.error(getErrorMessage(error));
+        },
+      }
+    );
   };
   
   const containerVariants = {
@@ -87,33 +78,6 @@ export default function LoginPage() {
       animate="visible"
       className="space-y-8"
     >
-      {/* Language Selector */}
-      <div className="absolute top-4 right-4">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative">
-              <Globe className="h-5 w-5" />
-              <span className="sr-only">{t("header.language")}</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            {supportedLanguages.map((lang) => (
-              <DropdownMenuItem
-                key={lang.code}
-                onClick={() => changeLanguage(lang.code)}
-                className="flex items-center gap-2 cursor-pointer"
-              >
-                <span className="text-lg">{lang.flag}</span>
-                <span>{lang.name}</span>
-                {currentLanguage === lang.code && (
-                  <Check className="h-4 w-4 ml-auto" />
-                )}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-      
       {/* Header */}
       <motion.div variants={itemVariants} className="space-y-2">
         {/* Mobile logo */}
@@ -148,17 +112,17 @@ export default function LoginPage() {
         </div>
         
         <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight">
-          {t("auth.login.title")}
+          Welcome back
         </h1>
         <p className="text-muted-foreground">
-          {t("auth.login.subtitle")}
+          Enter your credentials to access your account
         </p>
       </motion.div>
       
       {/* Form */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <motion.div variants={itemVariants} className="space-y-2">
-          <Label htmlFor="email">{t("auth.login.email")}</Label>
+          <Label htmlFor="email">Email</Label>
           <Input
             id="email"
             type="email"
@@ -175,19 +139,19 @@ export default function LoginPage() {
         
         <motion.div variants={itemVariants} className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor="password">{t("auth.login.password")}</Label>
+            <Label htmlFor="password">Password</Label>
             <Link 
               href="/forgot-password" 
               className="text-sm text-primary hover:text-primary/80 transition-colors"
             >
-              {t("auth.login.forgotPassword")}
+              Forgot password?
             </Link>
           </div>
           <div className="relative">
             <Input
               id="password"
               type={showPassword ? "text" : "password"}
-              placeholder="••••••••"
+              placeholder="Enter your password"
               autoComplete="current-password"
               disabled={isLoading}
               className="h-12 pr-12"
@@ -219,7 +183,7 @@ export default function LoginPage() {
             disabled={isLoading}
           />
           <Label htmlFor="rememberMe" className="text-sm font-normal cursor-pointer">
-            {t("auth.login.rememberMe")}
+            Keep me signed in for 30 days
           </Label>
         </motion.div>
         
@@ -232,11 +196,11 @@ export default function LoginPage() {
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                {t("auth.login.submitting")}
+                Signing in...
               </>
             ) : (
               <>
-                {t("auth.login.submit")}
+                Sign In
                 <ArrowRight className="ml-2 h-5 w-5" />
               </>
             )}
@@ -251,7 +215,7 @@ export default function LoginPage() {
         </div>
         <div className="relative flex justify-center text-xs uppercase">
           <span className="bg-background px-2 text-muted-foreground">
-            {t("auth.login.orContinueWith")}
+            Or continue with
           </span>
         </div>
       </motion.div>
@@ -282,7 +246,7 @@ export default function LoginPage() {
               d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
             />
           </svg>
-          {t("auth.login.google")}
+          Continue with Google
         </Button>
       </motion.div>
       
@@ -291,12 +255,12 @@ export default function LoginPage() {
         variants={itemVariants}
         className="text-center text-sm text-muted-foreground"
       >
-        {t("auth.login.noAccount")}{" "}
+        Don&apos;t have an account?{" "}
         <Link 
           href="/register" 
           className="text-primary hover:text-primary/80 font-medium transition-colors"
         >
-          {t("auth.login.createAccount")}
+          Create account
         </Link>
       </motion.p>
     </motion.div>

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import type { DateRange } from "react-day-picker";
 import { 
   Calendar as CalendarIcon, 
   ChevronDown, 
@@ -35,14 +36,12 @@ import {
 import { cn } from "@/lib/utils";
 import { SOURCE_TYPES, SENTIMENT_TYPES, DATE_RANGE_PRESETS } from "@/lib/constants";
 import { useMentionsFilterStore } from "@/stores";
-import { useTranslation } from "@/hooks";
 
 interface MentionsFiltersProps {
   projectId: string;
 }
 
 export function MentionsFilters({ projectId }: MentionsFiltersProps) {
-  const { t } = useTranslation();
   const { 
     filters, 
     setDateRange,
@@ -61,29 +60,45 @@ export function MentionsFilters({ projectId }: MentionsFiltersProps) {
   const sentiments = filters?.sentiments ?? [];
   const influenceRange = filters?.influenceRange ?? [0, 10];
   const author = filters?.author ?? "";
-  const dateRange = filters?.dateRange ?? { from: undefined, to: undefined, preset: "7days" };
+  const dateRange = filters?.dateRange ?? { from: undefined, to: undefined, preset: "all" };
   
   const handleDatePresetChange = (preset: string) => {
-    let from = new Date();
+    if (preset === "all") {
+      setDateRange({ from: undefined, to: undefined, preset: "all" });
+      return;
+    }
+    if (preset === "custom") {
+      setDateRange({ ...dateRange, preset: "custom" });
+      return;
+    }
+
     const to = new Date();
+    to.setHours(23, 59, 59, 999);
+    let from = new Date();
     
     switch (preset) {
       case "today":
-        from = new Date();
         from.setHours(0, 0, 0, 0);
         break;
-      case "yesterday":
+      case "yesterday": {
         from = new Date(Date.now() - 24 * 60 * 60 * 1000);
         from.setHours(0, 0, 0, 0);
-        break;
+        const yesterdayEnd = new Date(from);
+        yesterdayEnd.setHours(23, 59, 59, 999);
+        setDateRange({ from, to: yesterdayEnd, preset });
+        return;
+      }
       case "7days":
         from = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        from.setHours(0, 0, 0, 0);
         break;
       case "30days":
         from = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        from.setHours(0, 0, 0, 0);
         break;
       case "90days":
         from = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+        from.setHours(0, 0, 0, 0);
         break;
       default:
         break;
@@ -91,13 +106,34 @@ export function MentionsFilters({ projectId }: MentionsFiltersProps) {
     
     setDateRange({ from, to, preset });
   };
+
+  const handleCustomRangeSelect = useCallback(
+    (range: DateRange | undefined) => {
+      if (!range) {
+        setDateRange({ from: undefined, to: undefined, preset: "custom" });
+        return;
+      }
+      let from = range.from;
+      let to = range.to;
+      if (from && to && to < from) {
+        [from, to] = [to, from];
+      }
+      setDateRange({ from, to, preset: "custom" });
+    },
+    [setDateRange]
+  );
+
+  const customRangeValue: DateRange | undefined =
+    dateRange.preset === "custom" && (dateRange.from || dateRange.to)
+      ? { from: dateRange.from, to: dateRange.to }
+      : undefined;
   
   return (
     <div className="w-[280px] space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h3 className="font-semibold text-sm">{t("mentions.filters.title")}</h3>
+          <h3 className="font-semibold text-sm">Filters</h3>
           {activeFiltersCount > 0 && (
             <Badge variant="secondary" className="text-xs px-1.5">
               {activeFiltersCount}
@@ -123,7 +159,7 @@ export function MentionsFilters({ projectId }: MentionsFiltersProps) {
       <ScrollArea className="h-[calc(100vh-220px)] pr-4">
         <div className="space-y-6">
           {/* Date Range */}
-          <FilterSection title={t("mentions.filters.dateRange")} defaultOpen>
+          <FilterSection title="Date Range" defaultOpen>
             <div className="space-y-3">
               <Select 
                 value={dateRange.preset} 
@@ -141,60 +177,51 @@ export function MentionsFilters({ projectId }: MentionsFiltersProps) {
                 </SelectContent>
               </Select>
               
-              <div className="grid grid-cols-2 gap-2">
+              {dateRange.preset === "custom" ? (
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-9 justify-start text-left font-normal"
+                      className="h-9 w-full justify-start text-left font-normal"
                     >
                       <CalendarIcon className="mr-2 h-3.5 w-3.5" />
-                      {dateRange.from ? (
-                        format(dateRange.from, "MMM dd")
+                      {dateRange.from && dateRange.to ? (
+                        `${format(dateRange.from, "MMM dd, yyyy")} – ${format(dateRange.to, "MMM dd, yyyy")}`
+                      ) : dateRange.from ? (
+                        `From ${format(dateRange.from, "MMM dd, yyyy")}`
+                      ) : dateRange.to ? (
+                        `Until ${format(dateRange.to, "MMM dd, yyyy")}`
                       ) : (
-                        <span className="text-muted-foreground">{t("mentions.filters.from")}</span>
+                        <span className="text-muted-foreground">Select date range</span>
                       )}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
-                      mode="single"
-                      selected={dateRange.from}
-                      onSelect={(date) => setDateRange({ ...dateRange, from: date, preset: "custom" })}
+                      mode="range"
+                      selected={customRangeValue}
+                      onSelect={handleCustomRangeSelect}
+                      numberOfMonths={2}
                     />
                   </PopoverContent>
                 </Popover>
-                
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-9 justify-start text-left font-normal"
-                    >
-                      <CalendarIcon className="mr-2 h-3.5 w-3.5" />
-                      {dateRange.to ? (
-                        format(dateRange.to, "MMM dd")
-                      ) : (
-                        <span className="text-muted-foreground">{t("mentions.filters.to")}</span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={dateRange.to}
-                      onSelect={(date) => setDateRange({ ...dateRange, to: date, preset: "custom" })}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
+              ) : (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  {dateRange.preset === "all" ? (
+                    <span>All mentions in database</span>
+                  ) : dateRange.from && dateRange.to ? (
+                    <span>
+                      {format(dateRange.from, "MMM dd")} – {format(dateRange.to, "MMM dd")}
+                    </span>
+                  ) : null}
+                </div>
+              )}
             </div>
           </FilterSection>
           
           {/* Sources */}
-          <FilterSection title={t("mentions.filters.sources")} badge={sources.length} defaultOpen>
+          <FilterSection title="Sources" badge={sources.length} defaultOpen>
             <div className="space-y-2">
               {Object.values(SOURCE_TYPES).slice(0, 8).map((source) => (
                 <label
@@ -215,13 +242,13 @@ export function MentionsFilters({ projectId }: MentionsFiltersProps) {
                 </label>
               ))}
               <Button variant="ghost" size="sm" className="w-full text-xs mt-1">
-                {t("mentions.filters.showAll")}
+                Show all sources
               </Button>
             </div>
           </FilterSection>
           
           {/* Sentiment */}
-          <FilterSection title={t("mentions.filters.sentiment")} badge={sentiments.length}>
+          <FilterSection title="Sentiment" badge={sentiments.length}>
             <div className="flex flex-wrap gap-2">
               {Object.values(SENTIMENT_TYPES).map((sentiment) => (
                 <button
@@ -246,7 +273,7 @@ export function MentionsFilters({ projectId }: MentionsFiltersProps) {
           </FilterSection>
           
           {/* Influence Score */}
-          <FilterSection title={t("mentions.filters.influenceScore")}>
+          <FilterSection title="Influence Score">
             <div className="space-y-4 pt-2">
               <Slider
                 value={influenceRange}
@@ -256,16 +283,16 @@ export function MentionsFilters({ projectId }: MentionsFiltersProps) {
                 className="w-full"
               />
               <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>{t("mentions.filters.min")}: {influenceRange[0]}</span>
-                <span>{t("mentions.filters.max")}: {influenceRange[1]}</span>
+                <span>Min: {influenceRange[0]}</span>
+                <span>Max: {influenceRange[1]}</span>
               </div>
             </div>
           </FilterSection>
           
           {/* Author */}
-          <FilterSection title={t("mentions.filters.author")}>
+          <FilterSection title="Author">
             <Input
-              placeholder={t("mentions.filters.searchByAuthor")}
+              placeholder="Search by author..."
               value={author}
               onChange={(e) => setAuthor(e.target.value)}
               className="h-9"
@@ -273,16 +300,16 @@ export function MentionsFilters({ projectId }: MentionsFiltersProps) {
           </FilterSection>
           
           {/* Saved Filters */}
-          <FilterSection title={t("mentions.filters.savedFilters")}>
+          <FilterSection title="Saved Filters">
             <div className="space-y-2">
               <div className="p-2 rounded-lg border border-dashed border-border hover:border-primary/50 cursor-pointer transition-colors">
                 <p className="text-xs text-center text-muted-foreground">
-                  {t("mentions.filters.noSavedFilters")}
+                  No saved filters yet
                 </p>
               </div>
               <Button variant="outline" size="sm" className="w-full">
                 <Save className="h-3.5 w-3.5 mr-2" />
-                {t("mentions.filters.saveFilter")}
+                Save Current Filter
               </Button>
             </div>
           </FilterSection>

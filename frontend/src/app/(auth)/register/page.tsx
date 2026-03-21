@@ -2,24 +2,18 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Eye, EyeOff, ArrowRight, Loader2, Check, Globe } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, Loader2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useTranslation } from "@/hooks";
-import { supportedLanguages } from "@/lib/i18n";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { useRegister } from "@/hooks";
+import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/api";
 
 const registerSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -38,10 +32,8 @@ const registerSchema = z.object({
 type RegisterFormData = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
-  const router = useRouter();
-  const { t, changeLanguage, currentLanguage } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const registerMutation = useRegister();
   
   const {
     register,
@@ -61,17 +53,17 @@ export default function RegisterPage() {
   
   const password = watch("password");
   const acceptTerms = watch("acceptTerms");
+  const isLoading = registerMutation.isPending;
   
   const onSubmit = async (data: RegisterFormData) => {
-    setIsLoading(true);
-    
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    
-    console.log("Register data:", data);
-    
-    // TODO: Implement actual registration logic
-    router.push("/dashboard");
+    registerMutation.mutate(
+      { name: data.name, email: data.email, password: data.password },
+      {
+        onError: (error) => {
+          toast.error(getErrorMessage(error));
+        },
+      }
+    );
   };
   
   const containerVariants = {
@@ -120,33 +112,6 @@ export default function RegisterPage() {
       animate="visible"
       className="space-y-6"
     >
-      {/* Language Selector */}
-      <div className="absolute top-4 right-4">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative">
-              <Globe className="h-5 w-5" />
-              <span className="sr-only">{t("header.language")}</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            {supportedLanguages.map((lang) => (
-              <DropdownMenuItem
-                key={lang.code}
-                onClick={() => changeLanguage(lang.code)}
-                className="flex items-center gap-2 cursor-pointer"
-              >
-                <span className="text-lg">{lang.flag}</span>
-                <span>{lang.name}</span>
-                {currentLanguage === lang.code && (
-                  <Check className="h-4 w-4 ml-auto" />
-                )}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-      
       {/* Header */}
       <motion.div variants={itemVariants} className="space-y-2">
         {/* Mobile logo */}
@@ -181,17 +146,17 @@ export default function RegisterPage() {
         </div>
         
         <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight">
-          {t("auth.register.title")}
+          Create your account
         </h1>
         <p className="text-muted-foreground">
-          {t("auth.register.subtitle")}
+          Start your 14-day free trial. No credit card required.
         </p>
       </motion.div>
       
       {/* Form */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
         <motion.div variants={itemVariants} className="space-y-2">
-          <Label htmlFor="name">{t("auth.register.name")}</Label>
+          <Label htmlFor="name">Full Name</Label>
           <Input
             id="name"
             type="text"
@@ -207,7 +172,7 @@ export default function RegisterPage() {
         </motion.div>
         
         <motion.div variants={itemVariants} className="space-y-2">
-          <Label htmlFor="email">{t("auth.register.email")}</Label>
+          <Label htmlFor="email">Work Email</Label>
           <Input
             id="email"
             type="email"
@@ -223,12 +188,12 @@ export default function RegisterPage() {
         </motion.div>
         
         <motion.div variants={itemVariants} className="space-y-2">
-          <Label htmlFor="password">{t("auth.register.password")}</Label>
+          <Label htmlFor="password">Password</Label>
           <div className="relative">
             <Input
               id="password"
               type={showPassword ? "text" : "password"}
-              placeholder="••••••••"
+              placeholder="Create a strong password"
               autoComplete="new-password"
               disabled={isLoading}
               className="h-12 pr-12"
@@ -265,10 +230,10 @@ export default function RegisterPage() {
               
               {/* Requirements list */}
               <div className="grid grid-cols-2 gap-2 text-xs">
-                <PasswordRequirement met={checks.length} label={t("auth.passwordStrength.length")} />
-                <PasswordRequirement met={checks.uppercase} label={t("auth.passwordStrength.uppercase")} />
-                <PasswordRequirement met={checks.lowercase} label={t("auth.passwordStrength.lowercase")} />
-                <PasswordRequirement met={checks.number} label={t("auth.passwordStrength.number")} />
+                <PasswordRequirement met={checks.length} label="8+ characters" />
+                <PasswordRequirement met={checks.uppercase} label="Uppercase" />
+                <PasswordRequirement met={checks.lowercase} label="Lowercase" />
+                <PasswordRequirement met={checks.number} label="Number" />
               </div>
             </div>
           )}
@@ -287,7 +252,14 @@ export default function RegisterPage() {
             className="mt-0.5"
           />
           <Label htmlFor="acceptTerms" className="text-sm font-normal cursor-pointer leading-relaxed">
-            {t("auth.register.acceptTerms")}
+            I agree to the{" "}
+            <Link href="/terms" className="text-primary hover:text-primary/80">
+              Terms of Service
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy" className="text-primary hover:text-primary/80">
+              Privacy Policy
+            </Link>
           </Label>
         </motion.div>
         {errors.acceptTerms && (
@@ -303,11 +275,11 @@ export default function RegisterPage() {
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                {t("auth.register.submitting")}
+                Creating account...
               </>
             ) : (
               <>
-                {t("auth.register.submit")}
+                Create Account
                 <ArrowRight className="ml-2 h-5 w-5" />
               </>
             )}
@@ -322,7 +294,7 @@ export default function RegisterPage() {
         </div>
         <div className="relative flex justify-center text-xs uppercase">
           <span className="bg-background px-2 text-muted-foreground">
-            {t("auth.login.orContinueWith")}
+            Or continue with
           </span>
         </div>
       </motion.div>
@@ -353,7 +325,7 @@ export default function RegisterPage() {
               d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
             />
           </svg>
-          {t("auth.login.google")}
+          Continue with Google
         </Button>
       </motion.div>
       
@@ -362,12 +334,12 @@ export default function RegisterPage() {
         variants={itemVariants}
         className="text-center text-sm text-muted-foreground"
       >
-        {t("auth.register.hasAccount")}{" "}
+        Already have an account?{" "}
         <Link 
           href="/login" 
           className="text-primary hover:text-primary/80 font-medium transition-colors"
         >
-          {t("auth.register.signIn")}
+          Sign in
         </Link>
       </motion.p>
     </motion.div>

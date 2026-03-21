@@ -1,19 +1,21 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   Save,
   Upload,
   Plus,
   X,
+  Trash2,
   Globe,
   Bell,
   Key,
   Users,
-  Palette,
   FileText,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,7 +26,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { useTranslation } from "@/hooks";
+import { getErrorMessage } from "@/lib/api";
+import { useDeleteProject, useProject, useUpdateProject, useTranslation } from "@/hooks";
 
 interface SettingsPageProps {
   params: Promise<{ projectId: string }>;
@@ -42,35 +45,101 @@ const accentColors = [
 export default function SettingsPage({ params }: SettingsPageProps) {
   const { projectId } = use(params);
   const { t } = useTranslation();
-  const [projectName, setProjectName] = useState("Tech Brand Monitor");
-  const [projectDescription, setProjectDescription] = useState(
-    "Monitoring technology brand mentions across news, social media, and web sources."
+  const router = useRouter();
+  const { data: project, isLoading } = useProject(projectId);
+  const updateProjectMutation = useUpdateProject();
+  const deleteProjectMutation = useDeleteProject();
+
+  const initialDraft = useMemo(
+    () => ({
+      projectName: project?.name || "",
+      projectDescription: project?.description || "",
+      selectedColor: project?.accentColor || "#00A3E0",
+      keywords: Array.isArray(project?.settings?.keywords) ? project.settings.keywords : [],
+      excludedKeywords: Array.isArray(project?.settings?.excludedKeywords)
+        ? project.settings.excludedKeywords
+        : [],
+      emailNotifications: Boolean(project?.settings?.notifications?.email ?? true),
+      alertThreshold: String(project?.settings?.notifications?.alertThreshold || "high"),
+    }),
+    [project]
   );
-  const [selectedColor, setSelectedColor] = useState("#00A3E0");
-  const [keywords, setKeywords] = useState(["technology", "AI", "startup", "innovation"]);
-  const [excludedKeywords, setExcludedKeywords] = useState(["spam", "advertisement"]);
+  const [draft, setDraft] = useState(initialDraft);
   const [newKeyword, setNewKeyword] = useState("");
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [alertThreshold, setAlertThreshold] = useState("high");
+  const values = draft.projectName || draft.keywords.length > 0 ? draft : initialDraft;
   
   const addKeyword = (type: "required" | "excluded") => {
     if (!newKeyword.trim()) return;
     
     if (type === "required") {
-      setKeywords((prev) => [...prev, newKeyword.trim()]);
+      setDraft((prev) => ({ ...prev, keywords: [...values.keywords, newKeyword.trim()] }));
     } else {
-      setExcludedKeywords((prev) => [...prev, newKeyword.trim()]);
+      setDraft((prev) => ({
+        ...prev,
+        excludedKeywords: [...values.excludedKeywords, newKeyword.trim()],
+      }));
     }
     setNewKeyword("");
   };
   
   const removeKeyword = (keyword: string, type: "required" | "excluded") => {
     if (type === "required") {
-      setKeywords((prev) => prev.filter((k) => k !== keyword));
+      setDraft((prev) => ({
+        ...prev,
+        keywords: values.keywords.filter((k) => k !== keyword),
+      }));
     } else {
-      setExcludedKeywords((prev) => prev.filter((k) => k !== keyword));
+      setDraft((prev) => ({
+        ...prev,
+        excludedKeywords: values.excludedKeywords.filter((k) => k !== keyword),
+      }));
     }
   };
+
+  const handleSave = () => {
+    updateProjectMutation.mutate(
+      {
+        id: projectId,
+        data: {
+          name: values.projectName.trim(),
+          description: values.projectDescription.trim() || undefined,
+          accent_color: values.selectedColor,
+          settings: {
+            ...(project?.settings || {}),
+            keywords: values.keywords,
+            excludedKeywords: values.excludedKeywords,
+            topicQuery: values.projectName.trim(),
+            notifications: {
+              ...(project?.settings?.notifications || {}),
+              email: values.emailNotifications,
+              alertThreshold: values.alertThreshold,
+            },
+          },
+        },
+      },
+      {
+        onSuccess: () => toast.success(t("projectSettingsPage.toasts.updated")),
+        onError: (error) => toast.error(getErrorMessage(error)),
+      }
+    );
+  };
+
+  const handleDelete = () => {
+    const ok = window.confirm(
+      t("projectSettingsPage.confirmDelete")
+    );
+    if (!ok) return;
+    deleteProjectMutation.mutate(projectId, {
+      onSuccess: () => {
+        toast.success(t("projectSettingsPage.toasts.deleted"));
+        router.push("/dashboard");
+      },
+      onError: (error) => toast.error(getErrorMessage(error)),
+    });
+  };
+
+  const isSaving = updateProjectMutation.isPending;
+  const isDeleting = deleteProjectMutation.isPending;
   
   return (
     <div className="space-y-6 max-w-4xl">
@@ -78,39 +147,49 @@ export default function SettingsPage({ params }: SettingsPageProps) {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight">
-            {t("settings.title")}
+            {t("projectSettingsPage.title")}
           </h1>
           <p className="text-muted-foreground mt-1">
-            {t("settings.subtitle")}
+            {t("projectSettingsPage.subtitle")}
           </p>
         </div>
-        <Button className="glow-sm">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="destructive"
+            onClick={handleDelete}
+            disabled={isLoading || isSaving || isDeleting}
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            {t("projectSettingsPage.deleteTopic")}
+          </Button>
+          <Button className="glow-sm" onClick={handleSave} disabled={isLoading || isSaving || isDeleting}>
           <Save className="h-4 w-4 mr-2" />
-          {t("settings.save")}
-        </Button>
+          {isSaving ? t("projectSettingsPage.saving") : t("projectSettingsPage.saveChanges")}
+          </Button>
+        </div>
       </div>
       
       <Tabs defaultValue="general" className="space-y-6">
         <TabsList className="glass">
           <TabsTrigger value="general" className="gap-2">
             <FileText className="h-4 w-4" />
-            {t("settings.tabs.general")}
+            {t("projectSettingsPage.tabs.general")}
           </TabsTrigger>
           <TabsTrigger value="keywords" className="gap-2">
             <Key className="h-4 w-4" />
-            {t("settings.tabs.keywords")}
+            {t("projectSettingsPage.tabs.keywords")}
           </TabsTrigger>
           <TabsTrigger value="sources" className="gap-2">
             <Globe className="h-4 w-4" />
-            {t("settings.tabs.sources")}
+            {t("projectSettingsPage.tabs.sources")}
           </TabsTrigger>
           <TabsTrigger value="notifications" className="gap-2">
             <Bell className="h-4 w-4" />
-            {t("settings.tabs.notifications")}
+            {t("projectSettingsPage.tabs.notifications")}
           </TabsTrigger>
           <TabsTrigger value="team" className="gap-2">
             <Users className="h-4 w-4" />
-            {t("settings.tabs.team")}
+            {t("projectSettingsPage.tabs.team")}
           </TabsTrigger>
         </TabsList>
         
@@ -122,42 +201,44 @@ export default function SettingsPage({ params }: SettingsPageProps) {
           >
             <Card className="glass">
               <CardHeader>
-                <CardTitle>{t("settings.general.title")}</CardTitle>
+                <CardTitle>{t("projectSettingsPage.general.title")}</CardTitle>
                 <CardDescription>
-                  {t("settings.general.subtitle")}
+                  {t("projectSettingsPage.general.description")}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="name">{t("settings.general.name")}</Label>
+                  <Label htmlFor="name">{t("projectSettingsPage.general.projectName")}</Label>
                   <Input
                     id="name"
-                    value={projectName}
-                    onChange={(e) => setProjectName(e.target.value)}
+                    value={values.projectName}
+                    onChange={(e) => setDraft((prev) => ({ ...prev, projectName: e.target.value }))}
                     className="max-w-md"
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="description">{t("settings.general.description")}</Label>
+                  <Label htmlFor="description">{t("projectSettingsPage.general.descriptionLabel")}</Label>
                   <Textarea
                     id="description"
-                    value={projectDescription}
-                    onChange={(e) => setProjectDescription(e.target.value)}
+                    value={values.projectDescription}
+                    onChange={(e) =>
+                      setDraft((prev) => ({ ...prev, projectDescription: e.target.value }))
+                    }
                     className="max-w-md resize-none"
                     rows={3}
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label>{t("settings.general.logo")}</Label>
+                  <Label>{t("projectSettingsPage.general.projectLogo")}</Label>
                   <div className="flex items-center gap-4">
                     <div className="w-20 h-20 rounded-xl bg-primary/10 flex items-center justify-center border-2 border-dashed border-border hover:border-primary/50 transition-colors cursor-pointer">
                       <Upload className="h-6 w-6 text-muted-foreground" />
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      <p>{t("settings.general.logoHint")}</p>
-                      <p className="text-xs">PNG, JPG up to 2MB</p>
+                      <p>{t("projectSettingsPage.general.uploadLogo")}</p>
+                      <p className="text-xs">{t("projectSettingsPage.general.logoFormat")}</p>
                     </div>
                   </div>
                 </div>
@@ -165,15 +246,15 @@ export default function SettingsPage({ params }: SettingsPageProps) {
                 <Separator />
                 
                 <div className="space-y-3">
-                  <Label>{t("settings.general.accentColor")}</Label>
+                  <Label>{t("projectSettingsPage.general.accentColor")}</Label>
                   <div className="flex items-center gap-3">
                     {accentColors.map((color) => (
                       <button
                         key={color.value}
-                        onClick={() => setSelectedColor(color.value)}
+                        onClick={() => setDraft((prev) => ({ ...prev, selectedColor: color.value }))}
                         className={cn(
                           "w-8 h-8 rounded-full transition-all",
-                          selectedColor === color.value &&
+                          values.selectedColor === color.value &&
                             "ring-2 ring-offset-2 ring-offset-background ring-primary"
                         )}
                         style={{ backgroundColor: color.value }}
@@ -195,14 +276,14 @@ export default function SettingsPage({ params }: SettingsPageProps) {
           >
             <Card className="glass">
               <CardHeader>
-                <CardTitle>{t("settings.keywords.required.title")}</CardTitle>
+                <CardTitle>{t("projectSettingsPage.keywords.requiredTitle")}</CardTitle>
                 <CardDescription>
-                  {t("settings.keywords.required.subtitle")}
+                  {t("projectSettingsPage.keywords.requiredDescription")}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex flex-wrap gap-2">
-                  {keywords.map((keyword) => (
+                  {values.keywords.map((keyword) => (
                     <Badge
                       key={keyword}
                       variant="secondary"
@@ -221,7 +302,7 @@ export default function SettingsPage({ params }: SettingsPageProps) {
                 
                 <div className="flex gap-2 max-w-md">
                   <Input
-                    placeholder={t("settings.keywords.addPlaceholder")}
+                    placeholder={t("projectSettingsPage.keywords.addKeyword")}
                     value={newKeyword}
                     onChange={(e) => setNewKeyword(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && addKeyword("required")}
@@ -241,14 +322,14 @@ export default function SettingsPage({ params }: SettingsPageProps) {
           >
             <Card className="glass">
               <CardHeader>
-                <CardTitle>{t("settings.keywords.excluded.title")}</CardTitle>
+                <CardTitle>{t("projectSettingsPage.keywords.excludedTitle")}</CardTitle>
                 <CardDescription>
-                  {t("settings.keywords.excluded.subtitle")}
+                  {t("projectSettingsPage.keywords.excludedDescription")}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex flex-wrap gap-2">
-                  {excludedKeywords.map((keyword) => (
+                  {values.excludedKeywords.map((keyword) => (
                     <Badge
                       key={keyword}
                       variant="outline"
@@ -267,7 +348,7 @@ export default function SettingsPage({ params }: SettingsPageProps) {
                 
                 <div className="flex gap-2 max-w-md">
                   <Input
-                    placeholder={t("settings.keywords.addPlaceholder")}
+                    placeholder={t("projectSettingsPage.keywords.addExcludedKeyword")}
                     value={newKeyword}
                     onChange={(e) => setNewKeyword(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && addKeyword("excluded")}
@@ -289,19 +370,19 @@ export default function SettingsPage({ params }: SettingsPageProps) {
           >
             <Card className="glass">
               <CardHeader>
-                <CardTitle>Data Sources</CardTitle>
+                <CardTitle>{t("projectSettingsPage.sources.title")}</CardTitle>
                 <CardDescription>
-                  Configure which sources to monitor
+                  {t("projectSettingsPage.sources.description")}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {[
-                  { name: "News Sites", description: "Major news outlets and publications", enabled: true },
-                  { name: "Social Media", description: "Twitter, Facebook, LinkedIn", enabled: true },
-                  { name: "Blogs", description: "Medium, personal blogs, forums", enabled: true },
-                  { name: "Video Platforms", description: "YouTube, TikTok, Vimeo", enabled: false },
-                  { name: "Podcasts", description: "Podcast transcripts and mentions", enabled: false },
-                  { name: "Review Sites", description: "TripAdvisor, Yelp, App Store", enabled: false },
+                  { name: t("projectSettingsPage.sources.newsSites"), description: t("projectSettingsPage.sources.newsSitesDesc"), enabled: true },
+                  { name: t("projectSettingsPage.sources.socialMedia"), description: t("projectSettingsPage.sources.socialMediaDesc"), enabled: true },
+                  { name: t("projectSettingsPage.sources.blogs"), description: t("projectSettingsPage.sources.blogsDesc"), enabled: true },
+                  { name: t("projectSettingsPage.sources.videoPlatforms"), description: t("projectSettingsPage.sources.videoPlatformsDesc"), enabled: false },
+                  { name: t("projectSettingsPage.sources.podcasts"), description: t("projectSettingsPage.sources.podcastsDesc"), enabled: false },
+                  { name: t("projectSettingsPage.sources.reviewSites"), description: t("projectSettingsPage.sources.reviewSitesDesc"), enabled: false },
                 ].map((source) => (
                   <div
                     key={source.name}
@@ -327,42 +408,44 @@ export default function SettingsPage({ params }: SettingsPageProps) {
           >
             <Card className="glass">
               <CardHeader>
-                <CardTitle>{t("settings.notifications.title")}</CardTitle>
+                <CardTitle>{t("projectSettingsPage.notifications.title")}</CardTitle>
                 <CardDescription>
-                  {t("settings.notifications.subtitle")}
+                  {t("projectSettingsPage.notifications.description")}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium">{t("settings.notifications.email")}</p>
+                    <p className="font-medium">{t("projectSettingsPage.notifications.emailTitle")}</p>
                     <p className="text-sm text-muted-foreground">
-                      {t("settings.notifications.emailDesc")}
+                      {t("projectSettingsPage.notifications.emailAlerts")}
                     </p>
                   </div>
                   <Switch
-                    checked={emailNotifications}
-                    onCheckedChange={setEmailNotifications}
+                    checked={values.emailNotifications}
+                    onCheckedChange={(checked) =>
+                      setDraft((prev) => ({ ...prev, emailNotifications: checked }))
+                    }
                   />
                 </div>
                 
                 <Separator />
                 
                 <div className="space-y-3">
-                  <Label>{t("settings.notifications.threshold")}</Label>
+                  <Label>{t("projectSettingsPage.notifications.alertThreshold")}</Label>
                   <p className="text-sm text-muted-foreground">
-                    {t("settings.notifications.thresholdDesc")}
+                    {t("projectSettingsPage.notifications.alertThresholdHelp")}
                   </p>
                   <div className="flex gap-2">
                     {["low", "medium", "high"].map((level) => (
                       <Button
                         key={level}
-                        variant={alertThreshold === level ? "default" : "outline"}
+                        variant={values.alertThreshold === level ? "default" : "outline"}
                         size="sm"
-                        onClick={() => setAlertThreshold(level)}
+                        onClick={() => setDraft((prev) => ({ ...prev, alertThreshold: level }))}
                         className="capitalize"
                       >
-                        {t(`insights.severity.${level}`)}
+                        {t(`projectSettingsPage.levels.${level}`)}
                       </Button>
                     ))}
                   </div>
@@ -371,14 +454,14 @@ export default function SettingsPage({ params }: SettingsPageProps) {
                 <Separator />
                 
                 <div className="space-y-2">
-                  <Label htmlFor="webhook">{t("settings.notifications.webhook")}</Label>
+                  <Label htmlFor="webhook">{t("projectSettingsPage.notifications.webhookUrl")}</Label>
                   <Input
                     id="webhook"
-                    placeholder="https://your-webhook-url.com/endpoint"
+                    placeholder={t("projectSettingsPage.notifications.webhookPlaceholder")}
                     className="max-w-md"
                   />
                   <p className="text-xs text-muted-foreground">
-                    {t("settings.notifications.webhookDesc")}
+                    {t("projectSettingsPage.notifications.webhookHelp")}
                   </p>
                 </div>
               </CardContent>
@@ -394,9 +477,9 @@ export default function SettingsPage({ params }: SettingsPageProps) {
           >
             <Card className="glass">
               <CardHeader>
-                <CardTitle>{t("settings.team.title")}</CardTitle>
+                <CardTitle>{t("projectSettingsPage.team.title")}</CardTitle>
                 <CardDescription>
-                  {t("settings.team.subtitle")}
+                  {t("projectSettingsPage.team.description")}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -424,7 +507,7 @@ export default function SettingsPage({ params }: SettingsPageProps) {
                 
                 <Button variant="outline" className="w-full">
                   <Plus className="h-4 w-4 mr-2" />
-                  {t("settings.team.invite")}
+                  {t("projectSettingsPage.team.invite")}
                 </Button>
               </CardContent>
             </Card>

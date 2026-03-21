@@ -37,7 +37,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { useTranslation } from "@/hooks";
+import { useSources } from "@/hooks";
+import { Loader2 } from "lucide-react";
 
 interface SourcesPageProps {
   params: Promise<{ projectId: string }>;
@@ -148,28 +149,49 @@ const countryFlags: Record<string, string> = {
 
 export default function SourcesPage({ params }: SourcesPageProps) {
   const { projectId } = use(params);
-  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
-  const [sources, setSources] = useState(mockSources);
   
-  const filteredSources = sources.filter((source) => {
+  const { data: apiSources, isLoading } = useSources(projectId);
+  
+  const sources = (apiSources || []).map((s: any) => ({
+    id: s.id,
+    name: s.name,
+    type: s.type,
+    baseUrl: s.baseUrl || s.base_url,
+    mentions: s.mentionCount || s.mention_count || 0,
+    visits: 0,
+    influenceScore: s.trustScore || s.trust_score || 0.5,
+    active: s.active,
+    trusted: (s.trustScore || s.trust_score || 0) > 0.7,
+    country: s.country || "KZ",
+    language: s.language || "ru",
+    lastCrawled: s.lastCrawledAt ? new Date(s.lastCrawledAt) : null,
+  }));
+  
+  const filteredSources = sources.filter((source: any) => {
     const matchesSearch = source.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesType = typeFilter === "all" || source.type === typeFilter;
     return matchesSearch && matchesType;
   });
   
   const toggleActive = (id: string) => {
-    setSources((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, active: !s.active } : s))
-    );
+    // Will be wired to useUpdateSource when needed
   };
   
   const stats = {
     total: sources.length,
-    active: sources.filter((s) => s.active).length,
-    trusted: sources.filter((s) => s.trusted).length,
+    active: sources.filter((s: any) => s.active).length,
+    trusted: sources.filter((s: any) => s.trusted).length,
   };
+  
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
   
   return (
     <div className="space-y-6">
@@ -177,21 +199,21 @@ export default function SourcesPage({ params }: SourcesPageProps) {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight">
-            {t("sources.title")}
+            Sources
           </h1>
           <p className="text-muted-foreground mt-1">
-            {t("sources.subtitle")}
+            Manage and monitor your data sources
           </p>
         </div>
         
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm">
             <Download className="h-4 w-4 mr-2" />
-            {t("common.export")}
+            Export
           </Button>
           <Button size="sm" className="glow-sm">
             <Plus className="h-4 w-4 mr-2" />
-            {t("sources.addSource")}
+            Add Source
           </Button>
         </div>
       </div>
@@ -210,7 +232,7 @@ export default function SourcesPage({ params }: SourcesPageProps) {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{stats.total}</p>
-                  <p className="text-xs text-muted-foreground">{t("sources.totalSources")}</p>
+                  <p className="text-xs text-muted-foreground">Total Sources</p>
                 </div>
               </div>
             </CardContent>
@@ -230,7 +252,7 @@ export default function SourcesPage({ params }: SourcesPageProps) {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{stats.active}</p>
-                  <p className="text-xs text-muted-foreground">{t("sources.active")}</p>
+                  <p className="text-xs text-muted-foreground">Active</p>
                 </div>
               </div>
             </CardContent>
@@ -250,7 +272,7 @@ export default function SourcesPage({ params }: SourcesPageProps) {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{stats.trusted}</p>
-                  <p className="text-xs text-muted-foreground">{t("sources.trusted")}</p>
+                  <p className="text-xs text-muted-foreground">Trusted</p>
                 </div>
               </div>
             </CardContent>
@@ -265,7 +287,7 @@ export default function SourcesPage({ params }: SourcesPageProps) {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder={t("common.search") + "..."}
+                placeholder="Search sources..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
@@ -273,14 +295,14 @@ export default function SourcesPage({ params }: SourcesPageProps) {
             </div>
             <Select value={typeFilter} onValueChange={setTypeFilter}>
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder={t("sources.table.type")} />
+                <SelectValue placeholder="All types" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t("common.all") || "All types"}</SelectItem>
-                <SelectItem value="news">{t("sources.types.news")}</SelectItem>
-                <SelectItem value="social">{t("sources.types.social")}</SelectItem>
-                <SelectItem value="video">{t("sources.types.video")}</SelectItem>
-                <SelectItem value="blog">{t("sources.types.blog")}</SelectItem>
+                <SelectItem value="all">All types</SelectItem>
+                <SelectItem value="news">News</SelectItem>
+                <SelectItem value="social">Social Media</SelectItem>
+                <SelectItem value="video">Video</SelectItem>
+                <SelectItem value="blog">Blogs</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -295,22 +317,22 @@ export default function SourcesPage({ params }: SourcesPageProps) {
               <thead>
                 <tr className="border-b border-border/50 text-left">
                   <th className="p-4 text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                    {t("sources.table.source")}
+                    Source
                   </th>
                   <th className="p-4 text-xs font-medium text-muted-foreground uppercase tracking-wide w-24">
-                    {t("sources.table.type")}
+                    Type
                   </th>
                   <th className="p-4 text-xs font-medium text-muted-foreground uppercase tracking-wide w-24 text-right">
-                    {t("sources.table.mentions")}
+                    Mentions
                   </th>
                   <th className="p-4 text-xs font-medium text-muted-foreground uppercase tracking-wide w-24 text-right">
-                    {t("sources.table.visits")}
+                    Visits
                   </th>
                   <th className="p-4 text-xs font-medium text-muted-foreground uppercase tracking-wide w-24 text-center">
-                    {t("sources.table.score")}
+                    Score
                   </th>
                   <th className="p-4 text-xs font-medium text-muted-foreground uppercase tracking-wide w-20 text-center">
-                    {t("sources.table.status")}
+                    Status
                   </th>
                   <th className="p-4 w-12"></th>
                 </tr>
@@ -390,25 +412,25 @@ export default function SourcesPage({ params }: SourcesPageProps) {
                         <DropdownMenuContent align="end" className="w-48">
                           <DropdownMenuItem>
                             <ExternalLink className="h-4 w-4 mr-2" />
-                            {t("sources.actions.goToSite")}
+                            Go to site
                           </DropdownMenuItem>
                           <DropdownMenuItem>
                             {source.trusted ? (
                               <>
                                 <ShieldOff className="h-4 w-4 mr-2" />
-                                {t("sources.actions.removeTrust")}
+                                Remove trust
                               </>
                             ) : (
                               <>
                                 <Shield className="h-4 w-4 mr-2" />
-                                {t("sources.actions.markTrusted")}
+                                Mark as trusted
                               </>
                             )}
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem className="text-destructive">
                             <Ban className="h-4 w-4 mr-2" />
-                            {t("sources.actions.block")}
+                            Block source
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

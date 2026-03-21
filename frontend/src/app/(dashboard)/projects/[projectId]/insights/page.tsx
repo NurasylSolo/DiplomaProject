@@ -34,14 +34,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { useTranslation } from "@/hooks";
+import { useInsights, useProject } from "@/hooks";
+import { Loader2 } from "lucide-react";
 
 interface InsightsPageProps {
   params: Promise<{ projectId: string }>;
 }
 
-// Mock insights data
-const insightsData = [
+const insightsDataFallback = [
   {
     id: "1",
     type: "alert",
@@ -140,8 +140,38 @@ const typeIcons = {
 
 export default function InsightsPage({ params }: InsightsPageProps) {
   const { projectId } = use(params);
-  const { t } = useTranslation();
   const [editingId, setEditingId] = useState<string | null>(null);
+  const { data: apiInsights, isLoading } = useInsights(projectId);
+  const { data: project } = useProject(projectId);
+  
+  const insightsData = (apiInsights && apiInsights.length > 0)
+    ? apiInsights.map((i: any) => ({
+        id: i.id,
+        type: i.type === "trend_up" ? "trend" : i.type === "trend_down" ? "trend" : i.type === "anomaly" ? "alert" : i.type === "recommendation" ? "recommendation" : "opportunity",
+        severity: i.severity,
+        title: i.title,
+        description: i.description,
+        metric: i.metricChange ? `${i.metricChange > 0 ? "+" : ""}${i.metricChange}%` : "",
+        metricLabel: i.type === "trend_up" ? "increase" : i.type === "trend_down" ? "decrease" : "change",
+        source: "AI Analysis",
+        timeAgo: i.createdAt ? new Date(i.createdAt).toLocaleDateString() : "recently",
+        actionable: i.type === "recommendation",
+        category: "general",
+        timestamp: i.createdAt ? new Date(i.createdAt).toLocaleDateString() : "",
+      }))
+    : insightsDataFallback;
+  
+  const stats = project?.stats;
+  const summaryCardsData = [
+    { label: "Total Mentions", value: stats?.totalMentions ? `${(stats.totalMentions / 1000).toFixed(1)}K` : "0", change: "+12%", positive: true },
+    { label: "Total Reach", value: stats?.totalReach ? `${(stats.totalReach / 1000000).toFixed(1)}M` : "0", change: "+8%", positive: true },
+    { label: "Positive", value: stats?.positivePercentage ? `${stats.positivePercentage}%` : "0%", change: "+5%", positive: true },
+    { label: "Negative", value: stats?.negativePercentage ? `${stats.negativePercentage}%` : "0%", change: "-3%", positive: false },
+  ];
+  
+  if (isLoading) {
+    return <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+  }
   
   return (
     <div className="space-y-6">
@@ -150,10 +180,10 @@ export default function InsightsPage({ params }: InsightsPageProps) {
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
             <Sparkles className="h-7 w-7 text-primary" />
-            {t("insights.title")}
+            AI Insightss
           </h1>
           <p className="text-muted-foreground mt-1">
-            {t("insights.subtitle")}
+            AI-generated insights and recommendations based on your media data
           </p>
         </div>
         
@@ -179,7 +209,7 @@ export default function InsightsPage({ params }: InsightsPageProps) {
       
       {/* Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {summaryCards.map((card, index) => (
+        {summaryCardsData.map((card, index) => (
           <motion.div
             key={card.label}
             initial={{ opacity: 0, y: 20 }}

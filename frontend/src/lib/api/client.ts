@@ -8,7 +8,8 @@ export const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  timeout: 30000, // 30 seconds
+  // Disable client-side request timeout to avoid aborting long-running ingestion APIs.
+  timeout: 0,
 });
 
 // Token storage keys

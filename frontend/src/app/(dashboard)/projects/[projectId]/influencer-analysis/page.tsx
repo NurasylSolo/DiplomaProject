@@ -21,7 +21,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { useTranslation } from "@/hooks";
 
 interface InfluencerAnalysisPageProps {
   params: Promise<{ projectId: string }>;
@@ -102,7 +101,6 @@ const overviewStats = [
 
 export default function InfluencerAnalysisPage({ params }: InfluencerAnalysisPageProps) {
   const { projectId } = use(params);
-  const { t } = useTranslation();
   const { theme } = useTheme();
   const isDark = theme === "dark";
   const [selectedInfluencer, setSelectedInfluencer] = useState(influencerRanking[0]);
@@ -157,16 +155,16 @@ export default function InfluencerAnalysisPage({ params }: InfluencerAnalysisPag
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
             <UserCheck className="h-7 w-7 text-primary" />
-            {t("influencerAnalysis.title")}
+            Influencer Analysis
           </h1>
           <p className="text-muted-foreground mt-1">
-            {t("influencerAnalysis.subtitle")}
+            Deep dive into influencer performance and impact
           </p>
         </div>
         
         <Button variant="outline" size="sm">
           <Download className="h-4 w-4 mr-2" />
-          {t("influencerAnalysis.exportReport")}
+          Export Report
         </Button>
       </div>
       

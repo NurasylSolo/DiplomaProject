@@ -35,6 +35,7 @@ export const EMOTION_TYPES = {
 
 // Date range presets
 export const DATE_RANGE_PRESETS = [
+  { id: "all", label: "All time", days: -1 },
   { id: "today", label: "Today", days: 0 },
   { id: "yesterday", label: "Yesterday", days: 1 },
   { id: "7days", label: "Last 7 days", days: 7 },

@@ -1,10 +1,8 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  TrendingUp, 
-  TrendingDown, 
+import {
   MessageSquareText,
   Users,
   Eye,
@@ -23,110 +21,91 @@ import { MentionsChart } from "@/features/mentions/components/mentions-chart";
 import { SentimentChart } from "@/features/mentions/components/sentiment-chart";
 import { MentionsTable } from "@/features/mentions/components/mentions-table";
 import { StatCard } from "@/features/mentions/components/stat-card";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import { useTranslation } from "@/hooks";
+import { useTranslation, useMentions } from "@/hooks";
+import { useMentionsFilterStore, buildFilterQuery, formatDateRangeLabel } from "@/stores/use-mentions-filter-store";
 
 interface MentionsPageProps {
   params: Promise<{ projectId: string }>;
 }
 
+
 export default function MentionsPage({ params }: MentionsPageProps) {
   const { projectId } = use(params);
   const { t } = useTranslation();
-  const [showFilters, setShowFilters] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  
-  // Mock stats data with translations
-  const statsData = [
+  const [showFilters, setShowFilters] = useState(true);
+  const { filters } = useMentionsFilterStore();
+
+  const filterParams = useMemo(() => buildFilterQuery(filters), [filters]);
+
+  const { data: statsData, refetch, isRefetching } = useMentions(projectId, {
+    ...filterParams,
+    page: 1,
+    per_page: 1,
+  });
+
+  const totalMentions = statsData?.total ?? 0;
+
+  const dateLabel = formatDateRangeLabel(filters?.dateRange);
+
+  const statsCards = [
     {
       title: t("mentions.totalMentions"),
-      value: 12847,
-      change: 12.5,
-      changeType: "increase" as const,
+      value: totalMentions,
       icon: MessageSquareText,
     },
     {
       title: t("mentions.socialReach"),
-      value: 2400000,
-      change: 8.2,
-      changeType: "increase" as const,
+      value: 0,
       icon: Users,
       format: "compact" as const,
     },
     {
       title: t("mentions.nonSocialReach"),
-      value: 890000,
-      change: -3.1,
-      changeType: "decrease" as const,
+      value: 0,
       icon: Eye,
       format: "compact" as const,
     },
     {
       title: t("mentions.positiveSentiment"),
-      value: 72,
-      change: 5.4,
-      changeType: "increase" as const,
+      value: 0,
       icon: ThumbsUp,
       suffix: "%",
     },
   ];
-  
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsRefreshing(false);
-  };
-  
+
   return (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col gap-4">
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="font-display text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight">
+          <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight">
             {t("mentions.title")}
           </h1>
-          <p className="text-sm sm:text-base text-muted-foreground mt-1">
+          <p className="text-muted-foreground mt-1">
             {t("mentions.subtitle")}
           </p>
         </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowFilters(!showFilters)}
-            className="flex-1 sm:flex-initial"
-          >
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)}>
             <Filter className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">{showFilters ? t("common.hideFilters") : t("common.showFilters")}</span>
-            <span className="sm:hidden">{t("common.filters")}</span>
+            {showFilters ? t("common.hideFilters") : t("common.showFilters")}
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className="flex-1 sm:flex-initial"
-          >
-            <RefreshCw className={cn("h-4 w-4 sm:mr-2", isRefreshing && "animate-spin")} />
-            <span className="hidden sm:inline">{t("common.refresh")}</span>
+          <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isRefetching}>
+            <RefreshCw className={cn("h-4 w-4 mr-2", isRefetching && "animate-spin")} />
+            {t("common.refresh")}
           </Button>
-          <Button variant="outline" size="sm" className="hidden sm:flex">
+          <Button variant="outline" size="sm">
             <Download className="h-4 w-4 mr-2" />
             {t("common.export")}
           </Button>
-          <Button size="sm" className="glow-sm flex-1 sm:flex-initial">
-            <Sparkles className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">{t("mentions.aiSummary")}</span>
-            <span className="sm:hidden">{t("common.ai")}</span>
+          <Button size="sm" className="glow-sm">
+            <Sparkles className="h-4 w-4 mr-2" />
+            {t("mentions.aiSummary")}
           </Button>
         </div>
       </div>
-      
-      {/* Main Content */}
-      <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
-        {/* Filters Sidebar - Desktop */}
+
+      <div className="flex gap-6">
         <AnimatePresence mode="wait">
           {showFilters && (
             <motion.div
@@ -135,7 +114,7 @@ export default function MentionsPage({ params }: MentionsPageProps) {
               animate={{ width: 280, opacity: 1 }}
               exit={{ width: 0, opacity: 0 }}
               transition={{ duration: 0.3, ease: "easeInOut" }}
-              className="hidden lg:block flex-shrink-0 overflow-hidden"
+              className="flex-shrink-0 overflow-hidden"
             >
               <div className="w-[280px]">
                 <MentionsFilters projectId={projectId} />
@@ -143,12 +122,10 @@ export default function MentionsPage({ params }: MentionsPageProps) {
             </motion.div>
           )}
         </AnimatePresence>
-        
-        {/* Main Area */}
-        <div className="flex-1 min-w-0 space-y-4 sm:space-y-6">
-          {/* Stats Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            {statsData.map((stat, index) => (
+
+        <div className="flex-1 min-w-0 space-y-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {statsCards.map((stat, index) => (
               <motion.div
                 key={stat.title}
                 initial={{ opacity: 0, y: 20 }}
@@ -159,90 +136,62 @@ export default function MentionsPage({ params }: MentionsPageProps) {
               </motion.div>
             ))}
           </div>
-          
-              {/* Charts */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-                {/* Main Chart */}
-                <Card className="lg:col-span-2 glass">
-                  <CardHeader className="pb-2">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                      <CardTitle className="text-sm sm:text-base font-medium">
-                        {t("mentions.charts.mentionsOverTime")}
-                      </CardTitle>
-                      <Tabs defaultValue="mentions" className="w-full sm:w-auto">
-                        <TabsList className="h-8 w-full sm:w-auto">
-                          <TabsTrigger value="mentions" className="text-xs px-2 sm:px-3 flex-1 sm:flex-initial">
-                            {t("mentions.charts.mentions")}
-                          </TabsTrigger>
-                          <TabsTrigger value="reach" className="text-xs px-2 sm:px-3 flex-1 sm:flex-initial">
-                            {t("mentions.charts.reach")}
-                          </TabsTrigger>
-                          <TabsTrigger value="both" className="text-xs px-2 sm:px-3 flex-1 sm:flex-initial">
-                            {t("mentions.charts.both")}
-                          </TabsTrigger>
-                        </TabsList>
-                      </Tabs>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-4 sm:p-6">
-                    <MentionsChart />
-                  </CardContent>
-                </Card>
 
-                {/* Sentiment Chart */}
-                <Card className="glass">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm sm:text-base font-medium">
-                      {t("mentions.charts.sentimentDistribution")}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4 sm:p-6">
-                    <SentimentChart />
-                  </CardContent>
-                </Card>
+          <div className="grid lg:grid-cols-3 gap-6">
+            <Card className="lg:col-span-2 glass">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base font-medium">
+                    {t("mentions.charts.mentionsOverTime")}
+                  </CardTitle>
+                  <Tabs defaultValue="mentions" className="w-auto">
+                    <TabsList className="h-8">
+                      <TabsTrigger value="mentions" className="text-xs px-3">
+                        {t("mentions.charts.mentions")}
+                      </TabsTrigger>
+                      <TabsTrigger value="reach" className="text-xs px-3">
+                        {t("mentions.charts.reach")}
+                      </TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <MentionsChart />
+              </CardContent>
+            </Card>
+
+            <Card className="glass">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-medium">
+                  {t("mentions.charts.sentimentDistribution")}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <SentimentChart />
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card className="glass">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <CardTitle className="text-base font-medium">
+                    {t("mentions.recentMentions")}
+                  </CardTitle>
+                  <Badge variant="secondary" className="text-xs">
+                    {dateLabel} &middot; {totalMentions} results
+                  </Badge>
+                </div>
               </div>
-
-              {/* Mentions Table */}
-              <Card className="glass">
-                <CardHeader className="pb-3 sm:pb-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <div className="flex items-center gap-2 sm:gap-3">
-                      <CardTitle className="text-sm sm:text-base font-medium">
-                        {t("mentions.recentMentions")}
-                      </CardTitle>
-                      <Badge variant="secondary" className="text-xs">
-                        {t("mentions.last7days")}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="sm" className="text-xs sm:text-sm">
-                        {t("mentions.selectAll")}
-                      </Button>
-                      <Button variant="ghost" size="sm" className="text-xs sm:text-sm">
-                        {t("mentions.bulkActions")}
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <MentionsTable projectId={projectId} />
-                </CardContent>
-              </Card>
+            </CardHeader>
+            <CardContent className="p-0">
+              <MentionsTable projectId={projectId} />
+            </CardContent>
+          </Card>
         </div>
       </div>
-      
-      {/* Filters Sidebar - Mobile (Sheet) */}
-      <Sheet open={showFilters} onOpenChange={setShowFilters}>
-        <SheetContent side="left" className="w-[280px] sm:w-[320px] p-0">
-          <SheetHeader className="p-4 pb-3 border-b border-border">
-            <SheetTitle>{t("Common Filters")}</SheetTitle>
-          </SheetHeader>
-          <div className="p-4 overflow-y-auto h-[calc(100vh-73px)]">
-            <MentionsFilters projectId={projectId} />
-          </div>
-        </SheetContent>
-      </Sheet>
     </div>
   );
 }
-
