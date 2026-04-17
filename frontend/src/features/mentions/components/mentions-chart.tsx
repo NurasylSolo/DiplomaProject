@@ -13,13 +13,16 @@ export function MentionsChart() {
   const projectId = params?.projectId as string;
   
   const { data: apiData } = useTimeSeries(projectId, 30);
-  
+
   const data = useMemo(() => {
-    if (apiData && apiData.length > 0) {
-      return apiData.map((d: { date: string; mentions: number; reach: number }) => ({
+    // Guard against API errors / loading state — Array.isArray handles the
+    // case where apiData is undefined, null, or unexpectedly an object.
+    const safeData = Array.isArray(apiData) ? apiData : [];
+    if (safeData.length > 0) {
+      return safeData.map((d: { date: string; mentions: number; reach: number }) => ({
         date: d.date,
-        mentions: d.mentions,
-        reach: d.reach,
+        mentions: d.mentions ?? 0,
+        reach: d.reach ?? 0,
       }));
     }
     const fallback = [];
@@ -45,11 +48,13 @@ export function MentionsChart() {
         fontSize: 12,
       },
       formatter: (params: { name: string; marker: string; seriesName: string; value: number }[]) => {
-        let result = `<div style="font-weight: 600; margin-bottom: 8px;">${params[0].name}</div>`;
+        if (!params || params.length === 0) return "";
+        let result = `<div style="font-weight: 600; margin-bottom: 8px;">${params[0]?.name ?? ""}</div>`;
         params.forEach((param) => {
-          const value = param.seriesName === "Reach" 
-            ? `${(param.value / 1000).toFixed(1)}K` 
-            : param.value.toLocaleString();
+          const raw = Number.isFinite(param.value) ? param.value : 0;
+          const value = param.seriesName === "Reach"
+            ? `${(raw / 1000).toFixed(1)}K`
+            : raw.toLocaleString();
           result += `<div style="display: flex; align-items: center; gap: 8px; margin: 4px 0;">
             ${param.marker}
             <span style="color: ${isDark ? "#a3a3a3" : "#737373"}">${param.seriesName}:</span>

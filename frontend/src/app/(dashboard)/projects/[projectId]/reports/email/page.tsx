@@ -45,6 +45,7 @@ import {
   useEmailSchedules,
   useSendEmailScheduleNow,
   useUpdateEmailSchedule,
+  useTranslation,
 } from "@/hooks";
 
 interface EmailReportsPageProps {
@@ -72,6 +73,7 @@ const contentOptions = [
 
 export default function EmailReportsPage({ params }: EmailReportsPageProps) {
   const { projectId } = use(params);
+  const { t } = useTranslation();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const schedulesQuery = useEmailSchedules(projectId);
   const createSchedule = useCreateEmailSchedule(projectId);
@@ -100,10 +102,10 @@ export default function EmailReportsPage({ params }: EmailReportsPageProps) {
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
             <Mail className="h-7 w-7 text-primary" />
-            Email Reports
+            {t("reports.email.title")}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Schedule automated email reports for your team
+            {t("reports.email.subtitle")}
           </p>
         </div>
         
@@ -154,7 +156,7 @@ export default function EmailReportsPage({ params }: EmailReportsPageProps) {
               <Play className="h-5 w-5 text-green-500" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{reports.filter((r) => r.active).length}</p>
+              <p className="text-2xl font-bold">{reports.filter((r) => r?.active).length}</p>
               <p className="text-xs text-muted-foreground">Active</p>
             </div>
           </CardContent>
@@ -165,7 +167,7 @@ export default function EmailReportsPage({ params }: EmailReportsPageProps) {
               <Users className="h-5 w-5 text-blue-500" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{new Set(reports.flatMap((r) => r.recipients)).size}</p>
+              <p className="text-2xl font-bold">{new Set(reports.flatMap((r) => r?.recipients || [])).size}</p>
               <p className="text-xs text-muted-foreground">Recipients</p>
             </div>
           </CardContent>
@@ -202,7 +204,7 @@ export default function EmailReportsPage({ params }: EmailReportsPageProps) {
                       <div>Timezone: {report.timezone}</div>
                       <div className="flex items-center gap-1">
                         <Users className="h-3.5 w-3.5" />
-                        {report.recipients.length} recipients
+                        {(report.recipients || []).length} recipients
                       </div>
                     </div>
                     

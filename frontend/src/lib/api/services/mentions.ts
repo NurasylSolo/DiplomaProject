@@ -26,6 +26,19 @@ interface BulkActionRequest {
   value?: unknown;
 }
 
+export interface MentionsStats {
+  total_mentions: number;
+  total_reach: number;
+  positive_count: number;
+  neutral_count: number;
+  negative_count: number;
+  positive_percentage: number;
+  neutral_percentage: number;
+  negative_percentage: number;
+  avg_sentiment: number;
+  mentions_change_percentage: number | null;
+}
+
 export const mentionsApi = {
   async list(projectId: string, params: MentionsQuery = {}): Promise<PaginatedResponse<Mention>> {
     const response = await apiClient.get<PaginatedResponse<Mention>>(
@@ -46,6 +59,14 @@ export const mentionsApi = {
     const response = await apiClient.post(
       `/projects/${projectId}/mentions/bulk_action`,
       data
+    );
+    return response.data;
+  },
+
+  async stats(projectId: string, params: Omit<MentionsQuery, "page" | "per_page" | "sort_by" | "sort_order"> = {}): Promise<MentionsStats> {
+    const response = await apiClient.get<MentionsStats>(
+      `/projects/${projectId}/mentions/stats`,
+      { params }
     );
     return response.data;
   },

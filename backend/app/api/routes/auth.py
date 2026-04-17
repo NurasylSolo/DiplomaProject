@@ -7,11 +7,30 @@ from app.schemas.auth import (
     TokenResponse,
     RefreshRequest,
     MessageResponse,
+    VerifyEmailRequest,
+    ResendVerificationRequest,
+    GoogleLoginRequest,
 )
 from app.schemas.user import UserResponse
 from app.services import auth_service
 
 router = APIRouter()
+
+
+def _user_to_dict(user) -> dict:
+    return {
+        "id": user.id,
+        "email": user.email,
+        "name": user.name,
+        "avatar": user.avatar,
+        "role": user.role,
+        "locale": user.locale,
+        "timezone": user.timezone,
+        "emailVerified": getattr(user, "email_verified", False),
+        "authProvider": getattr(user, "auth_provider", "email"),
+        "createdAt": user.created_at.isoformat() if user.created_at else "",
+        "updatedAt": user.updated_at.isoformat() if user.updated_at else "",
+    }
 
 
 @router.post("/register")
@@ -33,17 +52,7 @@ async def register(
         "access_token": result["access_token"],
         "refresh_token": result["refresh_token"],
         "token_type": "bearer",
-        "user": {
-            "id": user.id,
-            "email": user.email,
-            "name": user.name,
-            "avatar": user.avatar,
-            "role": user.role,
-            "locale": user.locale,
-            "timezone": user.timezone,
-            "createdAt": user.created_at.isoformat() if user.created_at else "",
-            "updatedAt": user.updated_at.isoformat() if user.updated_at else "",
-        },
+        "user": _user_to_dict(user),
     }
 
 
@@ -66,17 +75,43 @@ async def login(
         "access_token": result["access_token"],
         "refresh_token": result["refresh_token"],
         "token_type": "bearer",
-        "user": {
-            "id": user.id,
-            "email": user.email,
-            "name": user.name,
-            "avatar": user.avatar,
-            "role": user.role,
-            "locale": user.locale,
-            "timezone": user.timezone,
-            "createdAt": user.created_at.isoformat() if user.created_at else "",
-            "updatedAt": user.updated_at.isoformat() if user.updated_at else "",
-        },
+        "user": _user_to_dict(user),
+    }
+
+
+@router.post("/verify-email")
+async def verify_email(
+    data: VerifyEmailRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    return await auth_service.verify_email(db, data.email, data.code)
+
+
+@router.post("/resend-verification", response_model=MessageResponse)
+async def resend_verification(
+    data: ResendVerificationRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    return await auth_service.resend_verification(db, data.email)
+
+
+@router.post("/google")
+async def google_login(
+    data: GoogleLoginRequest,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    result = await auth_service.google_login(
+        db,
+        data.credential,
+        user_agent=request.headers.get("user-agent"),
+        ip_address=request.client.host if request.client else None,
+    )
+    return {
+        "access_token": result["access_token"],
+        "refresh_token": result["refresh_token"],
+        "token_type": "bearer",
+        "user": _user_to_dict(result["user"]),
     }
 
 

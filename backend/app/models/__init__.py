@@ -9,6 +9,7 @@ from app.models.filter import SavedFilter
 from app.models.influencer import Influencer
 from app.models.chat import Chat, ChatMessage
 from app.models.refresh_token import RefreshToken
+from app.models.email_verification import EmailVerification
 from app.models.source_fetch_state import SourceFetchState
 from app.models.raw_document import RawDocument
 from app.models.crawl_job import CrawlJob
@@ -29,6 +30,7 @@ __all__ = [
     "Chat",
     "ChatMessage",
     "RefreshToken",
+    "EmailVerification",
     "SourceFetchState",
     "RawDocument",
     "CrawlJob",

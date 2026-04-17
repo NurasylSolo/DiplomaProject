@@ -10,6 +10,8 @@ export interface User {
   role: UserRole;
   locale: string;
   timezone: string;
+  emailVerified?: boolean;
+  authProvider?: string;
   createdAt: string;
   updatedAt: string;
 }

@@ -56,6 +56,7 @@ export default function SettingsPage({ params }: SettingsPageProps) {
       projectDescription: project?.description || "",
       selectedColor: project?.accentColor || "#00A3E0",
       keywords: Array.isArray(project?.settings?.keywords) ? project.settings.keywords : [],
+      aliases: Array.isArray(project?.settings?.aliases) ? project.settings.aliases : [],
       excludedKeywords: Array.isArray(project?.settings?.excludedKeywords)
         ? project.settings.excludedKeywords
         : [],
@@ -68,25 +69,33 @@ export default function SettingsPage({ params }: SettingsPageProps) {
   const [newKeyword, setNewKeyword] = useState("");
   const values = draft.projectName || draft.keywords.length > 0 ? draft : initialDraft;
   
-  const addKeyword = (type: "required" | "excluded") => {
+  const addKeyword = (type: "required" | "excluded" | "alias") => {
     if (!newKeyword.trim()) return;
-    
+    const value = newKeyword.trim();
+
     if (type === "required") {
-      setDraft((prev) => ({ ...prev, keywords: [...values.keywords, newKeyword.trim()] }));
+      setDraft((prev) => ({ ...prev, keywords: [...values.keywords, value] }));
+    } else if (type === "alias") {
+      setDraft((prev) => ({ ...prev, aliases: [...values.aliases, value] }));
     } else {
       setDraft((prev) => ({
         ...prev,
-        excludedKeywords: [...values.excludedKeywords, newKeyword.trim()],
+        excludedKeywords: [...values.excludedKeywords, value],
       }));
     }
     setNewKeyword("");
   };
-  
-  const removeKeyword = (keyword: string, type: "required" | "excluded") => {
+
+  const removeKeyword = (keyword: string, type: "required" | "excluded" | "alias") => {
     if (type === "required") {
       setDraft((prev) => ({
         ...prev,
         keywords: values.keywords.filter((k) => k !== keyword),
+      }));
+    } else if (type === "alias") {
+      setDraft((prev) => ({
+        ...prev,
+        aliases: values.aliases.filter((k) => k !== keyword),
       }));
     } else {
       setDraft((prev) => ({
@@ -107,6 +116,7 @@ export default function SettingsPage({ params }: SettingsPageProps) {
           settings: {
             ...(project?.settings || {}),
             keywords: values.keywords,
+            aliases: values.aliases,
             excludedKeywords: values.excludedKeywords,
             topicQuery: values.projectName.trim(),
             notifications: {
@@ -315,6 +325,66 @@ export default function SettingsPage({ params }: SettingsPageProps) {
             </Card>
           </motion.div>
           
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+          >
+            <Card className="glass">
+              <CardHeader>
+                <CardTitle>
+                  {t("projectSettingsPage.keywords.aliasesTitle", {
+                    defaultValue: "Aliases & alternative spellings",
+                  })}
+                </CardTitle>
+                <CardDescription>
+                  {t("projectSettingsPage.keywords.aliasesDescription", {
+                    defaultValue:
+                      "Add other ways the topic is mentioned (transliterations, short forms, translations) to find more relevant articles.",
+                  })}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex flex-wrap gap-2">
+                  {values.aliases.length === 0 && (
+                    <span className="text-sm text-muted-foreground">
+                      {t("projectSettingsPage.keywords.noAliases", { defaultValue: "No aliases yet" })}
+                    </span>
+                  )}
+                  {values.aliases.map((alias) => (
+                    <Badge
+                      key={alias}
+                      variant="secondary"
+                      className="pl-3 pr-1 py-1.5 gap-1 border-primary/30 bg-primary/10"
+                    >
+                      {alias}
+                      <button
+                        onClick={() => removeKeyword(alias, "alias")}
+                        className="ml-1 hover:bg-destructive/20 rounded p-0.5"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+
+                <div className="flex gap-2 max-w-md">
+                  <Input
+                    placeholder={t("projectSettingsPage.keywords.addAlias", {
+                      defaultValue: "Add an alias (e.g. Arman Tsarukyan)",
+                    })}
+                    value={newKeyword}
+                    onChange={(e) => setNewKeyword(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && addKeyword("alias")}
+                  />
+                  <Button onClick={() => addKeyword("alias")}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

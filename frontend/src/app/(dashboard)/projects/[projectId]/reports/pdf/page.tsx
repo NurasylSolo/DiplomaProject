@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { useCreatePdfReport, useDownloadReport } from "@/hooks";
+import { useCreatePdfReport, useDownloadReport, useTranslation } from "@/hooks";
 import { toast } from "sonner";
 
 interface PDFReportPageProps {
@@ -66,6 +66,7 @@ const accentColors = [
 
 export default function PDFReportPage({ params }: PDFReportPageProps) {
   const { projectId } = use(params);
+  const { t } = useTranslation();
   const [sections, setSections] = useState(
     reportSections.map(s => ({ ...s, checked: s.defaultChecked }))
   );
@@ -104,10 +105,10 @@ export default function PDFReportPage({ params }: PDFReportPageProps) {
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
             <FileText className="h-7 w-7 text-primary" />
-            PDF Report
+            {t("reports.pdf.title")}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Configure and generate a customized PDF report
+            {t("reports.pdf.subtitle")}
           </p>
         </div>
         

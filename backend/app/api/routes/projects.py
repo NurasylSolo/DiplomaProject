@@ -147,6 +147,42 @@ async def delete_project(
     return {"message": "Project deleted successfully"}
 
 
+@router.post("/{project_id}/refresh")
+async def refresh_project(
+    project_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Manually trigger a fresh ingestion run for the project.
+
+    Creates a `refresh_project_mentions` crawl job and dispatches it to the
+    task queue (Kafka or local), so the UI can poll progress just like
+    after project creation.
+    """
+    # Ensures the user actually owns the project (raises 404 otherwise).
+    await project_service.get_project(db, project_id, current_user.id)
+
+    job = await ingestion_service.create_crawl_job(
+        db=db,
+        project_id=project_id,
+        source_id=None,
+        created_by=current_user.id,
+        job_type="refresh_project_mentions",
+        status="pending",
+    )
+    await db.commit()
+    queue_task_id = enqueue_refresh_project_mentions(
+        project_id=project_id,
+        crawl_job_id=job.id,
+        created_by=current_user.id,
+    )
+    return {
+        "ingestionTaskId": queue_task_id,
+        "ingestionJobId": job.id,
+        "status": "pending",
+    }
+
+
 @router.delete("/cleanup/previous", response_model=MessageResponse)
 async def delete_previous_projects(
     keep_project_id: str | None = None,

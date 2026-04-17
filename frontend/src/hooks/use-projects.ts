@@ -2,6 +2,14 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { projectsApi } from "@/lib/api/services";
 import { useProjectStore } from "@/stores";
 
+// Common settings so every project-related screen pulls fresh data on
+// page enter / tab focus, instead of showing 5-minute-old cached data.
+const FRESH_QUERY_OPTS = {
+  staleTime: 0,
+  refetchOnMount: "always" as const,
+  refetchOnWindowFocus: true,
+} as const;
+
 export function useProjects() {
   const { setProjects } = useProjectStore();
 
@@ -12,7 +20,7 @@ export function useProjects() {
       setProjects(projects);
       return projects;
     },
-    staleTime: 2 * 60 * 1000,
+    ...FRESH_QUERY_OPTS,
   });
 }
 
@@ -21,6 +29,21 @@ export function useProject(projectId: string) {
     queryKey: ["projects", projectId],
     queryFn: () => projectsApi.get(projectId),
     enabled: !!projectId,
+    ...FRESH_QUERY_OPTS,
+  });
+}
+
+export function useRefreshProject() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (projectId: string) => projectsApi.refresh(projectId),
+    onSuccess: (_data, projectId) => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: ["projects", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["mentions", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["analytics"] });
+    },
   });
 }
 

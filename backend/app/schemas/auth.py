@@ -4,7 +4,7 @@ from pydantic import BaseModel, EmailStr, Field
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=6)
-    remember_me: bool = False
+    remember_me: bool = True
 
 
 class RegisterRequest(BaseModel):
@@ -34,3 +34,16 @@ class ResetPasswordRequest(BaseModel):
 
 class MessageResponse(BaseModel):
     message: str
+
+
+class VerifyEmailRequest(BaseModel):
+    email: EmailStr
+    code: str = Field(..., min_length=6, max_length=6)
+
+
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
+
+
+class GoogleLoginRequest(BaseModel):
+    credential: str = Field(..., min_length=10)

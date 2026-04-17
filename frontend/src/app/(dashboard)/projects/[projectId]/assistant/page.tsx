@@ -35,7 +35,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { useAiChat } from "@/hooks";
+import { useAiChat, useTranslation } from "@/hooks";
 
 interface AssistantPageProps {
   params: Promise<{ projectId: string }>;
@@ -78,6 +78,7 @@ const suggestedPrompts = [
 
 export default function AssistantPage({ params }: AssistantPageProps) {
   const { projectId } = use(params);
+  const { t } = useTranslation();
   const [chats, setChats] = useState<Chat[]>([
     { id: "1", title: "New Chat", lastMessage: "", timestamp: new Date(), messages: [] },
   ]);
@@ -201,10 +202,10 @@ export default function AssistantPage({ params }: AssistantPageProps) {
       {/* Chat History Sidebar */}
       <div className="w-72 flex-shrink-0 flex flex-col">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold">Chats</h2>
+          <h2 className="font-semibold">{t("assistant.chatHistory")}</h2>
           <Button size="sm" onClick={createNewChat}>
             <Plus className="h-4 w-4 mr-1" />
-            New
+            {t("assistant.newChat")}
           </Button>
         </div>
         
@@ -260,7 +261,7 @@ export default function AssistantPage({ params }: AssistantPageProps) {
               </div>
               <div>
                 <CardTitle className="text-base font-medium">{activeChat.title}</CardTitle>
-                <p className="text-xs text-muted-foreground">AI Brand Assistant</p>
+                <p className="text-xs text-muted-foreground">{t("assistant.title")}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">

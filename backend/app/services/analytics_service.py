@@ -4,9 +4,36 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.mention import Mention
 from app.models.topic import Topic
 from app.models.source import Source
+from app.services import nlp_service
+
+
+_COUNTRY_DISPLAY_NAMES: dict[str, str] = {
+    "US": "United States", "GB": "United Kingdom", "DE": "Germany", "FR": "France",
+    "ES": "Spain", "IT": "Italy", "RU": "Russia", "KZ": "Kazakhstan", "UA": "Ukraine",
+    "BY": "Belarus", "UZ": "Uzbekistan", "KG": "Kyrgyzstan", "TJ": "Tajikistan",
+    "CA": "Canada", "AU": "Australia", "JP": "Japan", "CN": "China", "IN": "India",
+    "BR": "Brazil", "MX": "Mexico", "TR": "Turkey", "PL": "Poland", "NL": "Netherlands",
+    "SE": "Sweden", "FI": "Finland", "NO": "Norway", "DK": "Denmark", "AT": "Austria",
+    "BE": "Belgium", "CH": "Switzerland", "PT": "Portugal", "GR": "Greece",
+    "IE": "Ireland", "KR": "South Korea", "HK": "Hong Kong", "SG": "Singapore",
+    "MY": "Malaysia", "TH": "Thailand", "ID": "Indonesia", "PH": "Philippines",
+    "VN": "Vietnam", "PK": "Pakistan", "IR": "Iran", "IQ": "Iraq", "SA": "Saudi Arabia",
+    "AE": "United Arab Emirates", "QA": "Qatar", "EG": "Egypt", "MA": "Morocco",
+    "NG": "Nigeria", "ZA": "South Africa", "KE": "Kenya", "AR": "Argentina",
+    "CL": "Chile", "PE": "Peru", "CO": "Colombia", "NZ": "New Zealand",
+    "IL": "Israel", "MN": "Mongolia", "GE": "Georgia", "MD": "Moldova",
+    "AZ": "Azerbaijan", "AM": "Armenia",
+}
 
 
 async def get_geo_data(db: AsyncSession, project_id: str) -> list:
+    """Aggregated mentions per ISO‑2 country.
+
+    The DB column `Mention.country` is mostly already normalized, but in
+    older rows it may still contain raw "USA" / "Россия" / "kz" — so we
+    re‑normalize and merge counts here so the geo map / countries table
+    never has duplicate rows for the same country.
+    """
     result = await db.execute(
         select(
             Mention.country,
@@ -18,32 +45,50 @@ async def get_geo_data(db: AsyncSession, project_id: str) -> list:
         )
         .where(Mention.project_id == project_id)
         .group_by(Mention.country)
-        .order_by(func.count(Mention.id).desc())
     )
     rows = result.all()
 
-    country_codes = {
-        "Kazakhstan": "KZ", "KZ": "KZ", "Russia": "RU", "RU": "RU",
-        "United States": "US", "US": "US", "United Kingdom": "GB", "GB": "GB",
-        "Germany": "DE", "DE": "DE", "France": "FR", "FR": "FR",
-        "Turkey": "TR", "TR": "TR", "China": "CN", "CN": "CN",
-        "Uzbekistan": "UZ", "UZ": "UZ", "Kyrgyzstan": "KG", "KG": "KG",
-    }
-
-    return [
-        {
-            "country": row.country,
-            "country_code": country_codes.get(row.country, row.country[:2].upper() if row.country else "XX"),
-            "mentions": row.mentions,
-            "reach": row.reach,
-            "sentiment": {
-                "positive": row.positive,
-                "neutral": row.neutral,
-                "negative": row.negative,
+    aggregated: dict[str, dict] = {}
+    for row in rows:
+        code = nlp_service.normalize_country(row.country)
+        bucket = aggregated.setdefault(
+            code,
+            {
+                "mentions": 0,
+                "reach": 0,
+                "positive": 0,
+                "neutral": 0,
+                "negative": 0,
             },
-        }
-        for row in rows
-    ]
+        )
+        bucket["mentions"] += int(row.mentions or 0)
+        bucket["reach"] += int(row.reach or 0)
+        bucket["positive"] += int(row.positive or 0)
+        bucket["neutral"] += int(row.neutral or 0)
+        bucket["negative"] += int(row.negative or 0)
+
+    output = []
+    for code, agg in aggregated.items():
+        if code == "XX":
+            display = "Unknown"
+        else:
+            display = _COUNTRY_DISPLAY_NAMES.get(code, code)
+        output.append(
+            {
+                "country": display,
+                "country_code": code,
+                "mentions": agg["mentions"],
+                "reach": agg["reach"],
+                "sentiment": {
+                    "positive": agg["positive"],
+                    "neutral": agg["neutral"],
+                    "negative": agg["negative"],
+                },
+            }
+        )
+
+    output.sort(key=lambda x: x["mentions"], reverse=True)
+    return output
 
 
 async def get_hot_hours(db: AsyncSession, project_id: str) -> list:

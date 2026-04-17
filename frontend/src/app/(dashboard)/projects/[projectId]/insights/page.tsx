@@ -34,7 +34,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { useInsights, useProject } from "@/hooks";
+import { useInsights, useProject, useTranslation } from "@/hooks";
 import { Loader2 } from "lucide-react";
 
 interface InsightsPageProps {
@@ -140,6 +140,7 @@ const typeIcons = {
 
 export default function InsightsPage({ params }: InsightsPageProps) {
   const { projectId } = use(params);
+  const { t } = useTranslation();
   const [editingId, setEditingId] = useState<string | null>(null);
   const { data: apiInsights, isLoading } = useInsights(projectId);
   const { data: project } = useProject(projectId);
@@ -180,10 +181,10 @@ export default function InsightsPage({ params }: InsightsPageProps) {
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
             <Sparkles className="h-7 w-7 text-primary" />
-            AI Insightss
+            {t("insights.title")}
           </h1>
           <p className="text-muted-foreground mt-1">
-            AI-generated insights and recommendations based on your media data
+            {t("insights.subtitle")}
           </p>
         </div>
         

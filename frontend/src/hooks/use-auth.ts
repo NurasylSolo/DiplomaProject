@@ -46,7 +46,12 @@ export function useRegister() {
     onSuccess: (data) => {
       setUser(data.user);
       queryClient.invalidateQueries({ queryKey: ["user"] });
-      router.push("/dashboard");
+      // New email accounts must verify before getting into the dashboard.
+      if (data.user && data.user.emailVerified === false) {
+        router.push(`/verify-email?email=${encodeURIComponent(data.user.email)}`);
+      } else {
+        router.push("/dashboard");
+      }
     },
   });
 }

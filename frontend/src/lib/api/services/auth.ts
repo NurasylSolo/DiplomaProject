@@ -108,4 +108,21 @@ export const authApi = {
     await apiClient.post("/user/delete-account", { password });
     tokenManager.clearTokens();
   },
+
+  async verifyEmail(email: string, code: string): Promise<{ message: string; email_verified: boolean }> {
+    const response = await apiClient.post("/auth/verify-email", { email, code });
+    return response.data;
+  },
+
+  async resendVerification(email: string): Promise<{ message: string }> {
+    const response = await apiClient.post("/auth/resend-verification", { email });
+    return response.data;
+  },
+
+  async googleLogin(credential: string): Promise<AuthResponse> {
+    const response = await apiClient.post<AuthResponse>("/auth/google", { credential });
+    const { access_token, refresh_token } = response.data;
+    tokenManager.setTokens(access_token, refresh_token);
+    return response.data;
+  },
 };

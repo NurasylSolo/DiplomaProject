@@ -99,6 +99,29 @@ async def list_mentions(
     }
 
 
+@router.get("/projects/{project_id}/mentions/stats")
+async def mentions_stats(
+    project_id: str,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    sources: str | None = None,
+    sentiment: str | None = None,
+    search: str | None = None,
+    languages: str | None = None,
+    countries: str | None = None,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Filter-aware aggregates used by stat cards on Mentions / Analysis pages."""
+    await get_project(db, project_id, current_user.id)
+    return await mention_service.get_mentions_stats(
+        db, project_id,
+        date_from=date_from, date_to=date_to,
+        sources=sources, sentiment=sentiment,
+        search=search, languages=languages, countries=countries,
+    )
+
+
 @router.get("/projects/{project_id}/mentions/{mention_id}")
 async def get_mention(
     project_id: str,

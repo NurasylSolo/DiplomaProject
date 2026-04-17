@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { useProject, useTopics, useInfluencers } from "@/hooks";
+import { useProject, useTopics, useInfluencers, useTranslation } from "@/hooks";
 
 interface InfographicPageProps {
   params: Promise<{ projectId: string }>;
@@ -33,6 +33,7 @@ function formatCompact(n: number): string {
 
 export default function InfographicPage({ params }: InfographicPageProps) {
   const { projectId } = use(params);
+  const { t } = useTranslation();
   const { data: project, isLoading: isProjectLoading } = useProject(projectId);
   const { data: topics, isLoading: isTopicsLoading } = useTopics(projectId);
   const { data: influencers, isLoading: isInfluencersLoading } = useInfluencers(projectId);
@@ -78,10 +79,10 @@ export default function InfographicPage({ params }: InfographicPageProps) {
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
             <Image className="h-7 w-7 text-primary" />
-            Infographic
+            {t("reports.infographic.title")}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Auto-generated visual summary of your media data
+            {t("reports.infographic.subtitle")}
           </p>
         </div>
         

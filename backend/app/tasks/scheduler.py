@@ -19,10 +19,9 @@ async def _refresh_all_projects_job():
                 project_id=project_id,
                 source_id=None,
                 created_by=None,
-                job_type="project_refresh",
+                job_type="refresh_project_mentions",
                 status="pending",
                 idempotency_key=f"scheduler:project_refresh:{project_id}:{datetime.now(timezone.utc).strftime('%Y%m%d%H')}",
-                started_by_scheduler=True,
             )
             await db.commit()
             enqueue_refresh_project_mentions(

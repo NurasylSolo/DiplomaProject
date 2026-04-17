@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import String, DateTime, func
+from sqlalchemy import String, DateTime, Boolean, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 
@@ -11,11 +11,15 @@ class User(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
+    # Empty string allowed for Google-only accounts (no local password).
+    hashed_password: Mapped[str] = mapped_column(String(255), nullable=False, default="")
     avatar: Mapped[str | None] = mapped_column(String(500), nullable=True)
     role: Mapped[str] = mapped_column(String(20), nullable=False, default="analyst")
     locale: Mapped[str] = mapped_column(String(10), nullable=False, default="ru")
     timezone: Mapped[str] = mapped_column(String(50), nullable=False, default="Asia/Almaty")
+    email_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    auth_provider: Mapped[str] = mapped_column(String(20), nullable=False, default="email")
+    google_id: Mapped[str | None] = mapped_column(String(255), nullable=True, unique=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

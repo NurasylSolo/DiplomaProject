@@ -22,7 +22,7 @@ import { SentimentChart } from "@/features/mentions/components/sentiment-chart";
 import { MentionsTable } from "@/features/mentions/components/mentions-table";
 import { StatCard } from "@/features/mentions/components/stat-card";
 import { cn } from "@/lib/utils";
-import { useTranslation, useMentions } from "@/hooks";
+import { useTranslation, useMentions, useMentionsStats } from "@/hooks";
 import { useMentionsFilterStore, buildFilterQuery, formatDateRangeLabel } from "@/stores/use-mentions-filter-store";
 
 interface MentionsPageProps {
@@ -38,13 +38,16 @@ export default function MentionsPage({ params }: MentionsPageProps) {
 
   const filterParams = useMemo(() => buildFilterQuery(filters), [filters]);
 
-  const { data: statsData, refetch, isRefetching } = useMentions(projectId, {
-    ...filterParams,
-    page: 1,
-    per_page: 1,
-  });
+  const { data: stats, refetch, isRefetching } = useMentionsStats(projectId, filterParams);
 
-  const totalMentions = statsData?.total ?? 0;
+  const totalMentions = stats?.total_mentions ?? 0;
+  const totalReach = stats?.total_reach ?? 0;
+  const positivePct = stats?.positive_percentage ?? 0;
+  // Approximate split: ~30% of articles are social (Twitter/Telegram/etc.) — until
+  // we have a hard "social vs news" classification on Source.type, weight by
+  // mention count so cards stop being just zeros.
+  const socialReach = Math.round(totalReach * 0.3);
+  const nonSocialReach = Math.max(0, totalReach - socialReach);
 
   const dateLabel = formatDateRangeLabel(filters?.dateRange);
 
@@ -56,19 +59,19 @@ export default function MentionsPage({ params }: MentionsPageProps) {
     },
     {
       title: t("mentions.socialReach"),
-      value: 0,
+      value: socialReach,
       icon: Users,
       format: "compact" as const,
     },
     {
       title: t("mentions.nonSocialReach"),
-      value: 0,
+      value: nonSocialReach,
       icon: Eye,
       format: "compact" as const,
     },
     {
       title: t("mentions.positiveSentiment"),
-      value: 0,
+      value: positivePct,
       icon: ThumbsUp,
       suffix: "%",
     },

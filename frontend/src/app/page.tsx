@@ -23,6 +23,15 @@ import { Logo } from "@/components/ui/logo";
 import { GradientText } from "@/components/ui/gradient-text";
 import { CompactCounter } from "@/components/ui/animated-counter";
 import { FloatingShapes, GridPattern } from "@/components/ui/floating-shapes";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useTranslation } from "@/hooks";
+import { supportedLanguages } from "@/lib/i18n";
 
 // Animation variants
 const fadeInUp = {
@@ -40,6 +49,7 @@ const staggerContainer = {
 };
 
 export default function LandingPage() {
+  const { t, changeLanguage, currentLanguage } = useTranslation();
   return (
     <div className="relative min-h-screen bg-background overflow-hidden">
       {/* Background elements */}
@@ -58,18 +68,38 @@ export default function LandingPage() {
             <Logo size="md" />
             
             <div className="hidden md:flex items-center justify-center gap-8 absolute left-1/2 -translate-x-1/2">
-              <NavLink href="#features">Features</NavLink>
-              <NavLink href="#stats">Analytics</NavLink>
-              <NavLink href="#contact">Contact</NavLink>
+              <NavLink href="#features">{t("landing.nav.features", { defaultValue: "Features" })}</NavLink>
+              <NavLink href="#stats">{t("landing.nav.analytics", { defaultValue: "Analytics" })}</NavLink>
+              <NavLink href="#contact">{t("landing.nav.contact", { defaultValue: "Contact" })}</NavLink>
             </div>
-            
-            <div className="flex items-center gap-3">
+
+            <div className="flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" title={t("header.language")}>
+                    <Globe2 className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {supportedLanguages.map((lang) => (
+                    <DropdownMenuItem
+                      key={lang.code}
+                      onClick={() => changeLanguage(lang.code)}
+                      className={currentLanguage === lang.code ? "bg-accent" : ""}
+                    >
+                      <span className="mr-2">{lang.flag}</span>
+                      {lang.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <ThemeToggle />
               <Button variant="ghost" asChild>
-                <Link href="/login">Sign In</Link>
+                <Link href="/login">{t("auth.login.submit")}</Link>
               </Button>
               <Button asChild className="glow-sm">
                 <Link href="/register">
-                  Get Started
+                  {t("landing.hero.ctaPrimary")}
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
@@ -91,65 +121,62 @@ export default function LandingPage() {
             <motion.div variants={fadeInUp} className="mb-6">
               <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass text-sm font-medium">
                 <Sparkles className="h-4 w-4 text-accent" />
-                <span>AI-Powered Media Intelligence</span>
+                <span>{t("landing.hero.badge")}</span>
               </span>
             </motion.div>
-            
+
             {/* Headline */}
-            <motion.h1 
+            <motion.h1
               variants={fadeInUp}
               className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6"
             >
-              Monitor Your Brand
+              {t("landing.hero.title")}
               <br />
               <GradientText variant="primary" animated>
-                Across All Media
+                {t("landing.hero.titleHighlight")}
               </GradientText>
             </motion.h1>
-            
+
             {/* Subheadline */}
-            <motion.p 
+            <motion.p
               variants={fadeInUp}
               className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10"
             >
-              Real-time sentiment analysis, trend detection, and actionable insights 
-              from news, social media, and web sources. Powered by advanced NLP and AI.
+              {t("landing.hero.subtitle")}
             </motion.p>
-            
+
             {/* CTA Buttons */}
-            <motion.div 
+            <motion.div
               variants={fadeInUp}
               className="flex flex-col sm:flex-row items-center justify-center gap-4"
             >
               <Button size="lg" asChild className="glow-md text-lg px-8 py-6">
                 <Link href="/register">
-                  Get Started
+                  {t("landing.hero.ctaPrimary")}
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
               <Button size="lg" variant="outline" asChild className="text-lg px-8 py-6">
-                <Link href="#demo">
-                  Watch Demo
-                </Link>
+                <Link href="#demo">{t("landing.hero.ctaSecondary")}</Link>
               </Button>
             </motion.div>
-            
+
             {/* Trust badges */}
-            <motion.div 
+            <motion.div
               variants={fadeInUp}
               className="mt-12 flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground"
             >
               <div className="flex items-center gap-2">
                 <Shield className="h-4 w-4 text-primary" />
-                <span>Enterprise Security</span>
+                <span>{t("landing.hero.trust.security")}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Globe2 className="h-4 w-4 text-primary" />
-                <span>Multi-language Support</span>
+                <span>{t("landing.hero.trust.multilang")}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 text-primary" />
-                <span>Real-time Updates</span>
+                <span>{t("landing.hero.trust.realtime")}</span>
               </div>
             </motion.div>
           </motion.div>
@@ -184,28 +211,28 @@ export default function LandingPage() {
             viewport={{ once: true, margin: "-100px" }}
             variants={staggerContainer}
           >
-            <StatCard 
-              value={50000000} 
-              label="Mentions Tracked" 
+            <StatCard
+              value={50000000}
+              label={t("landing.stats.mentionsTracked")}
               suffix="+"
               icon={<Newspaper className="h-5 w-5" />}
             />
-            <StatCard 
-              value={150} 
-              label="Countries Covered" 
+            <StatCard
+              value={150}
+              label={t("landing.stats.countriesCovered")}
               suffix="+"
               icon={<Globe2 className="h-5 w-5" />}
             />
-            <StatCard 
-              value={99.9} 
-              label="Uptime SLA" 
+            <StatCard
+              value={99.9}
+              label={t("landing.stats.uptimeSLA")}
               suffix="%"
               decimals={1}
               icon={<Zap className="h-5 w-5" />}
             />
-            <StatCard 
-              value={500} 
-              label="Enterprise Clients" 
+            <StatCard
+              value={500}
+              label={t("landing.stats.enterpriseClients")}
               suffix="+"
               icon={<Users className="h-5 w-5" />}
             />
@@ -223,14 +250,16 @@ export default function LandingPage() {
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
           >
-            <span className="text-primary font-medium mb-4 block">FEATURES</span>
+            <span className="text-primary font-medium mb-4 block">
+              {t("landing.features.kicker", { defaultValue: "FEATURES" })}
+            </span>
             <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-              Everything You Need for
+              {t("landing.features.title")}
               <br />
-              <GradientText>Media Intelligence</GradientText>
+              <GradientText>{t("landing.features.titleHighlight")}</GradientText>
             </h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Comprehensive tools to monitor, analyze, and act on media mentions across all channels.
+              {t("landing.features.subtitle")}
             </p>
           </motion.div>
           
@@ -241,35 +270,35 @@ export default function LandingPage() {
             whileInView="animate"
             viewport={{ once: true, margin: "-100px" }}
           >
-            <FeatureCard 
+            <FeatureCard
               icon={<MessageSquareText className="h-6 w-6" />}
-              title="Mention Tracking"
-              description="Track brand mentions across news, social media, blogs, podcasts, and videos in real-time."
+              title={t("landing.features.items.tracking.title")}
+              description={t("landing.features.items.tracking.description")}
             />
-            <FeatureCard 
+            <FeatureCard
               icon={<Brain className="h-6 w-6" />}
-              title="AI Sentiment Analysis"
-              description="Advanced NLP models detect sentiment, emotions, and context in multiple languages."
+              title={t("landing.features.items.sentiment.title")}
+              description={t("landing.features.items.sentiment.description")}
             />
-            <FeatureCard 
+            <FeatureCard
               icon={<TrendingUp className="h-6 w-6" />}
-              title="Trend Detection"
-              description="Identify emerging trends, topics, and potential crises before they escalate."
+              title={t("landing.features.items.trends.title")}
+              description={t("landing.features.items.trends.description")}
             />
-            <FeatureCard 
+            <FeatureCard
               icon={<BarChart3 className="h-6 w-6" />}
-              title="Analytics Dashboard"
-              description="Interactive visualizations with reach, engagement, and presence score metrics."
+              title={t("landing.features.items.analytics.title")}
+              description={t("landing.features.items.analytics.description")}
             />
-            <FeatureCard 
+            <FeatureCard
               icon={<LineChart className="h-6 w-6" />}
-              title="Competitive Analysis"
-              description="Compare your brand against competitors with side-by-side metrics and insights."
+              title={t("landing.features.items.competitive.title")}
+              description={t("landing.features.items.competitive.description")}
             />
-            <FeatureCard 
+            <FeatureCard
               icon={<FileText className="h-6 w-6" />}
-              title="Automated Reports"
-              description="Generate PDF, Excel, and infographic reports with scheduled email delivery."
+              title={t("landing.features.items.reports.title")}
+              description={t("landing.features.items.reports.description")}
             />
           </motion.div>
         </div>
@@ -290,26 +319,24 @@ export default function LandingPage() {
             
             <div className="relative z-10">
               <h2 className="font-display text-3xl sm:text-4xl font-bold mb-4">
-                Ready to Transform Your Media Monitoring?
+                {t("landing.cta.title")}
               </h2>
               <p className="text-muted-foreground text-lg mb-8 max-w-xl mx-auto">
-                Join hundreds of brands using Senti News to stay ahead of the conversation.
+                {t("landing.cta.subtitle")}
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Button size="lg" asChild className="glow-md">
                   <Link href="/register">
-                    Create Account
+                    {t("landing.cta.primary")}
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                 </Button>
                 <Button size="lg" variant="outline" asChild>
-                  <Link href="#features">
-                    Learn More
-                  </Link>
+                  <Link href="#features">{t("landing.cta.secondary")}</Link>
                 </Button>
               </div>
               <p className="text-sm text-muted-foreground mt-4">
-                Setup in minutes • Start monitoring today
+                {t("landing.cta.note")}
               </p>
             </div>
           </motion.div>
@@ -323,17 +350,17 @@ export default function LandingPage() {
             <Logo size="sm" />
             <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground">
               <Link href="/privacy" className="hover:text-foreground transition-colors">
-                Privacy
+                {t("landing.footer.privacy")}
               </Link>
               <Link href="/terms" className="hover:text-foreground transition-colors">
-                Terms
+                {t("landing.footer.terms")}
               </Link>
               <Link href="/contact" className="hover:text-foreground transition-colors">
-                Contact
+                {t("landing.footer.contact")}
               </Link>
             </div>
             <p className="text-sm text-muted-foreground">
-              © {new Date().getFullYear()} Senti News. All rights reserved.
+              © {new Date().getFullYear()} Senti News. {t("landing.footer.copyright")}
             </p>
           </div>
         </div>

@@ -18,7 +18,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 
 import { cn } from "@/lib/utils";
-import { useCreateExcelReport, useDownloadReport } from "@/hooks";
+import { useCreateExcelReport, useDownloadReport, useTranslation } from "@/hooks";
 import { toast } from "sonner";
 
 interface ExcelExportPageProps {
@@ -60,6 +60,7 @@ const sheetOptions = [
 
 export default function ExcelExportPage({ params }: ExcelExportPageProps) {
   const { projectId } = use(params);
+  const { t } = useTranslation();
   const [selectedOption, setSelectedOption] = useState("current");
   const [sheets, setSheets] = useState(sheetOptions);
   const [isComplete, setIsComplete] = useState(false);
@@ -96,10 +97,10 @@ export default function ExcelExportPage({ params }: ExcelExportPageProps) {
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
             <FileSpreadsheet className="h-7 w-7 text-primary" />
-            Excel Export
+            {t("reports.excel.title")}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Export your data to Microsoft Excel format
+            {t("reports.excel.subtitle")}
           </p>
         </div>
       </div>

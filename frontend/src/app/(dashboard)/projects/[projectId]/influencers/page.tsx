@@ -18,7 +18,7 @@ import {
   Instagram,
   Loader2,
 } from "lucide-react";
-import { useInfluencers } from "@/hooks";
+import { useInfluencers, useTranslation } from "@/hooks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -65,6 +65,7 @@ function formatNumber(num: number): string {
 
 export default function InfluencersPage({ params }: InfluencersPageProps) {
   const { projectId } = use(params);
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [platformFilter, setPlatformFilter] = useState("all");
   const { data: apiInfluencers, isLoading } = useInfluencers(projectId);
@@ -115,10 +116,10 @@ export default function InfluencersPage({ params }: InfluencersPageProps) {
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
             <Users className="h-7 w-7 text-primary" />
-            Influencers
+            {t("influencers.title")}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Track and manage influencers mentioning your brand
+            {t("influencers.subtitle")}
           </p>
         </div>
         
@@ -296,11 +297,11 @@ export default function InfluencersPage({ params }: InfluencersPageProps) {
                                 </div>
                                 
                                 {/* Recent Posts */}
-                                {selectedInfluencer.recentPosts.length > 0 && (
+                                {(selectedInfluencer.recentPosts || []).length > 0 && (
                                   <div>
                                     <h4 className="font-medium mb-3">Recent Posts</h4>
                                     <div className="space-y-3">
-                                      {selectedInfluencer.recentPosts.map((post: any, i: number) => (
+                                      {(selectedInfluencer.recentPosts || []).map((post: any, i: number) => (
                                         <div key={i} className="p-3 rounded-lg bg-muted/30">
                                           <p className="text-sm">{post.content}</p>
                                           <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">

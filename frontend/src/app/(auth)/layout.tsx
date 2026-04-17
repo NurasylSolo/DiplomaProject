@@ -1,4 +1,5 @@
 import { FloatingShapes, GridPattern } from "@/components/ui/floating-shapes";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 export default function AuthLayout({
   children,
@@ -7,6 +8,11 @@ export default function AuthLayout({
 }) {
   return (
     <div className="relative min-h-screen flex">
+      {/* Top-right controls */}
+      <div className="absolute top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
+
       {/* Left side - Decorative */}
       <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-primary/5 via-background to-accent/5 overflow-hidden">
         <FloatingShapes variant="minimal" />

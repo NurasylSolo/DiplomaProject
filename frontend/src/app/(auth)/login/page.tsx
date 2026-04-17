@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useGoogleLogin } from "@react-oauth/google";
 import { z } from "zod";
 import { Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,6 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useLogin } from "@/hooks";
+import { useAuthStore } from "@/stores";
+import { authApi } from "@/lib/api/services";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/api";
 
@@ -25,8 +29,11 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const loginMutation = useLogin();
-  
+  const router = useRouter();
+  const { setUser } = useAuthStore();
+
   const {
     register,
     handleSubmit,
@@ -38,23 +45,48 @@ export default function LoginPage() {
     defaultValues: {
       email: "",
       password: "",
-      rememberMe: false,
+      rememberMe: true,
     },
   });
   
   const rememberMe = watch("rememberMe");
-  const isLoading = loginMutation.isPending;
-  
+  const isLoading = loginMutation.isPending || googleLoading;
+
   const onSubmit = async (data: LoginFormData) => {
     loginMutation.mutate(
       { email: data.email, password: data.password, remember_me: !!data.rememberMe },
       {
+        onSuccess: (result) => {
+          // If the user signed up via email and never confirmed, ask them to verify.
+          if (result?.user && result.user.emailVerified === false) {
+            router.push(`/verify-email?email=${encodeURIComponent(data.email)}`);
+          }
+        },
         onError: (error) => {
           toast.error(getErrorMessage(error));
         },
       }
     );
   };
+
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setGoogleLoading(true);
+      try {
+        const result = await authApi.googleLogin(tokenResponse.access_token);
+        setUser(result.user);
+        toast.success(`Welcome, ${result.user.name}!`);
+        router.push("/dashboard");
+      } catch (error) {
+        toast.error(getErrorMessage(error));
+      } finally {
+        setGoogleLoading(false);
+      }
+    },
+    onError: () => {
+      toast.error("Google sign-in failed");
+    },
+  });
   
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -222,12 +254,16 @@ export default function LoginPage() {
       
       {/* Social login */}
       <motion.div variants={itemVariants}>
-        <Button 
-          type="button" 
-          variant="outline" 
+        <Button
+          type="button"
+          variant="outline"
           className="w-full h-12"
           disabled={isLoading}
+          onClick={() => googleLogin()}
         >
+          {googleLoading ? (
+            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+          ) : (
           <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24">
             <path
               fill="currentColor"
@@ -246,6 +282,7 @@ export default function LoginPage() {
               d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
             />
           </svg>
+          )}
           Continue with Google
         </Button>
       </motion.div>

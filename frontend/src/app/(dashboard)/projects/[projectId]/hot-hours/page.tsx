@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { useHotHours } from "@/hooks";
+import { useHotHours, useTranslation } from "@/hooks";
 
 interface HotHoursPageProps {
   params: Promise<{ projectId: string }>;
@@ -47,6 +47,7 @@ function formatHour(hour: number): string {
 
 export default function HotHoursPage({ params }: HotHoursPageProps) {
   const { projectId } = use(params);
+  const { t } = useTranslation();
   const { data: hotHoursData, isLoading } = useHotHours(projectId);
   const [selectedCell, setSelectedCell] = useState<{ day: number; hour: number } | null>(null);
 
@@ -96,10 +97,10 @@ export default function HotHoursPage({ params }: HotHoursPageProps) {
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
             <Clock className="h-7 w-7 text-primary" />
-            Hot Hours
+            {t("hotHours.title")}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Discover when your brand is mentioned most
+            {t("hotHours.subtitle")}
           </p>
         </div>
         

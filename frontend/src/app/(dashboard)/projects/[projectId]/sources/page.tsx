@@ -37,7 +37,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { useSources } from "@/hooks";
+import { useSources, useTranslation } from "@/hooks";
 import { Loader2 } from "lucide-react";
 
 interface SourcesPageProps {
@@ -149,6 +149,7 @@ const countryFlags: Record<string, string> = {
 
 export default function SourcesPage({ params }: SourcesPageProps) {
   const { projectId } = use(params);
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   
@@ -199,21 +200,21 @@ export default function SourcesPage({ params }: SourcesPageProps) {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight">
-            Sources
+            {t("sources.title")}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Manage and monitor your data sources
+            {t("sources.subtitle")}
           </p>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm">
             <Download className="h-4 w-4 mr-2" />
-            Export
+            {t("common.export")}
           </Button>
           <Button size="sm" className="glow-sm">
             <Plus className="h-4 w-4 mr-2" />
-            Add Source
+            {t("sources.addSource")}
           </Button>
         </div>
       </div>

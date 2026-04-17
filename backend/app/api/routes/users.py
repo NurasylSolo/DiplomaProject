@@ -26,6 +26,8 @@ async def get_me(current_user: User = Depends(get_current_user)):
         "role": current_user.role,
         "locale": current_user.locale,
         "timezone": current_user.timezone,
+        "emailVerified": getattr(current_user, "email_verified", False),
+        "authProvider": getattr(current_user, "auth_provider", "email"),
         "createdAt": current_user.created_at.isoformat() if current_user.created_at else "",
         "updatedAt": current_user.updated_at.isoformat() if current_user.updated_at else "",
     }

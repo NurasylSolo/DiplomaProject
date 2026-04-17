@@ -68,4 +68,13 @@ export const projectsApi = {
     const query = keepProjectId ? `?keep_project_id=${encodeURIComponent(keepProjectId)}` : "";
     await apiClient.delete(`/projects/cleanup/previous${query}`);
   },
+
+  async refresh(projectId: string): Promise<{
+    ingestionTaskId?: string;
+    ingestionJobId: string;
+    status: string;
+  }> {
+    const response = await apiClient.post(`/projects/${projectId}/refresh`);
+    return response.data;
+  },
 };

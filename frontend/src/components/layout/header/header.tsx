@@ -15,8 +15,6 @@ import {
   LogOut,
   Settings,
   User,
-  Moon,
-  Sun,
   Menu,
   Check,
   Trash2,
@@ -25,8 +23,8 @@ import {
   Users,
   Clock,
   Globe,
+  RefreshCw,
 } from "lucide-react";
-import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { getErrorMessage } from "@/lib/api";
 import { useSidebarStore, useAuthStore } from "@/stores";
@@ -38,12 +36,14 @@ import {
   useMarkAlertRead,
   useDeleteProject,
   useDeletePreviousProjects,
+  useRefreshProject,
 } from "@/hooks";
 import { toast } from "sonner";
 import { supportedLanguages } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -105,7 +105,6 @@ const notificationColors: Record<string, string> = {
 
 export function Header({ projectId }: HeaderProps) {
   const router = useRouter();
-  const { theme, setTheme } = useTheme();
   const { isCollapsed, toggleMobileOpen } = useSidebarStore();
   const { t, changeLanguage, currentLanguage } = useTranslation();
   const [searchFocused, setSearchFocused] = useState(false);
@@ -119,6 +118,7 @@ export function Header({ projectId }: HeaderProps) {
   const logoutMutation = useLogout();
   const deleteProjectMutation = useDeleteProject();
   const deletePreviousProjectsMutation = useDeletePreviousProjects();
+  const refreshProjectMutation = useRefreshProject();
   
   const projects = (projectsList || []).map((p, i) => ({
     id: p.id,
@@ -156,6 +156,20 @@ export function Header({ projectId }: HeaderProps) {
   
   const deleteNotification = (id: string) => {
     markReadMutation.mutate(id);
+  };
+
+  const handleRefreshProject = () => {
+    if (!currentProject?.id) return;
+    refreshProjectMutation.mutate(currentProject.id, {
+      onSuccess: () => {
+        toast.success(
+          t("header.projectRefreshing", {
+            defaultValue: "Refreshing project data...",
+          })
+        );
+      },
+      onError: (error) => toast.error(getErrorMessage(error)),
+    });
   };
 
   const handleDeleteCurrentProject = () => {
@@ -267,6 +281,20 @@ export function Header({ projectId }: HeaderProps) {
               </Button>
             </SelectContent>
           </Select>
+          <Button
+            variant="ghost"
+            size="icon"
+            title={t("header.refreshProject", { defaultValue: "Refresh project data" })}
+            onClick={handleRefreshProject}
+            disabled={refreshProjectMutation.isPending || projects.length === 0}
+          >
+            <RefreshCw
+              className={cn(
+                "h-4 w-4",
+                refreshProjectMutation.isPending && "animate-spin"
+              )}
+            />
+          </Button>
           <Button
             variant="ghost"
             size="icon"
@@ -541,15 +569,7 @@ export function Header({ projectId }: HeaderProps) {
           </DropdownMenu>
 
           {/* Theme Toggle */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          >
-            <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-            <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-            <span className="sr-only">Toggle theme</span>
-          </Button>
+          <ThemeToggle />
           
           {/* User Menu */}
           <DropdownMenu>

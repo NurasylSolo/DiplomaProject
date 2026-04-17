@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useEmotions } from "@/hooks";
+import { useEmotions, useTranslation } from "@/hooks";
 
 interface EmotionAnalysisPageProps {
   params: Promise<{ projectId: string }>;
@@ -30,6 +30,7 @@ const EMOTION_META: Record<string, { emoji: string; color: string }> = {
 
 export default function EmotionAnalysisPage({ params }: EmotionAnalysisPageProps) {
   const { projectId } = use(params);
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const isDark = theme === "dark";
   const { data, isLoading } = useEmotions(projectId);
@@ -80,10 +81,10 @@ export default function EmotionAnalysisPage({ params }: EmotionAnalysisPageProps
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
             <Heart className="h-7 w-7 text-primary" />
-            Emotion Analysis
+            {t("emotions.title")}
           </h1>
           <p className="text-muted-foreground mt-1">
-            {totalAnalyzed} mentions analyzed
+            {t("emotions.subtitle")} · {totalAnalyzed}
           </p>
         </div>
         <Button variant="outline" size="sm">

@@ -14,7 +14,7 @@ import {
   ChevronDown,
   Loader2,
 } from "lucide-react";
-import { useGeoData } from "@/hooks";
+import { useGeoData, useTranslation } from "@/hooks";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,6 +25,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { getCountryFlag, getCountryName, getEChartsCountryName } from "@/lib/utils/countries";
 
 interface GeoAnalysisPageProps {
   params: Promise<{ projectId: string }>;
@@ -36,18 +37,9 @@ function formatReach(num: number): string {
   return String(num);
 }
 
-const countryCodeToEChartsName: Record<string, string> = {
-  US: "United States", GB: "United Kingdom", DE: "Germany", FR: "France",
-  KZ: "Kazakhstan", RU: "Russia", CA: "Canada", AU: "Australia",
-  JP: "Japan", IN: "India", BR: "Brazil", CN: "China", MX: "Mexico",
-  IT: "Italy", ES: "Spain", NL: "Netherlands", SE: "Sweden", PL: "Poland",
-  TR: "Turkey", UA: "Ukraine", KR: "South Korea", ZA: "South Africa",
-  AR: "Argentina", EG: "Egypt", SA: "Saudi Arabia", AE: "United Arab Emirates",
-  TH: "Thailand", ID: "Indonesia", NG: "Nigeria", CO: "Colombia",
-};
-
 export default function GeoAnalysisPage({ params }: GeoAnalysisPageProps) {
   const { projectId } = use(params);
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const isDark = theme === "dark";
   const [excludedCountries, setExcludedCountries] = useState<string[]>([]);
@@ -62,15 +54,16 @@ export default function GeoAnalysisPage({ params }: GeoAnalysisPageProps) {
     const negative = sent.negative || 0;
     const total = positive + neutral + negative;
     const sentimentScore = total > 0 ? Math.round((positive / total) * 100) : 50;
+    const code = (g.country_code || "").toUpperCase();
     return {
-      code: g.country_code || "",
-      name: g.country || "",
+      code,
+      name: getCountryName(code, "en") || g.country || "Unknown",
       mentions: g.mentions || 0,
       reach: typeof g.reach === "number" ? formatReach(g.reach) : (g.reach || "0"),
       sentiment: sentimentScore,
       change: 0,
     };
-  });
+  }).filter((c: { code: string }) => c.code && c.code !== "XX");
 
   useEffect(() => {
     const loadMap = async () => {
@@ -115,7 +108,9 @@ export default function GeoAnalysisPage({ params }: GeoAnalysisPageProps) {
   }, []);
   
   const filteredCountries = countriesData.filter(c => !excludedCountries.includes(c.code));
-  const maxMentions = Math.max(...countriesData.map(c => c.mentions));
+  const maxMentions = countriesData.length > 0
+    ? Math.max(...countriesData.map(c => c.mentions || 0))
+    : 0;
   
   const toggleCountry = (code: string) => {
     setExcludedCountries(prev => 
@@ -124,7 +119,7 @@ export default function GeoAnalysisPage({ params }: GeoAnalysisPageProps) {
   };
   
   const mapData = filteredCountries.map((country) => ({
-    name: countryCodeToEChartsName[country.code] || country.name,
+    name: getEChartsCountryName(country.code) || country.name,
     value: country.mentions,
     sentiment: country.sentiment,
   }));
@@ -197,10 +192,10 @@ export default function GeoAnalysisPage({ params }: GeoAnalysisPageProps) {
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
             <Globe className="h-7 w-7 text-primary" />
-            Geo Analysis
+            {t("geo.title")}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Geographic distribution of your media mentions
+            {t("geo.subtitle")}
           </p>
         </div>
         
@@ -209,25 +204,25 @@ export default function GeoAnalysisPage({ params }: GeoAnalysisPageProps) {
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
                 <Filter className="h-4 w-4 mr-2" />
-                Filter Countries
+                {t("geo.filterCountries")}
                 <ChevronDown className="h-4 w-4 ml-2" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 max-h-[300px] overflow-y-auto">
-              {countriesData.map((country) => (
+                {countriesData.map((country) => (
                 <DropdownMenuCheckboxItem
                   key={country.code}
                   checked={!excludedCountries.includes(country.code)}
                   onCheckedChange={() => toggleCountry(country.code)}
                 >
-                  {getFlagEmoji(country.code)} {country.name}
+                  {getCountryFlag(country.code)} {country.name}
                 </DropdownMenuCheckboxItem>
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
           <Button variant="outline" size="sm">
             <Download className="h-4 w-4 mr-2" />
-            Export
+            {t("common.export")}
           </Button>
         </div>
       </div>
@@ -235,7 +230,7 @@ export default function GeoAnalysisPage({ params }: GeoAnalysisPageProps) {
       {/* Map */}
       <Card className="glass">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base font-medium">World Map - Mentions by Country</CardTitle>
+          <CardTitle className="text-base font-medium">{t("geo.worldMap")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="relative rounded-lg overflow-hidden bg-muted/10">
@@ -269,8 +264,8 @@ export default function GeoAnalysisPage({ params }: GeoAnalysisPageProps) {
       <Card className="glass">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base font-medium">Countries Breakdown</CardTitle>
-            <Badge variant="secondary">{filteredCountries.length} countries</Badge>
+            <CardTitle className="text-base font-medium">{t("geo.countriesBreakdown")}</CardTitle>
+            <Badge variant="secondary">{filteredCountries.length} {t("geo.countries")}</Badge>
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -298,7 +293,7 @@ export default function GeoAnalysisPage({ params }: GeoAnalysisPageProps) {
                     <td className="p-4 text-muted-foreground">{index + 1}</td>
                     <td className="p-4">
                       <div className="flex items-center gap-2">
-                        <span className="text-lg">{getFlagEmoji(country.code)}</span>
+                        <span className="text-lg">{getCountryFlag(country.code)}</span>
                         <span className="font-medium">{country.name}</span>
                       </div>
                     </td>
@@ -344,12 +339,3 @@ export default function GeoAnalysisPage({ params }: GeoAnalysisPageProps) {
   );
 }
 
-function getFlagEmoji(countryCode: string): string {
-  const flags: Record<string, string> = {
-    US: "🇺🇸", GB: "🇬🇧", DE: "🇩🇪", FR: "🇫🇷", KZ: "🇰🇿",
-    RU: "🇷🇺", CA: "🇨🇦", AU: "🇦🇺", JP: "🇯🇵", IN: "🇮🇳",
-    BR: "🇧🇷", CN: "🇨🇳", MX: "🇲🇽", IT: "🇮🇹", ES: "🇪🇸",
-    NL: "🇳🇱", SE: "🇸🇪", PL: "🇵🇱", TR: "🇹🇷", UA: "🇺🇦",
-  };
-  return flags[countryCode] || "🌍";
-}

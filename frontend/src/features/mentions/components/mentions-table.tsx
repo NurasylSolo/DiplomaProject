@@ -34,6 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { getCountryFlag, getCountryName } from "@/lib/utils/countries";
 import { useMentions, useBulkAction } from "@/hooks";
 import { useMentionsFilterStore } from "@/stores";
 import { buildFilterQuery } from "@/stores/use-mentions-filter-store";
@@ -47,11 +48,6 @@ const sentimentColors = {
   positive: "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20",
   neutral: "bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20",
   negative: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
-};
-
-const countryFlags: Record<string, string> = {
-  US: "🇺🇸", UK: "🇬🇧", GB: "🇬🇧", RU: "🇷🇺", KZ: "🇰🇿", DE: "🇩🇪",
-  FR: "🇫🇷", TR: "🇹🇷", CN: "🇨🇳", UZ: "🇺🇿", KG: "🇰🇬",
 };
 
 const sourceIcons: Record<string, string> = {
@@ -236,8 +232,8 @@ export function MentionsTable({ projectId }: MentionsTableProps) {
                     </span>
                   </td>
                   <td className="p-4 text-center">
-                    <span className="text-lg" title={mention.country}>
-                      {countryFlags[mention.country] || "🌍"}
+                    <span className="text-lg" title={getCountryName(mention.country, "en")}>
+                      {getCountryFlag(mention.country)}
                     </span>
                   </td>
                   <td className="p-4" onClick={(e) => e.stopPropagation()}>

@@ -132,6 +132,116 @@ async def bulk_action(
     return len(mentions)
 
 
+async def get_mentions_stats(
+    db: AsyncSession,
+    project_id: str,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    sources: str | None = None,
+    sentiment: str | None = None,
+    search: str | None = None,
+    languages: str | None = None,
+    countries: str | None = None,
+) -> dict:
+    """Aggregate stat cards for the dashboard, honoring the same filters
+    as the mentions list. All numbers are computed from real DB rows — no
+    hardcoded values left in the response.
+    """
+
+    def _apply_filters(query):
+        if date_from:
+            query = query.where(Mention.published_at >= _parse_date(date_from))
+        if date_to:
+            query = query.where(Mention.published_at <= _parse_date(date_to))
+        if sources:
+            source_types = [s.strip() for s in sources.split(",") if s.strip()]
+            if source_types:
+                query = query.join(Source).where(Source.type.in_(source_types))
+        if sentiment:
+            sentiments = [s.strip() for s in sentiment.split(",") if s.strip()]
+            if sentiments:
+                query = query.where(Mention.sentiment_label.in_(sentiments))
+        if search:
+            term = f"%{search}%"
+            query = query.where(or_(Mention.title.ilike(term), Mention.body.ilike(term)))
+        if languages:
+            langs = [l.strip() for l in languages.split(",") if l.strip()]
+            if langs:
+                query = query.where(Mention.language.in_(langs))
+        if countries:
+            ctrs = [c.strip() for c in countries.split(",") if c.strip()]
+            if ctrs:
+                query = query.where(Mention.country.in_(ctrs))
+        return query
+
+    base = select(Mention).where(Mention.project_id == project_id)
+
+    total_mentions = int(
+        (await db.execute(_apply_filters(select(func.count(Mention.id)).where(Mention.project_id == project_id)))).scalar() or 0
+    )
+    total_reach = int(
+        (await db.execute(_apply_filters(select(func.coalesce(func.sum(Mention.reach), 0)).where(Mention.project_id == project_id)))).scalar() or 0
+    )
+    avg_sentiment_raw = (
+        await db.execute(_apply_filters(select(func.coalesce(func.avg(Mention.sentiment_score), 0.0)).where(Mention.project_id == project_id)))
+    ).scalar()
+    avg_sentiment = float(avg_sentiment_raw or 0.0)
+
+    pos_count = int(
+        (await db.execute(_apply_filters(select(func.count(Mention.id)).where(Mention.project_id == project_id, Mention.sentiment_label == "positive")))).scalar() or 0
+    )
+    neu_count = int(
+        (await db.execute(_apply_filters(select(func.count(Mention.id)).where(Mention.project_id == project_id, Mention.sentiment_label == "neutral")))).scalar() or 0
+    )
+    neg_count = int(
+        (await db.execute(_apply_filters(select(func.count(Mention.id)).where(Mention.project_id == project_id, Mention.sentiment_label == "negative")))).scalar() or 0
+    )
+
+    positive_percentage = round((pos_count / total_mentions) * 100, 1) if total_mentions else 0.0
+    neutral_percentage = round((neu_count / total_mentions) * 100, 1) if total_mentions else 0.0
+    negative_percentage = round((neg_count / total_mentions) * 100, 1) if total_mentions else 0.0
+
+    # Period-over-period delta only meaningful when an explicit date_from is given
+    mentions_change_percentage: float | None = None
+    if date_from and date_to:
+        try:
+            df = _parse_date(date_from)
+            dt = _parse_date(date_to)
+            window = dt - df
+            prev_from = df - window
+            prev_to = df
+            prev_count = int(
+                (await db.execute(
+                    select(func.count(Mention.id)).where(
+                        Mention.project_id == project_id,
+                        Mention.published_at >= prev_from,
+                        Mention.published_at < prev_to,
+                    )
+                )).scalar() or 0
+            )
+            if prev_count == 0:
+                mentions_change_percentage = 100.0 if total_mentions > 0 else 0.0
+            else:
+                mentions_change_percentage = round(
+                    ((total_mentions - prev_count) / prev_count) * 100, 1
+                )
+        except Exception:
+            mentions_change_percentage = None
+
+    return {
+        "total_mentions": total_mentions,
+        "total_reach": total_reach,
+        "positive_count": pos_count,
+        "neutral_count": neu_count,
+        "negative_count": neg_count,
+        "positive_percentage": positive_percentage,
+        "neutral_percentage": neutral_percentage,
+        "negative_percentage": negative_percentage,
+        "avg_sentiment": round(avg_sentiment, 3),
+        "mentions_change_percentage": mentions_change_percentage,
+    }
+
+
 async def get_duplicate_clusters(db: AsyncSession, project_id: str, limit: int = 100) -> list[dict]:
     rows = (
         await db.execute(

@@ -4,19 +4,21 @@ import { useMemo } from "react";
 import ReactECharts from "echarts-for-react";
 import { useTheme } from "next-themes";
 import { useParams } from "next/navigation";
-import { useProject } from "@/hooks";
+import { useMentionsStats } from "@/hooks";
+import { useMentionsFilterStore, buildFilterQuery } from "@/stores/use-mentions-filter-store";
 
 export function SentimentChart() {
   const { theme } = useTheme();
   const isDark = theme === "dark";
   const params = useParams();
   const projectId = params?.projectId as string;
-  const { data: project } = useProject(projectId);
-  
-  const stats = project?.stats;
-  const positive = stats?.positivePercentage || 0;
-  const negative = stats?.negativePercentage || 0;
-  const neutral = Math.max(0, 100 - positive - negative);
+  const { filters } = useMentionsFilterStore();
+  const filterParams = useMemo(() => buildFilterQuery(filters), [filters]);
+  const { data: stats } = useMentionsStats(projectId, filterParams);
+
+  const positive = stats?.positive_percentage ?? 0;
+  const neutral = stats?.neutral_percentage ?? 0;
+  const negative = stats?.negative_percentage ?? 0;
   
   const sentimentData = [
     { name: "Positive", value: positive, color: "oklch(0.65 0.17 155)" },

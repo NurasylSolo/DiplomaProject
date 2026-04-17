@@ -16,7 +16,7 @@ import {
   BarChart3,
   Loader2,
 } from "lucide-react";
-import { useTopics } from "@/hooks";
+import { useTopics, useTranslation } from "@/hooks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -62,6 +62,7 @@ const topSources = [
 
 export default function TopicsPage({ params }: TopicsPageProps) {
   const { projectId } = use(params);
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const { data: apiTopics, isLoading } = useTopics(projectId);
 
@@ -106,10 +107,10 @@ export default function TopicsPage({ params }: TopicsPageProps) {
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
             <Tags className="h-7 w-7 text-primary" />
-            AI Topic Analysis
+            {t("topics.title")}
           </h1>
           <p className="text-muted-foreground mt-1">
-            AI-detected topics from your media mentions
+            {t("topics.subtitle")}
           </p>
         </div>
         
@@ -196,7 +197,7 @@ export default function TopicsPage({ params }: TopicsPageProps) {
                         fill="none"
                         stroke="oklch(0.70 0.15 195)"
                         strokeWidth="2"
-                        points={topic.trend.map((v: number, i: number) => `${i * (100 / (topic.trend.length - 1))},${40 - (v / 100) * 40}`).join(" ")}
+                        points={(Array.isArray(topic.trend) ? topic.trend : []).map((v: number, i: number, arr: number[]) => `${arr.length > 1 ? i * (100 / (arr.length - 1)) : 50},${40 - (v / 100) * 40}`).join(" ")}
                       />
                     </svg>
                   </div>
