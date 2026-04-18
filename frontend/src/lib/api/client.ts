@@ -15,6 +15,10 @@ export const apiClient = axios.create({
 // Token storage keys
 const ACCESS_TOKEN_KEY = "senti_access_token";
 const REFRESH_TOKEN_KEY = "senti_refresh_token";
+const REMEMBER_ME_KEY = "senti_remember_me";
+// Absolute expiry of the refresh token, set on login. We use it to
+// auto-clear stale tokens (e.g. after 30 days of inactivity).
+const REFRESH_EXPIRES_AT_KEY = "senti_refresh_expires_at";
 
 // Token management utilities
 export const tokenManager = {
@@ -22,26 +26,64 @@ export const tokenManager = {
     if (typeof window === "undefined") return null;
     return localStorage.getItem(ACCESS_TOKEN_KEY);
   },
-  
+
   getRefreshToken: () => {
     if (typeof window === "undefined") return null;
     return localStorage.getItem(REFRESH_TOKEN_KEY);
   },
-  
-  setTokens: (accessToken: string, refreshToken: string) => {
+
+  setTokens: (accessToken: string, refreshToken: string, options?: { rememberMe?: boolean; refreshExpiresInDays?: number }) => {
     if (typeof window === "undefined") return;
     localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
     localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+    if (options) {
+      if (typeof options.rememberMe === "boolean") {
+        localStorage.setItem(REMEMBER_ME_KEY, options.rememberMe ? "1" : "0");
+      }
+      if (options.refreshExpiresInDays && options.refreshExpiresInDays > 0) {
+        const expiresAt = Date.now() + options.refreshExpiresInDays * 24 * 60 * 60 * 1000;
+        localStorage.setItem(REFRESH_EXPIRES_AT_KEY, String(expiresAt));
+      }
+    }
   },
-  
+
   clearTokens: () => {
     if (typeof window === "undefined") return;
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
+    localStorage.removeItem(REMEMBER_ME_KEY);
+    localStorage.removeItem(REFRESH_EXPIRES_AT_KEY);
   },
-  
+
   isAuthenticated: () => {
-    return !!tokenManager.getAccessToken();
+    if (typeof window === "undefined") return false;
+    const token = localStorage.getItem(ACCESS_TOKEN_KEY);
+    if (!token) return false;
+    // If we know the absolute refresh expiry, drop the session when it has passed.
+    const expiresAtStr = localStorage.getItem(REFRESH_EXPIRES_AT_KEY);
+    if (expiresAtStr) {
+      const expiresAt = Number(expiresAtStr);
+      if (Number.isFinite(expiresAt) && expiresAt > 0 && Date.now() > expiresAt) {
+        tokenManager.clearTokens();
+        return false;
+      }
+    }
+    return true;
+  },
+
+  getRememberMe: () => {
+    if (typeof window === "undefined") return true;
+    const v = localStorage.getItem(REMEMBER_ME_KEY);
+    if (v === null) return true; // default — checked
+    return v === "1";
+  },
+
+  getRefreshExpiresAt: () => {
+    if (typeof window === "undefined") return null;
+    const v = localStorage.getItem(REFRESH_EXPIRES_AT_KEY);
+    if (!v) return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
   },
 };
 
@@ -112,16 +154,34 @@ apiClient.interceptors.response.use(
         const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
           refresh_token: refreshToken,
         });
-        
+
         const { access_token, refresh_token } = response.data;
-        tokenManager.setTokens(access_token, refresh_token);
-        
+        // Preserve the user's "Remember me" choice across silent refreshes.
+        // We deliberately keep the absolute expires_at that was set on login
+        // (do not extend or shrink it), matching the backend which now uses
+        // the exact remaining lifetime from the database.
+        const remember = tokenManager.getRememberMe();
+        const previousExpiresAt = tokenManager.getRefreshExpiresAt();
+        if (previousExpiresAt) {
+          const msLeft = previousExpiresAt - Date.now();
+          const daysLeft = Math.max(1, Math.ceil(msLeft / (24 * 60 * 60 * 1000)));
+          tokenManager.setTokens(access_token, refresh_token, {
+            rememberMe: remember,
+            refreshExpiresInDays: daysLeft,
+          });
+        } else {
+          tokenManager.setTokens(access_token, refresh_token, {
+            rememberMe: remember,
+            refreshExpiresInDays: remember ? 30 : 7,
+          });
+        }
+
         processQueue(null, access_token);
-        
+
         if (originalRequest.headers) {
           originalRequest.headers.Authorization = `Bearer ${access_token}`;
         }
-        
+
         return apiClient(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError as AxiosError, null);

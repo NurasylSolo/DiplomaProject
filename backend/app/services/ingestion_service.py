@@ -619,12 +619,33 @@ async def run_project_ingestion(
         saved_total = 0
         dedup_total = 0
 
+        async def _safe_process(article: dict) -> tuple[bool, bool]:
+            """Wrap _process_article so a single bad article never aborts the job.
+
+            Catches transient DB / NLP / network errors and rolls back the
+            failed sub-transaction so the next article can proceed.
+            """
+            try:
+                return await _process_article(
+                    db=db, project=project, article=article, search_terms=all_terms_lower
+                )
+            except Exception as exc:
+                logger.warning(
+                    "Skipping article %r due to error: %s",
+                    str(article.get("url", ""))[:100], exc,
+                )
+                try:
+                    await db.rollback()
+                except Exception:
+                    pass
+                return False, False
+
         async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
             for lang in NEWS_API_LANGUAGES:
                 articles = await _fetch_newsapi(client, query=search_query, language=lang)
                 fetched_total += len(articles)
                 for article in articles:
-                    is_dup, created = await _process_article(db=db, project=project, article=article, search_terms=all_terms_lower)
+                    is_dup, created = await _safe_process(article)
                     if is_dup:
                         dedup_total += 1
                     if created:
@@ -636,7 +657,7 @@ async def run_project_ingestion(
                 articles = await _fetch_serpapi(client, query=search_query, hl=serp_lang["hl"], gl=serp_lang["gl"])
                 fetched_total += len(articles)
                 for article in articles:
-                    is_dup, created = await _process_article(db=db, project=project, article=article, search_terms=all_terms_lower)
+                    is_dup, created = await _safe_process(article)
                     if is_dup:
                         dedup_total += 1
                     if created:
@@ -648,7 +669,7 @@ async def run_project_ingestion(
                 articles = await _fetch_newsdata(client, query=search_query, language=nd_lang)
                 fetched_total += len(articles)
                 for article in articles:
-                    is_dup, created = await _process_article(db=db, project=project, article=article, search_terms=all_terms_lower)
+                    is_dup, created = await _safe_process(article)
                     if is_dup:
                         dedup_total += 1
                     if created:
@@ -660,7 +681,7 @@ async def run_project_ingestion(
                 articles = await _fetch_event_registry(client, query=search_query, language=er_lang)
                 fetched_total += len(articles)
                 for article in articles:
-                    is_dup, created = await _process_article(db=db, project=project, article=article, search_terms=all_terms_lower)
+                    is_dup, created = await _safe_process(article)
                     if is_dup:
                         dedup_total += 1
                     if created:
@@ -672,7 +693,7 @@ async def run_project_ingestion(
                 articles = await _fetch_world_news(client, query=search_query, variant=wn_variant)
                 fetched_total += len(articles)
                 for article in articles:
-                    is_dup, created = await _process_article(db=db, project=project, article=article, search_terms=all_terms_lower)
+                    is_dup, created = await _safe_process(article)
                     if is_dup:
                         dedup_total += 1
                     if created:
@@ -684,6 +705,16 @@ async def run_project_ingestion(
         job.items_saved = saved_total
         job.items_deduplicated = dedup_total
         await recompute_project_metrics(db=db, project_id=project_id)
+
+        # Auto-generate AI insights from the freshly ingested data.
+        # This is best-effort: if it fails (no OpenAI key, GPT timeout, etc.)
+        # we just log a warning and finish the ingestion job successfully.
+        try:
+            from app.services import insight_service  # local import to avoid cycles
+            await insight_service.generate_insights_for_project(db, project_id)
+        except Exception as exc:
+            logger.warning("Insight auto-generation skipped: %s", exc)
+
         await _mark_job_completed(job)
         job_progress_service.finish_job(job.id, failed=False)
         await db.flush()
@@ -848,25 +879,33 @@ async def _process_article(
     title_hash = hashlib.sha256(title.lower().encode()).hexdigest() if title else None
     text_hash = hashlib.sha256(normalized_text.encode()).hexdigest() if normalized_text else None
 
+    # Use first() (with limit 1) instead of scalar_one_or_none(): if historic
+    # duplicate rows exist for the same (project_id, url_hash) — which can
+    # happen after re-runs before unique indexes were added — we still treat
+    # the article as a duplicate instead of crashing the whole ingestion job.
     existing_raw = (
         await db.execute(
-            select(RawDocument).where(
+            select(RawDocument)
+            .where(
                 RawDocument.project_id == project.id,
                 RawDocument.url_hash == url_hash,
-            ),
+            )
+            .limit(1)
         )
-    ).scalar_one_or_none()
+    ).scalars().first()
     if existing_raw:
         return True, False
 
     existing_mention = (
         await db.execute(
-            select(Mention).where(
+            select(Mention)
+            .where(
                 Mention.project_id == project.id,
                 Mention.url == canonical_url,
-            ),
+            )
+            .limit(1)
         )
-    ).scalar_one_or_none()
+    ).scalars().first()
     if existing_mention:
         return True, False
 
@@ -979,9 +1018,11 @@ async def _get_or_create_source(db: AsyncSession, project_id: str, source_name: 
 
     existing = (
         await db.execute(
-            select(Source).where(Source.project_id == project_id, Source.name == source_name).limit(1),
+            select(Source)
+            .where(Source.project_id == project_id, Source.name == source_name)
+            .limit(1)
         )
-    ).scalar_one_or_none()
+    ).scalars().first()
     if existing:
         _SOURCE_CACHE[cache_key] = existing
         return existing

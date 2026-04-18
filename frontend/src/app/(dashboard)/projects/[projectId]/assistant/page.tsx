@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useState, useRef, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Bot,
@@ -79,6 +80,7 @@ const suggestedPrompts = [
 export default function AssistantPage({ params }: AssistantPageProps) {
   const { projectId } = use(params);
   const { t } = useTranslation();
+  const searchParams = useSearchParams();
   const [chats, setChats] = useState<Chat[]>([
     { id: "1", title: "New Chat", lastMessage: "", timestamp: new Date(), messages: [] },
   ]);
@@ -86,9 +88,21 @@ export default function AssistantPage({ params }: AssistantPageProps) {
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  
+
   const aiChat = useAiChat(projectId);
   const isLoading = aiChat.isPending;
+
+  // Pick up `?prefill=...` from URL (used by Insights "Take Action" button)
+  // and pre-fill the input. We don't auto-send so the user can review.
+  useEffect(() => {
+    const prefill = searchParams.get("prefill");
+    if (prefill) {
+      setInput(prefill);
+      // small delay so the textarea is rendered before focus
+      setTimeout(() => textareaRef.current?.focus(), 0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

@@ -124,6 +124,8 @@
       "password": "Құпия сөз",
       "passwordPlaceholder": "Құпия сөзіңізді енгізіңіз",
       "rememberMe": "Мені 30 күн есте сақта",
+      "rememberMeHint": "Браузерді жапқаннан кейін де 30 күн жүйеде қалыңыз",
+      "rememberMeHintShort": "Сеанс 7 күнге белсенді болады",
       "forgotPassword": "Құпия сөзді ұмыттыңыз ба?",
       "submit": "Кіру",
       "submitting": "Кіру...",
@@ -277,8 +279,20 @@
   "insights": {
     "title": "AI Инсайттар",
     "subtitle": "Жетілдірілген AI талдау негізіндегі практикалық аналитика",
+    "topInsights": "Негізгі инсайттар",
+    "noInsights": "Инсайттар әзірге жоқ",
+    "noInsightsHint": "Жоба деректерінен AI инсайттарын жасау үшін Жасау батырмасын басыңыз.",
+    "generating": "Жасалуда...",
+    "generateNew": "Инсайттар жасау",
+    "generated": "Инсайттар жаңартылды",
+    "generateFailed": "Инсайттарды жасау мүмкін болмады",
+    "sendToEmail": "Поштаға жіберу",
+    "shareLink": "Сілтемемен бөлісу",
+    "schedule": "Кесте",
+    "addRecipients": "Алушыларды қосу",
+    "linkCopied": "Сілтеме көшірілді",
     "filters": {
-      "all": "Барлық инсайттар",
+      "all": "Барлығы",
       "alerts": "Ескертулер",
       "trends": "Трендтер",
       "recommendations": "Ұсыныстар",
@@ -297,15 +311,76 @@
     },
     "actions": {
       "dismiss": "Жасыру",
+      "dismissed": "Инсайт жасырылды",
       "viewDetails": "Толығырақ",
       "takeAction": "Әрекет жасау",
-      "share": "Бөлісу"
+      "share": "Инсайтпен бөлісу",
+      "edit": "Тақырыпты өңдеу"
+    },
+    "categories": {
+      "sentiment": "тональдық",
+      "reach": "қамту",
+      "engagement": "қатысу",
+      "influencers": "инфлюенсерлер",
+      "geo": "гео",
+      "general": "жалпы"
+    },
+    "metricLabels": {
+      "vsLastWeek": "өткен аптамен салыстырғанда",
+      "blogMentions": "блогтардағы атаулар",
+      "bestTime": "ең жақсы уақыт",
+      "influencers": "инфлюенсерлер",
+      "positive": "позитивті",
+      "increase": "өсу",
+      "decrease": "құлдырау",
+      "change": "өзгеріс"
+    },
+    "cards": {
+      "totalMentions": "Барлық атаулар",
+      "totalReach": "Жалпы қамту",
+      "positive": "Позитив",
+      "negative": "Негатив"
+    },
+    "sidebar": {
+      "recommendedActions": "Ұсынылатын әрекеттер",
+      "suggestedChannels": "Ұсынылған арналар",
+      "insightTrends": "Инсайт трендтері",
+      "last30Days": "Соңғы 30 күн",
+      "noChannels": "Белсенді арналар жоқ"
+    },
+    "recommendedActions": {
+      "draftPR": {
+        "label": "PR-жауап дайындау",
+        "description": "Соңғы теріс пікірлерге жауап"
+      },
+      "createTweet": {
+        "label": "Twitter-де тред жасау",
+        "description": "Позитивті пікірлерді көрсету"
+      },
+      "generateReport": {
+        "label": "Апталық есеп жасау",
+        "description": "Басшылыққа қысқаша есеп"
+      },
+      "contactInfluencers": {
+        "label": "Инфлюенсерлермен байланысу",
+        "description": "Әлеуетті серіктестер табу"
+      }
+    },
+    "channelPotential": {
+      "high": "Жоғары",
+      "medium": "Орташа",
+      "low": "Төмен"
+    },
+    "prompts": {
+      "takeActionPrefix": "Бұл инсайтпен не істеу керек: ",
+      "draftPR": "Брендім туралы соңғы теріс атаулар үшін PR-жауап дайында.",
+      "createTweet": "Ең позитивті атауларды бөліп көрсететін Twitter тред жаса.",
+      "contactInfluencersText": "Маған кімдермен байланысу керектігін және не айту керектігін ұсын."
     },
     "charts": {
       "insightsByCategory": "Категория бойынша инсайттар",
       "insightsOverTime": "Уақыт бойынша инсайттар"
-    },
-    "noInsights": "Қолжетімді инсайттар жоқ"
+    }
   },
   "analysis": {
     "title": "Талдау",

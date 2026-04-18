@@ -22,7 +22,18 @@ export {
 } from "./use-projects";
 export { useMentions, useMention, useBulkAction, useMentionsStats } from "./use-mentions";
 export { useSources, useCreateSource, useUpdateSource, useDeleteSource } from "./use-sources";
-export { useGeoData, useHotHours, useEmotions, useTopics, useTimeSeries, useComparison, useInsights, useInfluencers } from "./use-analytics";
+export {
+  useGeoData,
+  useHotHours,
+  useEmotions,
+  useTopics,
+  useTimeSeries,
+  useComparison,
+  useInsights,
+  useGenerateInsights,
+  useDismissInsight,
+  useInfluencers,
+} from "./use-analytics";
 export { useAiChat, useAiSummarize } from "./use-ai";
 export {
   useCreatePdfReport,

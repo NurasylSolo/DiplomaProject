@@ -124,6 +124,8 @@
       "password": "Пароль",
       "passwordPlaceholder": "Введите ваш пароль",
       "rememberMe": "Запомнить меня на 30 дней",
+      "rememberMeHint": "Не выходить из аккаунта 30 дней даже после закрытия браузера",
+      "rememberMeHintShort": "Сессия будет активна 7 дней",
       "forgotPassword": "Забыли пароль?",
       "submit": "Войти",
       "submitting": "Вход...",
@@ -277,8 +279,20 @@
   "insights": {
     "title": "AI Инсайты",
     "subtitle": "Практическая аналитика на базе продвинутого AI анализа",
+    "topInsights": "Главные инсайты",
+    "noInsights": "Инсайтов пока нет",
+    "noInsightsHint": "Нажмите Сгенерировать, чтобы AI создал инсайты из данных проекта.",
+    "generating": "Генерация...",
+    "generateNew": "Сгенерировать инсайты",
+    "generated": "Инсайты обновлены",
+    "generateFailed": "Не удалось сгенерировать инсайты",
+    "sendToEmail": "Отправить на почту",
+    "shareLink": "Поделиться ссылкой",
+    "schedule": "Расписание",
+    "addRecipients": "Добавить получателей",
+    "linkCopied": "Ссылка скопирована",
     "filters": {
-      "all": "Все инсайты",
+      "all": "Все",
       "alerts": "Оповещения",
       "trends": "Тренды",
       "recommendations": "Рекомендации",
@@ -297,15 +311,76 @@
     },
     "actions": {
       "dismiss": "Скрыть",
+      "dismissed": "Инсайт скрыт",
       "viewDetails": "Подробнее",
       "takeAction": "Принять меры",
-      "share": "Поделиться"
+      "share": "Поделиться инсайтом",
+      "edit": "Редактировать заголовок"
+    },
+    "categories": {
+      "sentiment": "тональность",
+      "reach": "охват",
+      "engagement": "вовлечённость",
+      "influencers": "инфлюенсеры",
+      "geo": "гео",
+      "general": "общее"
+    },
+    "metricLabels": {
+      "vsLastWeek": "к прошлой неделе",
+      "blogMentions": "упоминаний в блогах",
+      "bestTime": "лучшее время",
+      "influencers": "инфлюенсеров",
+      "positive": "позитивных",
+      "increase": "рост",
+      "decrease": "падение",
+      "change": "изменение"
+    },
+    "cards": {
+      "totalMentions": "Всего упоминаний",
+      "totalReach": "Общий охват",
+      "positive": "Позитив",
+      "negative": "Негатив"
+    },
+    "sidebar": {
+      "recommendedActions": "Рекомендуемые действия",
+      "suggestedChannels": "Рекомендуемые каналы",
+      "insightTrends": "Тренды инсайтов",
+      "last30Days": "Последние 30 дней",
+      "noChannels": "Нет активных каналов"
+    },
+    "recommendedActions": {
+      "draftPR": {
+        "label": "Подготовить PR-ответ",
+        "description": "Реакция на негативные упоминания"
+      },
+      "createTweet": {
+        "label": "Создать тред в Twitter",
+        "description": "Подсветить позитивные отзывы"
+      },
+      "generateReport": {
+        "label": "Создать недельный отчёт",
+        "description": "Сводка для руководства"
+      },
+      "contactInfluencers": {
+        "label": "Связаться с инфлюенсерами",
+        "description": "Найти потенциальных партнёров"
+      }
+    },
+    "channelPotential": {
+      "high": "Высокий",
+      "medium": "Средний",
+      "low": "Низкий"
+    },
+    "prompts": {
+      "takeActionPrefix": "Что мне делать с этим инсайтом: ",
+      "draftPR": "Подготовь PR-ответ на последние негативные упоминания о моём бренде.",
+      "createTweet": "Создай тред в Twitter с подборкой лучших позитивных упоминаний.",
+      "contactInfluencersText": "Подскажи самых влиятельных авторов, к которым стоит обратиться, и что им написать."
     },
     "charts": {
       "insightsByCategory": "Инсайты по категориям",
       "insightsOverTime": "Инсайты по времени"
-    },
-    "noInsights": "Нет доступных инсайтов"
+    }
   },
   "analysis": {
     "title": "Анализ",

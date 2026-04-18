@@ -1,5 +1,4 @@
 import logging
-import math
 import random
 from datetime import datetime, timedelta, timezone
 
@@ -266,7 +265,12 @@ async def refresh_tokens(
     if not stored_token:
         raise UnauthorizedError("Refresh token not found")
 
-    if stored_token.expires_at < datetime.now(timezone.utc):
+    now = datetime.now(timezone.utc)
+    # Make sure both datetimes are timezone-aware for the comparison.
+    stored_expires = stored_token.expires_at
+    if stored_expires.tzinfo is None:
+        stored_expires = stored_expires.replace(tzinfo=timezone.utc)
+    if stored_expires < now:
         await db.delete(stored_token)
         raise UnauthorizedError("Refresh token expired")
 
@@ -275,18 +279,19 @@ async def refresh_tokens(
     if not user:
         raise UnauthorizedError("User not found")
 
-    remaining_seconds = max(
-        1,
-        int((stored_token.expires_at - datetime.now(timezone.utc)).total_seconds()),
-    )
-    remaining_days = max(1, int(math.ceil(remaining_seconds / 86400)))
+    # Sliding session — keep the EXACT remaining lifetime (down to the second)
+    # so a 30-day "Remember me" stays 30 days even after multiple refreshes.
+    # Previously we rounded UP via math.ceil(seconds/86400) which silently
+    # drained the session by ~1 hour every refresh. Now we pass the precise
+    # expiry timestamp so it never drifts.
+    new_expires_at = stored_expires
     await db.delete(stored_token)
     tokens = await _create_tokens(
         db,
         user,
         user_agent=user_agent,
         ip_address=ip_address,
-        refresh_expires_days=remaining_days,
+        expires_at=new_expires_at,
     )
     return tokens
 
@@ -306,21 +311,43 @@ async def _create_tokens(
     user_agent: str | None = None,
     ip_address: str | None = None,
     refresh_expires_days: int | None = None,
+    expires_at: datetime | None = None,
 ) -> dict:
+    """Issue a new access + refresh token pair.
+
+    If ``expires_at`` is given, it is used as the absolute expiry (used by
+    ``refresh_tokens`` for sliding sessions). Otherwise we use
+    ``refresh_expires_days`` (or the default). This guarantees the JWT
+    payload's exp and the DB row's expires_at are computed once from the
+    same instant.
+    """
+    now = datetime.now(timezone.utc)
     token_data = {"sub": user.id, "email": user.email, "role": user.role}
-
     access_token = create_access_token(token_data)
-    refresh_days = refresh_expires_days or settings.REFRESH_TOKEN_EXPIRE_DAYS
-    refresh_token = create_refresh_token(token_data, expires_delta=timedelta(days=refresh_days))
 
-    expires_at = datetime.now(timezone.utc) + timedelta(days=refresh_days)
+    if expires_at is None:
+        refresh_days = refresh_expires_days or settings.REFRESH_TOKEN_EXPIRE_DAYS
+        expires_at = now + timedelta(days=refresh_days)
+    else:
+        # ensure tz-aware
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+
+    expires_delta = expires_at - now
+    if expires_delta.total_seconds() < 60:
+        # never issue a token that expires in less than a minute
+        expires_delta = timedelta(minutes=1)
+        expires_at = now + expires_delta
+
+    refresh_token = create_refresh_token(token_data, expires_delta=expires_delta)
+
     db_token = RefreshToken(
         user_id=user.id,
         token=refresh_token,
         expires_at=expires_at,
         user_agent=user_agent[:500] if user_agent else None,
         ip_address=ip_address[:100] if ip_address else None,
-        last_used_at=datetime.now(timezone.utc),
+        last_used_at=now,
     )
     db.add(db_token)
 

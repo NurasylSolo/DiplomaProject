@@ -16,6 +16,7 @@ class Insight(Base):
     metric: Mapped[float | None] = mapped_column(Float, nullable=True)
     metric_change: Mapped[float | None] = mapped_column(Float, nullable=True)
     severity: Mapped[str] = mapped_column(String(20), nullable=False, default="medium")
+    category: Mapped[str] = mapped_column(String(50), nullable=False, default="general")
     related_mention_ids: Mapped[list | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

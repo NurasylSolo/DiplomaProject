@@ -37,18 +37,32 @@ interface ActiveSession {
   current: boolean;
 }
 
+// These match REFRESH_TOKEN_EXPIRE_DAYS / REFRESH_TOKEN_SHORT_DAYS in backend/.env.
+// Used purely on the client to know when the locally stored refresh token is
+// definitively expired. Backend remains the source of truth on the actual TTL.
+const REFRESH_DAYS_REMEMBER = 30;
+const REFRESH_DAYS_DEFAULT = 7;
+
 export const authApi = {
   async login(data: LoginRequest): Promise<AuthResponse> {
     const response = await apiClient.post<AuthResponse>("/auth/login", data);
     const { access_token, refresh_token } = response.data;
-    tokenManager.setTokens(access_token, refresh_token);
+    const remember = !!data.remember_me;
+    tokenManager.setTokens(access_token, refresh_token, {
+      rememberMe: remember,
+      refreshExpiresInDays: remember ? REFRESH_DAYS_REMEMBER : REFRESH_DAYS_DEFAULT,
+    });
     return response.data;
   },
 
   async register(data: RegisterRequest): Promise<AuthResponse> {
     const response = await apiClient.post<AuthResponse>("/auth/register", data);
     const { access_token, refresh_token } = response.data;
-    tokenManager.setTokens(access_token, refresh_token);
+    // Registration always issues a long-lived session — user just signed up.
+    tokenManager.setTokens(access_token, refresh_token, {
+      rememberMe: true,
+      refreshExpiresInDays: REFRESH_DAYS_REMEMBER,
+    });
     return response.data;
   },
 
@@ -122,7 +136,11 @@ export const authApi = {
   async googleLogin(credential: string): Promise<AuthResponse> {
     const response = await apiClient.post<AuthResponse>("/auth/google", { credential });
     const { access_token, refresh_token } = response.data;
-    tokenManager.setTokens(access_token, refresh_token);
+    // Google login is treated as long-lived (same as Remember me).
+    tokenManager.setTokens(access_token, refresh_token, {
+      rememberMe: true,
+      refreshExpiresInDays: REFRESH_DAYS_REMEMBER,
+    });
     return response.data;
   },
 };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useLogin, useTranslation } from "@/hooks";
 import { useAuthStore } from "@/stores";
-import { authApi } from "@/lib/api/services";
+import { authApi, tokenManager } from "@/lib/api";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/api";
 
@@ -55,7 +55,13 @@ export default function LoginPage() {
       rememberMe: true,
     },
   });
-  
+
+  // Restore the user's previous "Remember me" preference from localStorage,
+  // so re-visits after logout default to whatever they last picked.
+  useEffect(() => {
+    setValue("rememberMe", tokenManager.getRememberMe());
+  }, [setValue]);
+
   const rememberMe = watch("rememberMe");
   const isLoading = loginMutation.isPending || googleLoading;
 
@@ -214,16 +220,24 @@ export default function LoginPage() {
           )}
         </motion.div>
 
-        <motion.div variants={itemVariants} className="flex items-center gap-2">
+        <motion.div variants={itemVariants} className="flex items-start gap-2">
           <Checkbox
             id="rememberMe"
             checked={rememberMe}
             onCheckedChange={(checked) => setValue("rememberMe", !!checked)}
             disabled={isLoading}
+            className="mt-0.5"
           />
-          <Label htmlFor="rememberMe" className="text-sm font-normal cursor-pointer">
-            {t("auth.login.rememberMe")}
-          </Label>
+          <div className="flex flex-col">
+            <Label htmlFor="rememberMe" className="text-sm font-normal cursor-pointer">
+              {t("auth.login.rememberMe")}
+            </Label>
+            <span className="text-xs text-muted-foreground">
+              {rememberMe
+                ? t("auth.login.rememberMeHint", { defaultValue: "Stay signed in for 30 days" })
+                : t("auth.login.rememberMeHintShort", { defaultValue: "Session lasts 7 days" })}
+            </span>
+          </div>
         </motion.div>
 
         <motion.div variants={itemVariants}>

@@ -124,6 +124,8 @@
       "password": "Password",
       "passwordPlaceholder": "Enter your password",
       "rememberMe": "Keep me signed in for 30 days",
+      "rememberMeHint": "Stay signed in for 30 days even after closing the browser",
+      "rememberMeHintShort": "Session lasts 7 days",
       "forgotPassword": "Forgot password?",
       "submit": "Sign In",
       "submitting": "Signing in...",
@@ -277,8 +279,20 @@
   "insights": {
     "title": "AI Insights",
     "subtitle": "Actionable intelligence powered by advanced AI analysis",
+    "topInsights": "Top Insights",
+    "noInsights": "No insights yet",
+    "noInsightsHint": "Click Generate to create AI-powered insights from your project data.",
+    "generating": "Generating...",
+    "generateNew": "Generate Insights",
+    "generated": "Insights regenerated",
+    "generateFailed": "Failed to generate insights",
+    "sendToEmail": "Send to Email",
+    "shareLink": "Share Link",
+    "schedule": "Schedule",
+    "addRecipients": "Add Recipients",
+    "linkCopied": "Link copied to clipboard",
     "filters": {
-      "all": "All Insights",
+      "all": "All",
       "alerts": "Alerts",
       "trends": "Trends",
       "recommendations": "Recommendations",
@@ -297,15 +311,76 @@
     },
     "actions": {
       "dismiss": "Dismiss",
+      "dismissed": "Insight dismissed",
       "viewDetails": "View Details",
       "takeAction": "Take Action",
-      "share": "Share"
+      "share": "Share insight",
+      "edit": "Edit title"
+    },
+    "categories": {
+      "sentiment": "sentiment",
+      "reach": "reach",
+      "engagement": "engagement",
+      "influencers": "influencers",
+      "geo": "geo",
+      "general": "general"
+    },
+    "metricLabels": {
+      "vsLastWeek": "vs last week",
+      "blogMentions": "blog mentions",
+      "bestTime": "best time",
+      "influencers": "influencers",
+      "positive": "positive",
+      "increase": "increase",
+      "decrease": "decrease",
+      "change": "change"
+    },
+    "cards": {
+      "totalMentions": "Total Mentions",
+      "totalReach": "Total Reach",
+      "positive": "Positive",
+      "negative": "Negative"
+    },
+    "sidebar": {
+      "recommendedActions": "Recommended Actions",
+      "suggestedChannels": "Suggested Channels",
+      "insightTrends": "Insight Trends",
+      "last30Days": "Last 30 days",
+      "noChannels": "No active channels yet"
+    },
+    "recommendedActions": {
+      "draftPR": {
+        "label": "Draft PR Response",
+        "description": "Address recent negative sentiment"
+      },
+      "createTweet": {
+        "label": "Create Tweet Thread",
+        "description": "Highlight positive reviews"
+      },
+      "generateReport": {
+        "label": "Generate Weekly Report",
+        "description": "Summary for stakeholders"
+      },
+      "contactInfluencers": {
+        "label": "Contact Influencers",
+        "description": "Reach out to potential partners"
+      }
+    },
+    "channelPotential": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "prompts": {
+      "takeActionPrefix": "How can I act on this insight: ",
+      "draftPR": "Draft a PR response for the latest negative mentions about my brand.",
+      "createTweet": "Create a Twitter thread highlighting the top positive mentions.",
+      "contactInfluencersText": "Suggest the most influential authors I should reach out to and what to say."
     },
     "charts": {
       "insightsByCategory": "Insights by Category",
       "insightsOverTime": "Insights Over Time"
-    },
-    "noInsights": "No insights available"
+    }
   },
   "analysis": {
     "title": "Analysis",

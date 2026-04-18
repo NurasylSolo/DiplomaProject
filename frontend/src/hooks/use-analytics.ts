@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { analyticsApi, insightsApi, influencersApi } from "@/lib/api/services";
 
 const FRESH = {
@@ -65,6 +65,26 @@ export function useInsights(projectId: string, params?: { type?: string; severit
     queryFn: () => insightsApi.list(projectId, params),
     enabled: !!projectId,
     ...FRESH,
+  });
+}
+
+export function useGenerateInsights(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => insightsApi.generate(projectId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["insights", projectId] });
+    },
+  });
+}
+
+export function useDismissInsight(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (insightId: string) => insightsApi.dismiss(projectId, insightId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["insights", projectId] });
+    },
   });
 }
 
