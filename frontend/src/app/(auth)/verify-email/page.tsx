@@ -10,8 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { authApi } from "@/lib/api/services";
 import { getErrorMessage } from "@/lib/api";
+import { useTranslation } from "@/hooks";
 
 function VerifyEmailContent() {
+  const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email") || "";
@@ -37,13 +39,13 @@ function VerifyEmailContent() {
   const handleVerify = useCallback(
     async (fullCode: string) => {
       if (!email) {
-        toast.error("Missing email — please go back and try again.");
+        toast.error(t("auth.verify.missingEmail"));
         return;
       }
       setIsVerifying(true);
       try {
         await authApi.verifyEmail(email, fullCode);
-        toast.success("Email verified! Redirecting...");
+        toast.success(t("auth.verify.verified"));
         setTimeout(() => router.push("/dashboard"), 600);
       } catch (error) {
         toast.error(getErrorMessage(error));
@@ -54,7 +56,7 @@ function VerifyEmailContent() {
         setIsVerifying(false);
       }
     },
-    [email, router]
+    [email, router, t]
   );
 
   const handleChange = (index: number, value: string) => {
@@ -97,7 +99,7 @@ function VerifyEmailContent() {
     setIsResending(true);
     try {
       await authApi.resendVerification(email);
-      toast.success("New code sent — check your inbox.");
+      toast.success(t("auth.verify.newCodeSent"));
       setResendCooldown(60);
     } catch (error) {
       toast.error(getErrorMessage(error));
@@ -118,12 +120,14 @@ function VerifyEmailContent() {
         </div>
         <div className="space-y-2">
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight">
-            Verify your email
+            {t("auth.verify.title")}
           </h1>
           <p className="text-muted-foreground text-sm max-w-sm">
-            We sent a 6-digit code to{" "}
-            <span className="text-foreground font-medium">{email || "your email"}</span>.
-            Enter it below to continue.
+            {t("auth.verify.subtitle")}{" "}
+            <span className="text-foreground font-medium">
+              {email || t("auth.verify.subtitleFallback")}
+            </span>
+            . {t("auth.verify.instructions")}
           </p>
         </div>
       </div>
@@ -152,7 +156,7 @@ function VerifyEmailContent() {
         {isVerifying && (
           <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Verifying...
+            {t("auth.verify.verifying")}
           </div>
         )}
 
@@ -171,24 +175,22 @@ function VerifyEmailContent() {
               <RefreshCw className="h-4 w-4 mr-2" />
             )}
             {resendCooldown > 0
-              ? `Resend in ${resendCooldown}s`
-              : "Resend code"}
+              ? t("auth.verify.resendIn", { seconds: resendCooldown })
+              : t("auth.verify.resend")}
           </Button>
           <Link
             href="/login"
             className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-3.5 w-3.5 mr-1.5" />
-            Back to sign in
+            {t("auth.verify.backToLogin")}
           </Link>
         </div>
       </div>
 
       <div className="rounded-lg border border-border/50 bg-muted/30 p-3 text-xs text-muted-foreground flex items-start gap-2">
         <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
-        <span>
-          Code expires in 10 minutes. Check your spam folder if you don't see it.
-        </span>
+        <span>{t("auth.verify.tip")}</span>
       </div>
     </motion.div>
   );

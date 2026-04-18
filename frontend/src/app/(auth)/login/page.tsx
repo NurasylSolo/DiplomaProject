@@ -13,26 +13,33 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useLogin } from "@/hooks";
+import { useLogin, useTranslation } from "@/hooks";
 import { useAuthStore } from "@/stores";
 import { authApi } from "@/lib/api/services";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/api";
 
 const loginSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  email: z.string().email("emailInvalid"),
+  password: z.string().min(6, "passwordMin"),
   rememberMe: z.boolean().optional(),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
+  const { t } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const loginMutation = useLogin();
   const router = useRouter();
   const { setUser } = useAuthStore();
+
+  // Map zod error keys to localized messages
+  const fieldError = (key?: string) => {
+    if (!key) return null;
+    return t(`auth.login.errors.${key}`, { defaultValue: key });
+  };
 
   const {
     register,
@@ -144,46 +151,46 @@ export default function LoginPage() {
         </div>
         
         <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight">
-          Welcome back
+          {t("auth.login.title")}
         </h1>
         <p className="text-muted-foreground">
-          Enter your credentials to access your account
+          {t("auth.login.subtitle")}
         </p>
       </motion.div>
       
       {/* Form */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <motion.div variants={itemVariants} className="space-y-2">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">{t("auth.login.email")}</Label>
           <Input
             id="email"
             type="email"
-            placeholder="name@company.com"
+            placeholder={t("auth.login.emailPlaceholder")}
             autoComplete="email"
             disabled={isLoading}
             className="h-12"
             {...register("email")}
           />
           {errors.email && (
-            <p className="text-sm text-destructive">{errors.email.message}</p>
+            <p className="text-sm text-destructive">{fieldError(errors.email.message)}</p>
           )}
         </motion.div>
-        
+
         <motion.div variants={itemVariants} className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor="password">Password</Label>
-            <Link 
-              href="/forgot-password" 
+            <Label htmlFor="password">{t("auth.login.password")}</Label>
+            <Link
+              href="/forgot-password"
               className="text-sm text-primary hover:text-primary/80 transition-colors"
             >
-              Forgot password?
+              {t("auth.login.forgotPassword")}
             </Link>
           </div>
           <div className="relative">
             <Input
               id="password"
               type={showPassword ? "text" : "password"}
-              placeholder="Enter your password"
+              placeholder={t("auth.login.passwordPlaceholder")}
               autoComplete="current-password"
               disabled={isLoading}
               className="h-12 pr-12"
@@ -203,10 +210,10 @@ export default function LoginPage() {
             </button>
           </div>
           {errors.password && (
-            <p className="text-sm text-destructive">{errors.password.message}</p>
+            <p className="text-sm text-destructive">{fieldError(errors.password.message)}</p>
           )}
         </motion.div>
-        
+
         <motion.div variants={itemVariants} className="flex items-center gap-2">
           <Checkbox
             id="rememberMe"
@@ -215,31 +222,31 @@ export default function LoginPage() {
             disabled={isLoading}
           />
           <Label htmlFor="rememberMe" className="text-sm font-normal cursor-pointer">
-            Keep me signed in for 30 days
+            {t("auth.login.rememberMe")}
           </Label>
         </motion.div>
-        
+
         <motion.div variants={itemVariants}>
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             className="w-full h-12 text-base glow-sm"
             disabled={isLoading}
           >
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Signing in...
+                {t("auth.login.submitting")}
               </>
             ) : (
               <>
-                Sign In
+                {t("auth.login.submit")}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </>
             )}
           </Button>
         </motion.div>
       </form>
-      
+
       {/* Divider */}
       <motion.div variants={itemVariants} className="relative">
         <div className="absolute inset-0 flex items-center">
@@ -247,7 +254,7 @@ export default function LoginPage() {
         </div>
         <div className="relative flex justify-center text-xs uppercase">
           <span className="bg-background px-2 text-muted-foreground">
-            Or continue with
+            {t("auth.login.orContinueWith")}
           </span>
         </div>
       </motion.div>
@@ -283,21 +290,21 @@ export default function LoginPage() {
             />
           </svg>
           )}
-          Continue with Google
+          {t("auth.login.google")}
         </Button>
       </motion.div>
-      
+
       {/* Sign up link */}
-      <motion.p 
+      <motion.p
         variants={itemVariants}
         className="text-center text-sm text-muted-foreground"
       >
-        Don&apos;t have an account?{" "}
-        <Link 
-          href="/register" 
+        {t("auth.login.noAccount")}{" "}
+        <Link
+          href="/register"
           className="text-primary hover:text-primary/80 font-medium transition-colors"
         >
-          Create account
+          {t("auth.login.createAccount")}
         </Link>
       </motion.p>
     </motion.div>

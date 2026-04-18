@@ -22,27 +22,50 @@ const COUNTRY_FLAGS: Record<string, string> = {
 };
 
 const COUNTRY_NAMES_EN: Record<string, string> = {
-  US: "United States", GB: "United Kingdom", DE: "Germany", FR: "France",
-  ES: "Spain", IT: "Italy", PT: "Portugal", NL: "Netherlands", BE: "Belgium",
-  CH: "Switzerland", AT: "Austria", SE: "Sweden", FI: "Finland", NO: "Norway",
-  DK: "Denmark", IE: "Ireland", PL: "Poland", CZ: "Czechia", GR: "Greece",
-  RO: "Romania", HU: "Hungary", BG: "Bulgaria", RS: "Serbia", HR: "Croatia",
-  SK: "Slovakia", SI: "Slovenia", EE: "Estonia", LT: "Lithuania", LV: "Latvia",
-  IS: "Iceland", RU: "Russia", KZ: "Kazakhstan", UA: "Ukraine", BY: "Belarus",
-  UZ: "Uzbekistan", KG: "Kyrgyzstan", TJ: "Tajikistan", AZ: "Azerbaijan",
-  AM: "Armenia", GE: "Georgia", MD: "Moldova",
-  TR: "Turkey", IL: "Israel", IR: "Iran", IQ: "Iraq",
-  SA: "Saudi Arabia", AE: "United Arab Emirates", QA: "Qatar", KW: "Kuwait",
-  OM: "Oman", BH: "Bahrain", JO: "Jordan", LB: "Lebanon",
+  // North America
+  US: "United States", CA: "Canada", MX: "Mexico", PR: "Puerto Rico",
+  KY: "Cayman Islands", BS: "Bahamas", JM: "Jamaica", CU: "Cuba", HT: "Haiti",
+  DO: "Dominican Republic", PA: "Panama", CR: "Costa Rica", GT: "Guatemala",
+  HN: "Honduras", NI: "Nicaragua", SV: "El Salvador", BZ: "Belize",
+  TT: "Trinidad and Tobago", BB: "Barbados",
+  // South America
+  BR: "Brazil", AR: "Argentina", CL: "Chile", PE: "Peru", CO: "Colombia",
+  VE: "Venezuela", EC: "Ecuador", BO: "Bolivia", PY: "Paraguay", UY: "Uruguay",
+  GY: "Guyana", SR: "Suriname",
+  // Europe
+  GB: "United Kingdom", DE: "Germany", FR: "France", ES: "Spain", IT: "Italy",
+  PT: "Portugal", NL: "Netherlands", BE: "Belgium", CH: "Switzerland",
+  AT: "Austria", SE: "Sweden", FI: "Finland", NO: "Norway", DK: "Denmark",
+  IE: "Ireland", PL: "Poland", CZ: "Czechia", GR: "Greece", RO: "Romania",
+  HU: "Hungary", BG: "Bulgaria", RS: "Serbia", HR: "Croatia", SK: "Slovakia",
+  SI: "Slovenia", EE: "Estonia", LT: "Lithuania", LV: "Latvia", IS: "Iceland",
+  LU: "Luxembourg", MT: "Malta", CY: "Cyprus", AL: "Albania", MK: "Macedonia",
+  ME: "Montenegro", BA: "Bosnia and Herzegovina", XK: "Kosovo",
+  // Eastern Europe / CIS
+  RU: "Russia", UA: "Ukraine", BY: "Belarus", MD: "Moldova", GE: "Georgia",
+  AM: "Armenia", AZ: "Azerbaijan", KZ: "Kazakhstan", UZ: "Uzbekistan",
+  KG: "Kyrgyzstan", TJ: "Tajikistan", TM: "Turkmenistan",
+  // Middle East
+  TR: "Turkey", IL: "Israel", IR: "Iran", IQ: "Iraq", SY: "Syria",
+  LB: "Lebanon", JO: "Jordan", PS: "Palestine", SA: "Saudi Arabia",
+  AE: "United Arab Emirates", QA: "Qatar", KW: "Kuwait", OM: "Oman",
+  BH: "Bahrain", YE: "Yemen", AF: "Afghanistan",
+  // Africa
   EG: "Egypt", MA: "Morocco", DZ: "Algeria", TN: "Tunisia", LY: "Libya",
-  NG: "Nigeria", ZA: "South Africa", KE: "Kenya", ET: "Ethiopia", GH: "Ghana",
-  CN: "China", HK: "Hong Kong", TW: "Taiwan", JP: "Japan",
-  KR: "South Korea", KP: "North Korea", IN: "India", PK: "Pakistan",
-  BD: "Bangladesh", SG: "Singapore", MY: "Malaysia", TH: "Thailand",
-  ID: "Indonesia", PH: "Philippines", VN: "Vietnam", MN: "Mongolia",
-  CA: "Canada", MX: "Mexico", BR: "Brazil", AR: "Argentina", CL: "Chile",
-  PE: "Peru", CO: "Colombia", VE: "Venezuela", EC: "Ecuador",
-  AU: "Australia", NZ: "New Zealand",
+  SD: "Sudan", SS: "South Sudan", NG: "Nigeria", ZA: "South Africa",
+  KE: "Kenya", ET: "Ethiopia", GH: "Ghana", CI: "Ivory Coast",
+  SN: "Senegal", CM: "Cameroon", UG: "Uganda", TZ: "Tanzania", AO: "Angola",
+  MZ: "Mozambique", MG: "Madagascar", ZW: "Zimbabwe", ZM: "Zambia",
+  RW: "Rwanda", BW: "Botswana", NA: "Namibia", ML: "Mali", SO: "Somalia",
+  // Asia
+  CN: "China", HK: "Hong Kong", TW: "Taiwan", JP: "Japan", KR: "South Korea",
+  KP: "North Korea", IN: "India", PK: "Pakistan", BD: "Bangladesh",
+  SG: "Singapore", MY: "Malaysia", TH: "Thailand", ID: "Indonesia",
+  PH: "Philippines", VN: "Vietnam", MN: "Mongolia", LK: "Sri Lanka",
+  NP: "Nepal", BT: "Bhutan", MM: "Myanmar", KH: "Cambodia", LA: "Laos",
+  MO: "Macau", BN: "Brunei",
+  // Oceania
+  AU: "Australia", NZ: "New Zealand", FJ: "Fiji", PG: "Papua New Guinea",
 };
 
 const COUNTRY_NAMES_RU: Record<string, string> = {
@@ -68,15 +91,37 @@ const COUNTRY_NAMES_KZ: Record<string, string> = {
   CA: "Канада", BR: "Бразилия", AU: "Австралия",
 };
 
-// ECharts world map uses English names — keep this in sync with the maps.
+// ECharts world map (johan/world.geo.json) uses these exact `name` properties.
+// Where they differ from human-friendly names we override here.
+// Reference: https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json
 const COUNTRY_NAMES_ECHARTS: Record<string, string> = {
   ...COUNTRY_NAMES_EN,
-  US: "United States",
+  US: "United States of America",
   GB: "United Kingdom",
+  RU: "Russia",
   KR: "South Korea",
   KP: "North Korea",
   AE: "United Arab Emirates",
   CZ: "Czech Republic",
+  CD: "Democratic Republic of the Congo",
+  CG: "Republic of the Congo",
+  CI: "Ivory Coast",
+  TZ: "United Republic of Tanzania",
+  TL: "East Timor",
+  RS: "Republic of Serbia",
+  BA: "Bosnia and Herzegovina",
+  MK: "Macedonia",
+  SY: "Syria",
+  GW: "Guinea Bissau",
+  GQ: "Equatorial Guinea",
+  CF: "Central African Republic",
+  SS: "South Sudan",
+  SR: "Suriname",
+  BS: "The Bahamas",
+  TT: "Trinidad and Tobago",
+  GM: "Gambia",
+  // Hong Kong / Taiwan / Greenland sometimes don't render — they are a separate
+  // polygon in the dataset. ECharts will silently drop unknown names.
 };
 
 export function getCountryFlag(code: string | null | undefined): string {

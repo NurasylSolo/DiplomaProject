@@ -13,34 +13,41 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useRegister } from "@/hooks";
+import { useRegister, useTranslation } from "@/hooks";
 import { useAuthStore } from "@/stores";
 import { authApi } from "@/lib/api/services";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/api";
 
+// Error keys are looked up in i18n: auth.register.errors.<key>
 const registerSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Please enter a valid email address"),
+  name: z.string().min(2, "nameMin"),
+  email: z.string().email("emailInvalid"),
   password: z
     .string()
-    .min(8, "Password must be at least 8 characters")
-    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-    .regex(/[0-9]/, "Password must contain at least one number"),
+    .min(8, "passwordMin")
+    .regex(/[A-Z]/, "passwordUpper")
+    .regex(/[a-z]/, "passwordLower")
+    .regex(/[0-9]/, "passwordNumber"),
   acceptTerms: z.boolean().refine((val) => val === true, {
-    message: "You must accept the terms and conditions",
+    message: "termsRequired",
   }),
 });
 
 type RegisterFormData = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
+  const { t } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const registerMutation = useRegister();
   const router = useRouter();
   const { setUser } = useAuthStore();
+
+  const fieldError = (key?: string) => {
+    if (!key) return null;
+    return t(`auth.register.errors.${key}`, { defaultValue: key });
+  };
 
   const {
     register,
@@ -172,54 +179,54 @@ export default function RegisterPage() {
         </div>
         
         <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight">
-          Create your account
+          {t("auth.register.title")}
         </h1>
         <p className="text-muted-foreground">
-          Start your 14-day free trial. No credit card required.
+          {t("auth.register.subtitle")}
         </p>
       </motion.div>
-      
+
       {/* Form */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
         <motion.div variants={itemVariants} className="space-y-2">
-          <Label htmlFor="name">Full Name</Label>
+          <Label htmlFor="name">{t("auth.register.name")}</Label>
           <Input
             id="name"
             type="text"
-            placeholder="John Doe"
+            placeholder={t("auth.register.namePlaceholder")}
             autoComplete="name"
             disabled={isLoading}
             className="h-12"
             {...register("name")}
           />
           {errors.name && (
-            <p className="text-sm text-destructive">{errors.name.message}</p>
+            <p className="text-sm text-destructive">{fieldError(errors.name.message)}</p>
           )}
         </motion.div>
-        
+
         <motion.div variants={itemVariants} className="space-y-2">
-          <Label htmlFor="email">Work Email</Label>
+          <Label htmlFor="email">{t("auth.register.email")}</Label>
           <Input
             id="email"
             type="email"
-            placeholder="name@company.com"
+            placeholder={t("auth.register.emailPlaceholder")}
             autoComplete="email"
             disabled={isLoading}
             className="h-12"
             {...register("email")}
           />
           {errors.email && (
-            <p className="text-sm text-destructive">{errors.email.message}</p>
+            <p className="text-sm text-destructive">{fieldError(errors.email.message)}</p>
           )}
         </motion.div>
-        
+
         <motion.div variants={itemVariants} className="space-y-2">
-          <Label htmlFor="password">Password</Label>
+          <Label htmlFor="password">{t("auth.register.password")}</Label>
           <div className="relative">
             <Input
               id="password"
               type={showPassword ? "text" : "password"}
-              placeholder="Create a strong password"
+              placeholder={t("auth.register.passwordPlaceholder")}
               autoComplete="new-password"
               disabled={isLoading}
               className="h-12 pr-12"
@@ -238,7 +245,7 @@ export default function RegisterPage() {
               )}
             </button>
           </div>
-          
+
           {/* Password strength indicator */}
           {password && (
             <div className="space-y-3 pt-1">
@@ -253,22 +260,22 @@ export default function RegisterPage() {
                   />
                 ))}
               </div>
-              
+
               {/* Requirements list */}
               <div className="grid grid-cols-2 gap-2 text-xs">
-                <PasswordRequirement met={checks.length} label="8+ characters" />
-                <PasswordRequirement met={checks.uppercase} label="Uppercase" />
-                <PasswordRequirement met={checks.lowercase} label="Lowercase" />
-                <PasswordRequirement met={checks.number} label="Number" />
+                <PasswordRequirement met={checks.length} label={t("auth.passwordStrength.length")} />
+                <PasswordRequirement met={checks.uppercase} label={t("auth.passwordStrength.uppercase")} />
+                <PasswordRequirement met={checks.lowercase} label={t("auth.passwordStrength.lowercase")} />
+                <PasswordRequirement met={checks.number} label={t("auth.passwordStrength.number")} />
               </div>
             </div>
           )}
-          
+
           {errors.password && (
-            <p className="text-sm text-destructive">{errors.password.message}</p>
+            <p className="text-sm text-destructive">{fieldError(errors.password.message)}</p>
           )}
         </motion.div>
-        
+
         <motion.div variants={itemVariants} className="flex items-start gap-2">
           <Checkbox
             id="acceptTerms"
@@ -278,41 +285,41 @@ export default function RegisterPage() {
             className="mt-0.5"
           />
           <Label htmlFor="acceptTerms" className="text-sm font-normal cursor-pointer leading-relaxed">
-            I agree to the{" "}
+            {t("auth.register.acceptTermsPrefix")}{" "}
             <Link href="/terms" className="text-primary hover:text-primary/80">
-              Terms of Service
+              {t("auth.register.termsOfService")}
             </Link>{" "}
-            and{" "}
+            {t("auth.register.and")}{" "}
             <Link href="/privacy" className="text-primary hover:text-primary/80">
-              Privacy Policy
+              {t("auth.register.privacyPolicy")}
             </Link>
           </Label>
         </motion.div>
         {errors.acceptTerms && (
-          <p className="text-sm text-destructive">{errors.acceptTerms.message}</p>
+          <p className="text-sm text-destructive">{fieldError(errors.acceptTerms.message)}</p>
         )}
-        
+
         <motion.div variants={itemVariants}>
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             className="w-full h-12 text-base glow-sm"
             disabled={isLoading}
           >
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Creating account...
+                {t("auth.register.submitting")}
               </>
             ) : (
               <>
-                Create Account
+                {t("auth.register.submit")}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </>
             )}
           </Button>
         </motion.div>
       </form>
-      
+
       {/* Divider */}
       <motion.div variants={itemVariants} className="relative">
         <div className="absolute inset-0 flex items-center">
@@ -320,7 +327,7 @@ export default function RegisterPage() {
         </div>
         <div className="relative flex justify-center text-xs uppercase">
           <span className="bg-background px-2 text-muted-foreground">
-            Or continue with
+            {t("auth.register.orContinueWith")}
           </span>
         </div>
       </motion.div>
@@ -356,21 +363,21 @@ export default function RegisterPage() {
             />
           </svg>
           )}
-          Continue with Google
+          {t("auth.register.google")}
         </Button>
       </motion.div>
-      
+
       {/* Sign in link */}
-      <motion.p 
+      <motion.p
         variants={itemVariants}
         className="text-center text-sm text-muted-foreground"
       >
-        Already have an account?{" "}
-        <Link 
-          href="/login" 
+        {t("auth.register.hasAccount")}{" "}
+        <Link
+          href="/login"
           className="text-primary hover:text-primary/80 font-medium transition-colors"
         >
-          Sign in
+          {t("auth.register.signIn")}
         </Link>
       </motion.p>
     </motion.div>

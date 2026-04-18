@@ -102,11 +102,27 @@
     }
   },
   "auth": {
+    "layout": {
+      "headingLine1": "Media Intelligence",
+      "headingLine2": "Reimagined",
+      "subtitle": "Track brand mentions, analyze sentiment, and gain actionable insights from news and social media in real-time.",
+      "features": {
+        "monitoring": "Real-time monitoring across 150+ countries",
+        "ai": "AI-powered sentiment & emotion analysis",
+        "reports": "Automated reports and alerts",
+        "multilang": "Multi-language support (EN, RU, KZ)"
+      },
+      "testimonial": "\"Senti News transformed how we monitor our brand reputation. The AI insights are incredibly accurate and save us hours every week.\"",
+      "authorName": "Nurasyl Kairkhanov & Akezhan Meirkhanov",
+      "authorRole": "Students of Astana IT University"
+    },
     "login": {
       "title": "Welcome back",
       "subtitle": "Enter your credentials to access your account",
       "email": "Email",
+      "emailPlaceholder": "name@company.com",
       "password": "Password",
+      "passwordPlaceholder": "Enter your password",
       "rememberMe": "Keep me signed in for 30 days",
       "forgotPassword": "Forgot password?",
       "submit": "Sign In",
@@ -114,25 +130,60 @@
       "noAccount": "Don't have an account?",
       "createAccount": "Create account",
       "orContinueWith": "Or continue with",
-      "google": "Continue with Google"
+      "google": "Continue with Google",
+      "errors": {
+        "emailInvalid": "Please enter a valid email address",
+        "passwordMin": "Password must be at least 6 characters"
+      }
     },
     "register": {
       "title": "Create your account",
-      "subtitle": "Get started with Senti News today. No credit card required.",
+      "subtitle": "Start your 14-day free trial. No credit card required.",
       "name": "Full Name",
+      "namePlaceholder": "John Doe",
       "email": "Work Email",
+      "emailPlaceholder": "name@company.com",
       "password": "Password",
-      "acceptTerms": "I agree to the Terms of Service and Privacy Policy",
+      "passwordPlaceholder": "Create a strong password",
+      "acceptTermsPrefix": "I agree to the",
+      "termsOfService": "Terms of Service",
+      "and": "and",
+      "privacyPolicy": "Privacy Policy",
       "submit": "Create Account",
       "submitting": "Creating account...",
       "hasAccount": "Already have an account?",
-      "signIn": "Sign in"
+      "signIn": "Sign in",
+      "orContinueWith": "Or continue with",
+      "google": "Continue with Google",
+      "errors": {
+        "nameMin": "Name must be at least 2 characters",
+        "emailInvalid": "Please enter a valid email address",
+        "passwordMin": "Password must be at least 8 characters",
+        "passwordUpper": "Password must contain at least one uppercase letter",
+        "passwordLower": "Password must contain at least one lowercase letter",
+        "passwordNumber": "Password must contain at least one number",
+        "termsRequired": "You must accept the terms and conditions"
+      }
     },
     "passwordStrength": {
       "length": "8+ characters",
       "uppercase": "Uppercase",
       "lowercase": "Lowercase",
       "number": "Number"
+    },
+    "verify": {
+      "title": "Verify your email",
+      "subtitle": "We sent a 6-digit code to",
+      "subtitleFallback": "your email",
+      "instructions": "Enter it below to continue.",
+      "verifying": "Verifying...",
+      "resend": "Resend code",
+      "resendIn": "Resend in {{seconds}}s",
+      "backToLogin": "Back to sign in",
+      "tip": "Code expires in 10 minutes. Check your spam folder if you don't see it.",
+      "missingEmail": "Missing email — please go back and try again.",
+      "verified": "Email verified! Redirecting...",
+      "newCodeSent": "New code sent — check your inbox."
     }
   },
   "header": {

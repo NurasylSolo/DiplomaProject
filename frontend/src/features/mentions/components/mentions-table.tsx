@@ -34,7 +34,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { getCountryFlag, getCountryName } from "@/lib/utils/countries";
+import { getCountryName } from "@/lib/utils/countries";
+import { CountryFlag } from "@/components/ui/country-flag";
 import { useMentions, useBulkAction } from "@/hooks";
 import { useMentionsFilterStore } from "@/stores";
 import { buildFilterQuery } from "@/stores/use-mentions-filter-store";
@@ -232,8 +233,8 @@ export function MentionsTable({ projectId }: MentionsTableProps) {
                     </span>
                   </td>
                   <td className="p-4 text-center">
-                    <span className="text-lg" title={getCountryName(mention.country, "en")}>
-                      {getCountryFlag(mention.country)}
+                    <span className="inline-flex items-center justify-center" title={getCountryName(mention.country, "en")}>
+                      <CountryFlag code={mention.country} size={22} />
                     </span>
                   </td>
                   <td className="p-4" onClick={(e) => e.stopPropagation()}>

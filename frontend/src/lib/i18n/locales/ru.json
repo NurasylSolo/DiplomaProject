@@ -102,11 +102,27 @@
     }
   },
   "auth": {
+    "layout": {
+      "headingLine1": "Медиа-аналитика",
+      "headingLine2": "По-новому",
+      "subtitle": "Отслеживайте упоминания бренда, анализируйте тональность и получайте практические инсайты из новостей и соцсетей в реальном времени.",
+      "features": {
+        "monitoring": "Мониторинг в реальном времени по 150+ странам",
+        "ai": "AI-анализ тональности и эмоций",
+        "reports": "Автоматические отчёты и оповещения",
+        "multilang": "Поддержка трёх языков (EN, RU, KZ)"
+      },
+      "testimonial": "«Senti News изменил наш подход к мониторингу репутации. AI-аналитика поразительно точна и экономит нам часы каждую неделю.»",
+      "authorName": "Nurasyl Kairkhanov & Akezhan Meirkhanov",
+      "authorRole": "Студенты Astana IT University"
+    },
     "login": {
       "title": "С возвращением",
       "subtitle": "Введите данные для входа в аккаунт",
       "email": "Email",
+      "emailPlaceholder": "name@company.com",
       "password": "Пароль",
+      "passwordPlaceholder": "Введите ваш пароль",
       "rememberMe": "Запомнить меня на 30 дней",
       "forgotPassword": "Забыли пароль?",
       "submit": "Войти",
@@ -114,19 +130,54 @@
       "noAccount": "Нет аккаунта?",
       "createAccount": "Создать аккаунт",
       "orContinueWith": "Или войти через",
-      "google": "Войти через Google"
+      "google": "Войти через Google",
+      "errors": {
+        "emailInvalid": "Введите корректный email",
+        "passwordMin": "Пароль должен содержать минимум 6 символов"
+      }
     },
     "register": {
       "title": "Создайте аккаунт",
-      "subtitle": "Начните работу с Senti News сегодня. Карта не требуется.",
+      "subtitle": "Начните бесплатный 14-дневный пробный период. Карта не требуется.",
       "name": "Полное имя",
+      "namePlaceholder": "Иван Иванов",
       "email": "Рабочий Email",
+      "emailPlaceholder": "name@company.com",
       "password": "Пароль",
-      "acceptTerms": "Я соглашаюсь с Условиями использования и Политикой конфиденциальности",
+      "passwordPlaceholder": "Создайте надёжный пароль",
+      "acceptTermsPrefix": "Я принимаю",
+      "termsOfService": "Условия использования",
+      "and": "и",
+      "privacyPolicy": "Политику конфиденциальности",
       "submit": "Создать аккаунт",
       "submitting": "Создание аккаунта...",
       "hasAccount": "Уже есть аккаунт?",
-      "signIn": "Войти"
+      "signIn": "Войти",
+      "orContinueWith": "Или войти через",
+      "google": "Войти через Google",
+      "errors": {
+        "nameMin": "Имя должно содержать минимум 2 символа",
+        "emailInvalid": "Введите корректный email",
+        "passwordMin": "Пароль должен содержать минимум 8 символов",
+        "passwordUpper": "Пароль должен содержать хотя бы одну заглавную букву",
+        "passwordLower": "Пароль должен содержать хотя бы одну строчную букву",
+        "passwordNumber": "Пароль должен содержать хотя бы одну цифру",
+        "termsRequired": "Необходимо принять условия использования"
+      }
+    },
+    "verify": {
+      "title": "Подтвердите email",
+      "subtitle": "Мы отправили 6-значный код на",
+      "subtitleFallback": "ваш email",
+      "instructions": "Введите его ниже, чтобы продолжить.",
+      "verifying": "Проверка...",
+      "resend": "Отправить код снова",
+      "resendIn": "Повторить через {{seconds}} сек",
+      "backToLogin": "Вернуться ко входу",
+      "tip": "Код действует 10 минут. Если письма нет — проверьте спам.",
+      "missingEmail": "Email не передан — вернитесь и попробуйте снова.",
+      "verified": "Email подтверждён! Перенаправление...",
+      "newCodeSent": "Новый код отправлен — проверьте почту."
     },
     "passwordStrength": {
       "length": "8+ символов",

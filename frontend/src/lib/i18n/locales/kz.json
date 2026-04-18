@@ -102,11 +102,27 @@
     }
   },
   "auth": {
+    "layout": {
+      "headingLine1": "Медиа-аналитика",
+      "headingLine2": "Жаңаша",
+      "subtitle": "Бренд атауларын бақылаңыз, тональдықты талдаңыз және жаңалықтар мен әлеуметтік желілерден нақты уақытта пайдалы қорытындылар алыңыз.",
+      "features": {
+        "monitoring": "150+ елде нақты уақыттағы мониторинг",
+        "ai": "AI негізіндегі тональдық пен эмоция талдауы",
+        "reports": "Автоматты есептер мен ескертулер",
+        "multilang": "Үш тілді қолдау (EN, RU, KZ)"
+      },
+      "testimonial": "«Senti News біздің бренд бедел бақылауды толығымен өзгертті. AI-аналитика таңқаларлықтай дәл және апта сайын бізге сағаттар үнемдейді.»",
+      "authorName": "Nurasyl Kairkhanov & Akezhan Meirkhanov",
+      "authorRole": "Astana IT University студенттері"
+    },
     "login": {
       "title": "Қайта оралуыңызбен",
       "subtitle": "Аккаунтқа кіру үшін деректерді енгізіңіз",
       "email": "Email",
+      "emailPlaceholder": "name@company.com",
       "password": "Құпия сөз",
+      "passwordPlaceholder": "Құпия сөзіңізді енгізіңіз",
       "rememberMe": "Мені 30 күн есте сақта",
       "forgotPassword": "Құпия сөзді ұмыттыңыз ба?",
       "submit": "Кіру",
@@ -114,19 +130,54 @@
       "noAccount": "Аккаунт жоқ па?",
       "createAccount": "Аккаунт жасау",
       "orContinueWith": "Немесе арқылы кіру",
-      "google": "Google арқылы кіру"
+      "google": "Google арқылы кіру",
+      "errors": {
+        "emailInvalid": "Дұрыс email енгізіңіз",
+        "passwordMin": "Құпия сөз кемінде 6 таңбадан тұруы керек"
+      }
     },
     "register": {
       "title": "Аккаунт жасау",
-      "subtitle": "Бүгін Senti News-пен жұмыс істей бастаңыз. Карта қажет емес.",
+      "subtitle": "14 күндік тегін сынақ кезеңін бастаңыз. Карта қажет емес.",
       "name": "Толық аты-жөні",
+      "namePlaceholder": "Аян Аянов",
       "email": "Жұмыс Email",
+      "emailPlaceholder": "name@company.com",
       "password": "Құпия сөз",
-      "acceptTerms": "Қызмет көрсету шарттары мен Құпиялылық саясатымен келісемін",
+      "passwordPlaceholder": "Берік құпия сөз жасаңыз",
+      "acceptTermsPrefix": "Мен қабылдаймын",
+      "termsOfService": "Қызмет көрсету шарттары",
+      "and": "және",
+      "privacyPolicy": "Құпиялылық саясаты",
       "submit": "Аккаунт жасау",
       "submitting": "Аккаунт жасалуда...",
       "hasAccount": "Аккаунт бар ма?",
-      "signIn": "Кіру"
+      "signIn": "Кіру",
+      "orContinueWith": "Немесе арқылы кіру",
+      "google": "Google арқылы кіру",
+      "errors": {
+        "nameMin": "Аты-жөні кемінде 2 таңбадан тұруы керек",
+        "emailInvalid": "Дұрыс email енгізіңіз",
+        "passwordMin": "Құпия сөз кемінде 8 таңбадан тұруы керек",
+        "passwordUpper": "Құпия сөзде кемінде бір бас әріп болуы керек",
+        "passwordLower": "Құпия сөзде кемінде бір кіші әріп болуы керек",
+        "passwordNumber": "Құпия сөзде кемінде бір сан болуы керек",
+        "termsRequired": "Шарттарды қабылдау қажет"
+      }
+    },
+    "verify": {
+      "title": "Email-ді растаңыз",
+      "subtitle": "Біз 6 таңбалы кодты жібердік",
+      "subtitleFallback": "сіздің email-ге",
+      "instructions": "Жалғастыру үшін оны төменде енгізіңіз.",
+      "verifying": "Тексерілуде...",
+      "resend": "Кодты қайта жіберу",
+      "resendIn": "{{seconds}} сек кейін қайта",
+      "backToLogin": "Кіру бетіне қайту",
+      "tip": "Код 10 минутта жарамсыз болады. Хат көрінбесе, спам бумасын тексеріңіз.",
+      "missingEmail": "Email көрсетілмеген — қайта оралып, тағы көріңіз.",
+      "verified": "Email расталды! Бағыттаймыз...",
+      "newCodeSent": "Жаңа код жіберілді — поштаңызды тексеріңіз."
     },
     "passwordStrength": {
       "length": "8+ таңба",

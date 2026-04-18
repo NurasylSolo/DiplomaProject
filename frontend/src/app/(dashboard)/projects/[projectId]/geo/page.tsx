@@ -25,7 +25,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { getCountryFlag, getCountryName, getEChartsCountryName } from "@/lib/utils/countries";
+import { getCountryName, getEChartsCountryName } from "@/lib/utils/countries";
+import { CountryFlag } from "@/components/ui/country-flag";
 
 interface GeoAnalysisPageProps {
   params: Promise<{ projectId: string }>;
@@ -215,7 +216,8 @@ export default function GeoAnalysisPage({ params }: GeoAnalysisPageProps) {
                   checked={!excludedCountries.includes(country.code)}
                   onCheckedChange={() => toggleCountry(country.code)}
                 >
-                  {getCountryFlag(country.code)} {country.name}
+                  <CountryFlag code={country.code} size={18} className="mr-2" />
+                  {country.name}
                 </DropdownMenuCheckboxItem>
               ))}
             </DropdownMenuContent>
@@ -293,7 +295,7 @@ export default function GeoAnalysisPage({ params }: GeoAnalysisPageProps) {
                     <td className="p-4 text-muted-foreground">{index + 1}</td>
                     <td className="p-4">
                       <div className="flex items-center gap-2">
-                        <span className="text-lg">{getCountryFlag(country.code)}</span>
+                        <CountryFlag code={country.code} size={22} />
                         <span className="font-medium">{country.name}</span>
                       </div>
                     </td>

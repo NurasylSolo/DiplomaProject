@@ -8,6 +8,12 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.resolve(__dirname),
   },
+  images: {
+    remotePatterns: [
+      // Country flags PNG (used by <CountryFlag />)
+      { protocol: "https", hostname: "flagcdn.com" },
+    ],
+  },
 };
 
 export default nextConfig;
