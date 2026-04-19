@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 from pydantic import BaseModel, Field
 
 
@@ -11,6 +11,11 @@ class SourceCreate(BaseModel):
     country: Optional[str] = None
     language: Optional[str] = None
     icon: Optional[str] = None
+
+
+class SourceBulkActionRequest(BaseModel):
+    action: str = Field(..., description="activate | deactivate | delete | mark_trusted | unmark_trusted")
+    source_ids: List[str] = Field(default_factory=list)
 
 
 class SourceUpdate(BaseModel):

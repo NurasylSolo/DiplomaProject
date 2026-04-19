@@ -1,16 +1,35 @@
-import uuid
+"""AI services: chat assistant, summarization, structured AI report.
+
+All GPT calls share one helper (`_chat_completion`) with retry, timeout and
+unified model selection from ``settings.OPENAI_CHAT_MODEL``.
+
+Retrieval uses persisted embeddings from ``mention_embeddings`` table via
+``embedding_service.search_similar`` — never the on-the-fly hash fallback.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+import re
 from datetime import datetime, timezone
-from sqlalchemy import select
+from typing import Any
+
+from sqlalchemy import select, delete, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from openai import AsyncOpenAI
+
 from app.config import settings
-from app.models.mention import Mention
+from app.core.exceptions import BadRequestError, NotFoundError
 from app.models.chat import Chat, ChatMessage
-from app.core.exceptions import BadRequestError
-from app.services.vector_service import embed_text, cosine_similarity
+from app.models.mention import Mention
+from app.services import embedding_service
+
+logger = logging.getLogger(__name__)
 
 
-_client = None
+_client: AsyncOpenAI | None = None
 
 
 def _get_openai_client() -> AsyncOpenAI:
@@ -22,6 +41,61 @@ def _get_openai_client() -> AsyncOpenAI:
     return _client
 
 
+# ---------------------------------------------------------------------------
+# Unified chat completion helper.
+# ---------------------------------------------------------------------------
+async def _chat_completion(
+    *,
+    messages: list[dict],
+    model: str | None = None,
+    temperature: float = 0.4,
+    max_tokens: int = 1500,
+    response_format: dict | None = None,
+    retries: int = 3,
+    timeout: float = 60.0,
+) -> tuple[str, dict[str, Any]]:
+    """Call ``chat.completions.create`` with retries, timeout and structured
+    metadata in the response.
+    """
+    client = _get_openai_client()
+    chosen_model = model or settings.OPENAI_CHAT_MODEL
+
+    last_err: Exception | None = None
+    for attempt in range(retries):
+        try:
+            kwargs = {
+                "model": chosen_model,
+                "messages": messages,
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+            }
+            if response_format is not None:
+                kwargs["response_format"] = response_format
+
+            resp = await asyncio.wait_for(
+                client.chat.completions.create(**kwargs), timeout=timeout
+            )
+            content = resp.choices[0].message.content or ""
+            meta = {
+                "model": chosen_model,
+                "tokens_used": resp.usage.total_tokens if resp.usage else None,
+                "prompt_tokens": resp.usage.prompt_tokens if resp.usage else None,
+                "completion_tokens": resp.usage.completion_tokens if resp.usage else None,
+            }
+            return content, meta
+        except Exception as exc:
+            last_err = exc
+            if attempt < retries - 1:
+                await asyncio.sleep(1.5 * (2 ** attempt))
+            else:
+                logger.error("chat.completions.create failed: %s", exc)
+
+    raise BadRequestError(f"AI request failed after {retries} attempts: {last_err}")
+
+
+# ---------------------------------------------------------------------------
+# Summarize a list of mentions.
+# ---------------------------------------------------------------------------
 async def summarize_mentions(
     db: AsyncSession,
     project_id: str,
@@ -39,32 +113,63 @@ async def summarize_mentions(
         query = query.where(Mention.published_at <= datetime.fromisoformat(date_to))
 
     query = query.order_by(Mention.published_at.desc()).limit(50)
-    result = await db.execute(query)
-    mentions = result.scalars().all()
+    mentions = (await db.execute(query)).scalars().all()
 
     if not mentions:
         return "No mentions found for the given criteria."
 
-    mentions_text = "\n\n".join(
-        f"Title: {m.title}\nSource: {m.sentiment_label}\nDate: {m.published_at}\nSnippet: {m.snippet or m.body[:200]}"
-        for m in mentions
+    lines = []
+    for m in mentions:
+        lines.append(
+            f"- id={m.id} | sentiment={m.sentiment_label} | reach={m.reach} | "
+            f"date={m.published_at.isoformat() if m.published_at else 'n/a'}\n"
+            f"  title: {m.title}\n  snippet: {(m.snippet or m.body or '')[:280]}"
+        )
+    body = "\n".join(lines)
+
+    system = (
+        "You are a senior media intelligence analyst. Summarize the supplied news "
+        "mentions in 4-7 bullet points covering: dominant narrative, sentiment "
+        "distribution, notable events, top sources, recommended next steps. "
+        "Reply in the same language as the majority of source titles. "
+        "Always cite specific mentions by id in square brackets like [m:abc123]."
     )
 
-    client = _get_openai_client()
-    response = await client.chat.completions.create(
-        model=settings.OPENAI_CHAT_MODEL,
+    content, _ = await _chat_completion(
         messages=[
-            {
-                "role": "system",
-                "content": "You are a media intelligence analyst. Summarize the following media mentions, highlighting key trends, sentiment patterns, and notable events. Provide the summary in Russian.",
-            },
-            {"role": "user", "content": f"Summarize these {len(mentions)} media mentions:\n\n{mentions_text}"},
+            {"role": "system", "content": system},
+            {"role": "user", "content": f"Mentions ({len(mentions)} total):\n\n{body}"},
         ],
-        max_tokens=1000,
         temperature=0.3,
+        max_tokens=900,
     )
+    return content or "Unable to generate summary."
 
-    return response.choices[0].message.content or "Unable to generate summary."
+
+# ---------------------------------------------------------------------------
+# Brand Assistant chat with RAG.
+# ---------------------------------------------------------------------------
+_CITATION_RE = re.compile(r"\[m:([a-zA-Z0-9-]{6,40})\]")
+
+
+def _extract_cited_ids(text: str) -> list[str]:
+    return list(dict.fromkeys(_CITATION_RE.findall(text or "")))
+
+
+def _resolve_cited_ids(raw_ids: list[str], pool: list[str]) -> list[str]:
+    """Map raw citation strings (which GPT often shortens to a prefix) to
+    actual mention ids from the retrieval pool.
+    """
+    out: list[str] = []
+    for raw in raw_ids:
+        if raw in pool:
+            out.append(raw)
+            continue
+        prefix_hits = [p for p in pool if p.startswith(raw)]
+        if len(prefix_hits) == 1:
+            out.append(prefix_hits[0])
+    # Preserve order, drop duplicates.
+    return list(dict.fromkeys(out))
 
 
 async def chat_with_assistant(
@@ -74,22 +179,24 @@ async def chat_with_assistant(
     message: str,
     chat_id: str | None = None,
 ) -> dict:
+    # ── chat lookup or creation ───────────────────────────────────────────
     if chat_id:
         result = await db.execute(
             select(Chat).where(Chat.id == chat_id, Chat.project_id == project_id)
         )
         chat = result.scalar_one_or_none()
         if not chat:
-            raise BadRequestError("Chat not found")
+            raise NotFoundError("Chat not found")
     else:
         chat = Chat(
             project_id=project_id,
             user_id=user_id,
-            title=message[:50] + "..." if len(message) > 50 else message,
+            title=(message[:50] + "...") if len(message) > 50 else message,
         )
         db.add(chat)
         await db.flush()
 
+    # ── persist user message ──────────────────────────────────────────────
     user_msg = ChatMessage(
         chat_id=chat.id,
         role="user",
@@ -98,80 +205,275 @@ async def chat_with_assistant(
     db.add(user_msg)
     await db.flush()
 
-    result = await db.execute(
+    # ── load chat history ────────────────────────────────────────────────
+    hist_q = (
         select(ChatMessage)
         .where(ChatMessage.chat_id == chat.id)
         .order_by(ChatMessage.created_at.desc())
         .limit(20)
     )
-    history = list(reversed(result.scalars().all()))
+    history = list(reversed((await db.execute(hist_q)).scalars().all()))
 
-    mentions_result = await db.execute(
-        select(Mention)
-        .where(Mention.project_id == project_id)
-        .order_by(Mention.published_at.desc())
-        .limit(80)
-    )
-    recent_mentions = list(mentions_result.scalars().all())
-    query_embedding = await embed_text(message)
-    scored: list[tuple[float, Mention]] = []
-    for mention in recent_mentions:
-        m_embedding = await embed_text(f"{mention.title}\n{mention.body[:600]}")
-        scored.append((cosine_similarity(query_embedding, m_embedding), mention))
-    scored.sort(key=lambda item: item[0], reverse=True)
-    top_mentions = [m for _, m in scored[:8]]
-
-    context = ""
-    if top_mentions:
-        context = "Top relevant mentions:\n" + "\n".join(
-            f"- [{m.id}] {m.title} | {m.sentiment_label} | reach={m.reach} | {m.url}"
-            for m in top_mentions
+    # ── RAG: retrieve top mentions for this question ─────────────────────
+    try:
+        top_pairs = await embedding_service.search_similar(
+            db, project_id, message, top_k=15
         )
+    except Exception as exc:
+        logger.warning("RAG search failed, falling back to recent: %s", exc)
+        recent = (
+            await db.execute(
+                select(Mention)
+                .where(Mention.project_id == project_id)
+                .order_by(Mention.published_at.desc())
+                .limit(15)
+            )
+        ).scalars().all()
+        top_pairs = [(m, 0.0) for m in recent]
 
-    messages = [
-        {
-            "role": "system",
-            "content": (
-                "You are a brand intelligence assistant for media monitoring. "
-                "Use provided mentions as grounding context and cite mention ids in square brackets. "
-                "Answer in the same language as the user's message.\n\n"
-                f"Context:\n{context}"
-            ),
-        }
-    ]
+    context_block = embedding_service.mentions_to_prompt_block(top_pairs)
+    cited_pool = [m.id for m, _ in top_pairs]
 
+    system_prompt = (
+        "You are SentiNews Brand Assistant — a senior media intelligence analyst. "
+        "You answer ONLY based on the supplied list of news mentions. "
+        "Always cite the supporting mention id in square brackets like [m:abc12345] "
+        "right after each fact, statistic or claim. If the user asks something "
+        "that is not supported by the supplied mentions, say so honestly and "
+        "suggest a related question. Match the user's language exactly "
+        "(English / Russian / Kazakh).\n\n"
+        "When asked for analysis, structure your answer with short headings and "
+        "bullet points. When asked for a report, follow the schema: "
+        "Executive summary -> Key findings (3-5 bullets) -> Sentiment overview -> "
+        "Top sources -> Recommendations.\n\n"
+        f"=== RETRIEVED MENTIONS (top {len(top_pairs)} by semantic similarity) ===\n"
+        f"{context_block}\n"
+        f"=== END MENTIONS ==="
+    )
+
+    messages: list[dict] = [{"role": "system", "content": system_prompt}]
     for msg in history:
         messages.append({"role": msg.role, "content": msg.content})
 
-    client = _get_openai_client()
-    response = await client.chat.completions.create(
-        model=settings.OPENAI_CHAT_MODEL,
+    content, meta = await _chat_completion(
         messages=messages,
+        temperature=0.4,
         max_tokens=1500,
-        temperature=0.7,
     )
 
-    assistant_content = response.choices[0].message.content or "I couldn't generate a response."
+    cited_ids = _resolve_cited_ids(_extract_cited_ids(content), cited_pool)
 
     assistant_msg = ChatMessage(
         chat_id=chat.id,
         role="assistant",
-        content=assistant_content,
+        content=content,
         metadata_json={
-            "model": settings.OPENAI_CHAT_MODEL,
-            "tokens_used": response.usage.total_tokens if response.usage else None,
-            "sources": [m.url for m in top_mentions],
-            "source_ids": [m.id for m in top_mentions],
+            **meta,
+            "cited_mention_ids": cited_ids,
+            "retrieved_mention_ids": cited_pool,
+            "retrieved_count": len(cited_pool),
         },
     )
     db.add(assistant_msg)
+    await db.flush()
+
+    # Update chat timestamp via title (cheap touch).
+    chat.title = chat.title  # noqa
     await db.flush()
 
     return {
         "id": assistant_msg.id,
         "chat_id": chat.id,
         "role": "assistant",
-        "content": assistant_content,
-        "timestamp": assistant_msg.created_at.isoformat() if assistant_msg.created_at else datetime.now(timezone.utc).isoformat(),
+        "content": content,
+        "timestamp": (
+            assistant_msg.created_at.isoformat()
+            if assistant_msg.created_at
+            else datetime.now(timezone.utc).isoformat()
+        ),
         "metadata": assistant_msg.metadata_json,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Comprehensive AI Report.
+# ---------------------------------------------------------------------------
+_REPORT_SYSTEM_PROMPT = (
+    "You are a senior media intelligence analyst writing a CEO-ready brief. "
+    "Use ONLY the supplied mentions and stats. Output STRICT JSON with this "
+    "schema:\n"
+    "{\n"
+    '  "language": "en"|"ru"|"kk",\n'
+    '  "executive_summary": "2-3 sentences",\n'
+    '  "key_findings": [{"title": str, "detail": str, "mention_ids": [str]}, ...] (3-5 items),\n'
+    '  "sentiment_overview": "1-2 sentences",\n'
+    '  "top_sources": [{"name": str, "mentions": int, "note": str}],\n'
+    '  "risks": [str],\n'
+    '  "opportunities": [str],\n'
+    '  "recommendations": [str]\n'
+    "}\n\n"
+    "Cite mention ids only from the provided list. Match the dominant language of titles."
+)
+
+
+async def generate_ai_report(
+    db: AsyncSession,
+    project_id: str,
+    *,
+    project_name: str,
+    project_stats: dict,
+    top_k: int = 25,
+) -> dict:
+    """Generate a comprehensive structured report (JSON) for the project."""
+    pairs = await embedding_service.search_similar(
+        db, project_id, f"key news about {project_name}", top_k=top_k
+    )
+    context = embedding_service.mentions_to_prompt_block(pairs)
+
+    user_payload = {
+        "project_name": project_name,
+        "stats": project_stats,
+        "mentions": [
+            embedding_service.mention_to_context_dict(m, sim) for m, sim in pairs
+        ],
+    }
+
+    content, meta = await _chat_completion(
+        messages=[
+            {"role": "system", "content": _REPORT_SYSTEM_PROMPT},
+            {
+                "role": "user",
+                "content": (
+                    f"Project: {project_name}\n"
+                    f"Stats: {json.dumps(project_stats, ensure_ascii=False)[:2000]}\n\n"
+                    f"=== MENTIONS (top {len(pairs)}) ===\n{context}\n=== END ==="
+                ),
+            },
+        ],
+        temperature=0.3,
+        max_tokens=2200,
+        response_format={"type": "json_object"},
+    )
+
+    try:
+        parsed = json.loads(content) if content else {}
+    except json.JSONDecodeError:
+        parsed = {"executive_summary": content[:600], "raw": True}
+
+    parsed.setdefault("language", "en")
+    parsed["meta"] = meta
+    parsed["mentions_used"] = [m.id for m, _ in pairs]
+    parsed["generated_at"] = datetime.now(timezone.utc).isoformat()
+    return parsed
+
+
+# ---------------------------------------------------------------------------
+# Chat history CRUD helpers.
+# ---------------------------------------------------------------------------
+async def list_chats(db: AsyncSession, project_id: str, user_id: str) -> list[dict]:
+    chats = (
+        await db.execute(
+            select(Chat)
+            .where(Chat.project_id == project_id, Chat.user_id == user_id)
+            .order_by(Chat.updated_at.desc(), Chat.created_at.desc())
+        )
+    ).scalars().all()
+
+    out: list[dict] = []
+    for c in chats:
+        last_msg_q = (
+            select(ChatMessage)
+            .where(ChatMessage.chat_id == c.id)
+            .order_by(ChatMessage.created_at.desc())
+            .limit(1)
+        )
+        last = (await db.execute(last_msg_q)).scalar_one_or_none()
+        out.append({
+            "id": c.id,
+            "title": c.title,
+            "created_at": c.created_at.isoformat() if c.created_at else None,
+            "updated_at": c.updated_at.isoformat() if c.updated_at else None,
+            "last_message_preview": (last.content[:120] if last else None),
+            "last_message_role": (last.role if last else None),
+            "last_message_at": (last.created_at.isoformat() if last and last.created_at else None),
+        })
+    return out
+
+
+async def get_chat_messages(
+    db: AsyncSession, project_id: str, chat_id: str, user_id: str
+) -> list[dict]:
+    chat = (
+        await db.execute(
+            select(Chat).where(
+                Chat.id == chat_id,
+                Chat.project_id == project_id,
+                Chat.user_id == user_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if not chat:
+        raise NotFoundError("Chat not found")
+
+    msgs = (
+        await db.execute(
+            select(ChatMessage)
+            .where(ChatMessage.chat_id == chat_id)
+            .order_by(ChatMessage.created_at.asc())
+        )
+    ).scalars().all()
+
+    return [
+        {
+            "id": m.id,
+            "chat_id": m.chat_id,
+            "role": m.role,
+            "content": m.content,
+            "timestamp": m.created_at.isoformat() if m.created_at else None,
+            "metadata": m.metadata_json,
+        }
+        for m in msgs
+    ]
+
+
+async def delete_chat(
+    db: AsyncSession, project_id: str, chat_id: str, user_id: str
+) -> None:
+    chat = (
+        await db.execute(
+            select(Chat).where(
+                Chat.id == chat_id,
+                Chat.project_id == project_id,
+                Chat.user_id == user_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if not chat:
+        raise NotFoundError("Chat not found")
+
+    await db.execute(delete(ChatMessage).where(ChatMessage.chat_id == chat_id))
+    await db.delete(chat)
+
+
+async def rename_chat(
+    db: AsyncSession, project_id: str, chat_id: str, user_id: str, title: str
+) -> dict:
+    title = (title or "").strip() or "New chat"
+    chat = (
+        await db.execute(
+            select(Chat).where(
+                Chat.id == chat_id,
+                Chat.project_id == project_id,
+                Chat.user_id == user_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if not chat:
+        raise NotFoundError("Chat not found")
+    chat.title = title[:100]
+    await db.flush()
+    return {
+        "id": chat.id,
+        "title": chat.title,
+        "updated_at": chat.updated_at.isoformat() if chat.updated_at else None,
     }

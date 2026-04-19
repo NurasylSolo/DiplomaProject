@@ -1001,6 +1001,24 @@ async def _process_article(
         final_relevance_score=keyword_score,
     )
     db.add(mention)
+    await db.flush()  # need mention.id for embedding + topic assignment
+
+    # Best-effort: persist embedding + auto-assign best topic. Both are
+    # wrapped in try/except so a failure here never aborts ingestion.
+    try:
+        from app.services import embedding_service
+        await embedding_service.embed_and_store_mention(db, mention)
+    except Exception as exc:
+        logger.warning("embed_and_store_mention failed for %s: %s", mention.id, exc)
+
+    try:
+        from app.services import topic_service
+        topic_id = await topic_service.assign_to_best_topic(db, mention)
+        if topic_id:
+            mention.topic_id = topic_id
+    except Exception as exc:
+        logger.warning("topic auto-assignment failed for %s: %s", mention.id, exc)
+
     return False, True
 
 

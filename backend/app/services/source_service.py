@@ -7,11 +7,15 @@ from app.core.exceptions import NotFoundError
 
 
 async def get_sources(db: AsyncSession, project_id: str) -> list:
-    # Show only sources that already have mentions for this project.
+    """Sources that already have mentions for this project, plus per-source
+    aggregates used by the Sources page (reach, avg sentiment, last seen)."""
     result = await db.execute(
         select(
             Source,
             func.count(Mention.id).label("mention_count"),
+            func.coalesce(func.sum(Mention.reach), 0).label("total_reach"),
+            func.coalesce(func.avg(Mention.sentiment_score), 0.0).label("avg_sentiment"),
+            func.max(Mention.published_at).label("last_published_at"),
         )
         .join(Mention, Mention.source_id == Source.id)
         .where(Source.project_id == project_id, Mention.project_id == project_id)
@@ -19,6 +23,45 @@ async def get_sources(db: AsyncSession, project_id: str) -> list:
         .order_by(func.count(Mention.id).desc(), Source.created_at.desc())
     )
     return list(result.all())
+
+
+async def bulk_action(
+    db: AsyncSession,
+    project_id: str,
+    action: str,
+    source_ids: list[str],
+) -> int:
+    """Apply ``action`` to all ``source_ids`` belonging to ``project_id``.
+
+    Supported actions: 'activate', 'deactivate', 'delete', 'mark_trusted',
+    'unmark_trusted'. Foreign IDs are silently dropped.
+    """
+    if not source_ids:
+        return 0
+    rows = (
+        await db.execute(
+            select(Source).where(
+                Source.project_id == project_id, Source.id.in_(source_ids)
+            )
+        )
+    ).scalars().all()
+    affected = 0
+    for src in rows:
+        if action == "activate":
+            src.active = True
+        elif action == "deactivate":
+            src.active = False
+        elif action == "delete":
+            await db.delete(src)
+        elif action == "mark_trusted":
+            src.trust_score = max(float(src.trust_score or 0.0), 0.85)
+        elif action == "unmark_trusted":
+            src.trust_score = min(float(src.trust_score or 0.0), 0.49)
+        else:
+            continue
+        affected += 1
+    await db.flush()
+    return affected
 
 
 async def get_source(db: AsyncSession, project_id: str, source_id: str) -> Source:

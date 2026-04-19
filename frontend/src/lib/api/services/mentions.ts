@@ -37,6 +37,9 @@ export interface MentionsStats {
   negative_percentage: number;
   avg_sentiment: number;
   mentions_change_percentage: number | null;
+  reach_change_percentage: number | null;
+  positive_change_percentage: number | null;
+  negative_change_percentage: number | null;
 }
 
 export const mentionsApi = {

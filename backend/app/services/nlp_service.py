@@ -132,8 +132,13 @@ def score_sentiment_gpt(text: str) -> tuple[str, float]:
         from openai import OpenAI
 
         client = OpenAI(api_key=api_key)
+        # Sentiment scoring uses a cheap fast model regardless of the chat
+        # model — quality of "positive/neutral/negative" doesn't justify gpt-4o
+        # cost on every ingested article. Configurable via OPENAI_CHAT_MODEL
+        # if the operator wants the same model everywhere.
+        sentiment_model = settings.OPENAI_CHAT_MODEL or "gpt-4o-mini"
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model=sentiment_model,
             messages=[
                 {"role": "system", "content": _SENTIMENT_PROMPT},
                 {"role": "user", "content": sample[:4000]},

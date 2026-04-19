@@ -15,6 +15,7 @@ from app.models.raw_document import RawDocument
 from app.models.crawl_job import CrawlJob
 from app.models.alert import AlertRule, NotificationEvent
 from app.models.source_catalog import SourceCatalog, SourceCatalogHealth, SourceCatalogPolicy
+from app.models.mention_embedding import MentionEmbedding
 
 __all__ = [
     "User",
@@ -39,4 +40,5 @@ __all__ = [
     "SourceCatalog",
     "SourceCatalogHealth",
     "SourceCatalogPolicy",
+    "MentionEmbedding",
 ]

@@ -13,11 +13,15 @@ router = APIRouter()
 @router.get("/projects/{project_id}/analytics/geo")
 async def geo_data(
     project_id: str,
+    date_from: str | None = None,
+    date_to: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     await get_project(db, project_id, current_user.id)
-    return await analytics_service.get_geo_data(db, project_id)
+    return await analytics_service.get_geo_data(
+        db, project_id, date_from=date_from, date_to=date_to
+    )
 
 
 @router.get("/projects/{project_id}/analytics/hot-hours")
@@ -43,22 +47,89 @@ async def emotions(
 @router.get("/projects/{project_id}/analytics/topics")
 async def topics(
     project_id: str,
+    date_from: str | None = None,
+    date_to: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     await get_project(db, project_id, current_user.id)
-    return await analytics_service.get_topics_data(db, project_id)
+    return await analytics_service.get_topics_data(
+        db, project_id, date_from=date_from, date_to=date_to
+    )
+
+
+@router.get("/projects/{project_id}/analytics/sources")
+async def sources_breakdown(
+    project_id: str,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    limit: int = Query(50, ge=1, le=200),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    await get_project(db, project_id, current_user.id)
+    return await analytics_service.get_sources_breakdown(
+        db, project_id, date_from=date_from, date_to=date_to, limit=limit
+    )
+
+
+@router.get("/projects/{project_id}/analytics/keywords")
+async def keywords(
+    project_id: str,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    limit: int = Query(50, ge=1, le=200),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    await get_project(db, project_id, current_user.id)
+    return await analytics_service.get_keywords(
+        db, project_id, date_from=date_from, date_to=date_to, limit=limit
+    )
+
+
+@router.get("/projects/{project_id}/analytics/top-links")
+async def top_links(
+    project_id: str,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    limit: int = Query(20, ge=1, le=100),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    await get_project(db, project_id, current_user.id)
+    return await analytics_service.get_top_links(
+        db, project_id, date_from=date_from, date_to=date_to, limit=limit
+    )
+
+
+@router.get("/projects/{project_id}/analytics/languages")
+async def languages_breakdown(
+    project_id: str,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    await get_project(db, project_id, current_user.id)
+    return await analytics_service.get_languages_breakdown(
+        db, project_id, date_from=date_from, date_to=date_to
+    )
 
 
 @router.get("/projects/{project_id}/analytics/time-series")
 async def time_series(
     project_id: str,
     days: int = Query(30, ge=1, le=365),
+    date_from: str | None = None,
+    date_to: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     await get_project(db, project_id, current_user.id)
-    return await analytics_service.get_time_series(db, project_id, days)
+    return await analytics_service.get_time_series(
+        db, project_id, days=days, date_from=date_from, date_to=date_to
+    )
 
 
 @router.get("/projects/{project_id}/analytics/events")
@@ -83,8 +154,32 @@ async def compare(
     current_user: User = Depends(get_current_user),
 ):
     await get_project(db, project_id, current_user.id)
+
+    # Security: only let the user compare projects they actually own.
+    # Silently drop foreign IDs instead of 403'ing so the UI stays useful
+    # if someone navigates with a stale URL.
+    from app.models.project import Project as _Project
+    from sqlalchemy import select as _select
+
+    owned_ids: set[str] = set()
+    if data.item_ids:
+        rows = (
+            await db.execute(
+                _select(_Project.id).where(
+                    _Project.id.in_(data.item_ids),
+                    _Project.owner_id == current_user.id,
+                )
+            )
+        ).all()
+        owned_ids = {row.id for row in rows}
+
+    safe_ids = [i for i in data.item_ids if i in owned_ids]
+    if not safe_ids:
+        # Always include the source project at minimum so the response is non-empty.
+        safe_ids = [project_id]
+
     return await analytics_service.get_comparison(
-        db, project_id, data.type, data.item_ids, data.date_from, data.date_to
+        db, project_id, data.type, safe_ids, data.date_from, data.date_to
     )
 
 

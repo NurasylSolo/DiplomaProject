@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.routes import auth, users, projects, mentions, sources, insights, ai, reports, filters, analytics, influencers, ingestion, alerts, source_catalog
+from app.api.routes import auth, users, projects, mentions, sources, insights, ai, reports, filters, analytics, influencers, ingestion, alerts, source_catalog, topics
 
 api_router = APIRouter()
 
@@ -17,3 +17,4 @@ api_router.include_router(influencers.router, tags=["Influencers"])
 api_router.include_router(ingestion.router, tags=["Ingestion"])
 api_router.include_router(alerts.router, tags=["Alerts"])
 api_router.include_router(source_catalog.router, tags=["SourceCatalog"])
+api_router.include_router(topics.router, tags=["Topics"])

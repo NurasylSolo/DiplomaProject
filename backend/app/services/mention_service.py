@@ -201,8 +201,12 @@ async def get_mentions_stats(
     neutral_percentage = round((neu_count / total_mentions) * 100, 1) if total_mentions else 0.0
     negative_percentage = round((neg_count / total_mentions) * 100, 1) if total_mentions else 0.0
 
-    # Period-over-period delta only meaningful when an explicit date_from is given
+    # Period-over-period deltas — meaningful only when an explicit date range is given.
     mentions_change_percentage: float | None = None
+    reach_change_percentage: float | None = None
+    positive_change_percentage: float | None = None
+    negative_change_percentage: float | None = None
+
     if date_from and date_to:
         try:
             df = _parse_date(date_from)
@@ -210,23 +214,42 @@ async def get_mentions_stats(
             window = dt - df
             prev_from = df - window
             prev_to = df
-            prev_count = int(
+
+            def _prev_filter(query):
+                return query.where(
+                    Mention.project_id == project_id,
+                    Mention.published_at >= prev_from,
+                    Mention.published_at < prev_to,
+                )
+
+            prev_mentions = int(
+                (await db.execute(_prev_filter(select(func.count(Mention.id))))).scalar() or 0
+            )
+            prev_reach = int(
+                (await db.execute(_prev_filter(select(func.coalesce(func.sum(Mention.reach), 0))))).scalar() or 0
+            )
+            prev_positive = int(
                 (await db.execute(
-                    select(func.count(Mention.id)).where(
-                        Mention.project_id == project_id,
-                        Mention.published_at >= prev_from,
-                        Mention.published_at < prev_to,
-                    )
+                    _prev_filter(select(func.count(Mention.id))).where(Mention.sentiment_label == "positive")
                 )).scalar() or 0
             )
-            if prev_count == 0:
-                mentions_change_percentage = 100.0 if total_mentions > 0 else 0.0
-            else:
-                mentions_change_percentage = round(
-                    ((total_mentions - prev_count) / prev_count) * 100, 1
-                )
+            prev_negative = int(
+                (await db.execute(
+                    _prev_filter(select(func.count(Mention.id))).where(Mention.sentiment_label == "negative")
+                )).scalar() or 0
+            )
+
+            def _delta_pct(curr: float, prev: float) -> float:
+                if prev == 0:
+                    return 100.0 if curr > 0 else 0.0
+                return round(((curr - prev) / prev) * 100, 1)
+
+            mentions_change_percentage = _delta_pct(total_mentions, prev_mentions)
+            reach_change_percentage = _delta_pct(total_reach, prev_reach)
+            positive_change_percentage = _delta_pct(pos_count, prev_positive)
+            negative_change_percentage = _delta_pct(neg_count, prev_negative)
         except Exception:
-            mentions_change_percentage = None
+            pass
 
     return {
         "total_mentions": total_mentions,
@@ -239,6 +262,9 @@ async def get_mentions_stats(
         "negative_percentage": negative_percentage,
         "avg_sentiment": round(avg_sentiment, 3),
         "mentions_change_percentage": mentions_change_percentage,
+        "reach_change_percentage": reach_change_percentage,
+        "positive_change_percentage": positive_change_percentage,
+        "negative_change_percentage": negative_change_percentage,
     }
 
 

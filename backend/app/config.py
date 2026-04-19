@@ -57,7 +57,7 @@ class Settings(BaseSettings):
     ENABLE_CLICKHOUSE: bool = False
     CLICKHOUSE_DSN: str = ""
 
-    ENABLE_RAG_EMBEDDINGS: bool = False
+    ENABLE_RAG_EMBEDDINGS: bool = True
     OPENAI_EMBEDDING_MODEL: str = "text-embedding-3-small"
 
     ALERT_WEBHOOK_TIMEOUT_SECONDS: int = 10

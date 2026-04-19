@@ -96,3 +96,11 @@ class SummarizeRequest(BaseModel):
     mention_ids: Optional[List[str]] = None
     date_from: Optional[str] = None
     date_to: Optional[str] = None
+
+
+class RenameChatRequest(BaseModel):
+    title: str
+
+
+class AIReportRequest(BaseModel):
+    top_k: int = 25

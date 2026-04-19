@@ -1,10 +1,90 @@
+import re
+from collections import Counter
 from datetime import datetime, timedelta, timezone
+from urllib.parse import urlparse
+
 from sqlalchemy import select, func, and_, extract
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.mention import Mention
 from app.models.topic import Topic
 from app.models.source import Source
 from app.services import nlp_service
+
+
+def _parse_date(raw: str | None) -> datetime | None:
+    """Parse ISO datetime, defaulting to UTC when no tz is present."""
+    if not raw:
+        return None
+    raw = raw.strip().replace("Z", "+00:00")
+    try:
+        dt = datetime.fromisoformat(raw)
+    except ValueError:
+        try:
+            dt = datetime.strptime(raw[:19], "%Y-%m-%dT%H:%M:%S")
+        except ValueError:
+            return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
+def _date_window(query, date_from: str | None, date_to: str | None):
+    """Apply optional date_from/date_to filters to a Mention query."""
+    df = _parse_date(date_from)
+    dt = _parse_date(date_to)
+    if df is not None:
+        query = query.where(Mention.published_at >= df)
+    if dt is not None:
+        query = query.where(Mention.published_at <= dt)
+    return query
+
+
+# ---------------------------------------------------------------------------
+# Stop-word lists for keyword extraction. Kept short and project-agnostic
+# so popular pronouns / prepositions in EN/RU/KZ don't dominate the cloud.
+# ---------------------------------------------------------------------------
+_STOPWORDS: set[str] = {
+    # English
+    "the", "and", "for", "are", "with", "you", "this", "that", "from", "have",
+    "has", "had", "will", "can", "but", "not", "all", "your", "our", "they",
+    "them", "their", "out", "into", "about", "more", "than", "then", "after",
+    "before", "what", "when", "where", "who", "how", "why", "his", "her",
+    "she", "him", "its", "was", "were", "been", "being", "also", "just",
+    "any", "such", "some", "one", "two", "very", "much", "may", "should",
+    "would", "could", "did", "does", "say", "said", "says", "now", "new",
+    "yet", "via", "etc",
+    # Russian
+    "что", "как", "это", "для", "так", "его", "ему", "она", "они", "тот",
+    "там", "тут", "вот", "уже", "ещё", "еще", "был", "была", "было", "быть",
+    "при", "под", "над", "над", "без", "через", "также", "тоже", "очень",
+    "если", "или", "либо", "либо", "там", "вон", "тогда", "потом", "почти",
+    "будет", "будут", "будем", "может", "могут", "сейчас", "снова", "после",
+    "перед", "между", "около", "нет", "да", "ещё", "ещё", "вся", "весь",
+    "все", "всё", "всех", "всем", "всеми", "наш", "ваш", "мой", "твой",
+    "его", "её", "их", "этот", "эта", "эти", "этих", "этим", "этой",
+    "там", "здесь", "когда", "куда", "оттуда", "сегодня", "вчера", "завтра",
+    "годе", "году", "дня", "лет", "год", "лет", "это", "эту", "этого",
+    # Kazakh
+    "және", "бірақ", "осы", "бұл", "бар", "жоқ", "болады", "болған", "болмайды",
+    "сол", "сондай", "оның", "оған", "оны", "одан", "оған", "оның", "сол",
+    "арқылы", "үшін", "емес", "тағы", "тек", "тағы", "немесе", "сондықтан",
+}
+
+
+def _extract_keywords(text: str) -> list[str]:
+    """Return tokens from `text` that are not pure numbers, not stop-words,
+    and length >= 4 (to avoid noise like 'kg', 'us', 'rt' etc)."""
+    if not text:
+        return []
+    tokens = re.findall(r"[#\wа-яё\-]{4,30}", text.lower(), re.UNICODE)
+    out: list[str] = []
+    for tok in tokens:
+        if tok.isdigit():
+            continue
+        if tok in _STOPWORDS:
+            continue
+        out.append(tok)
+    return out
 
 
 _COUNTRY_DISPLAY_NAMES: dict[str, str] = {
@@ -26,7 +106,12 @@ _COUNTRY_DISPLAY_NAMES: dict[str, str] = {
 }
 
 
-async def get_geo_data(db: AsyncSession, project_id: str) -> list:
+async def get_geo_data(
+    db: AsyncSession,
+    project_id: str,
+    date_from: str | None = None,
+    date_to: str | None = None,
+) -> list:
     """Aggregated mentions per ISO‑2 country.
 
     The DB column `Mention.country` is mostly already normalized, but in
@@ -34,7 +119,7 @@ async def get_geo_data(db: AsyncSession, project_id: str) -> list:
     re‑normalize and merge counts here so the geo map / countries table
     never has duplicate rows for the same country.
     """
-    result = await db.execute(
+    base = (
         select(
             Mention.country,
             func.count(Mention.id).label("mentions"),
@@ -44,8 +129,9 @@ async def get_geo_data(db: AsyncSession, project_id: str) -> list:
             func.count(Mention.id).filter(Mention.sentiment_label == "negative").label("negative"),
         )
         .where(Mention.project_id == project_id)
-        .group_by(Mention.country)
     )
+    base = _date_window(base, date_from, date_to).group_by(Mention.country)
+    result = await db.execute(base)
     rows = result.all()
 
     aggregated: dict[str, dict] = {}
@@ -131,28 +217,83 @@ async def get_emotions_data(db: AsyncSession, project_id: str) -> dict:
     return {"averages": totals, "total_analyzed": count}
 
 
-async def get_topics_data(db: AsyncSession, project_id: str) -> list:
+async def get_topics_data(
+    db: AsyncSession,
+    project_id: str,
+    date_from: str | None = None,
+    date_to: str | None = None,
+) -> list:
     result = await db.execute(
         select(Topic).where(Topic.project_id == project_id).order_by(Topic.created_at.desc())
     )
     topics = result.scalars().all()
 
     total_q = await db.execute(
-        select(func.count(Mention.id)).where(Mention.project_id == project_id)
+        _date_window(
+            select(func.count(Mention.id)).where(Mention.project_id == project_id),
+            date_from,
+            date_to,
+        )
     )
     total_mentions = total_q.scalar() or 1
 
     topics_data = []
     for topic in topics:
         count_q = await db.execute(
-            select(func.count(Mention.id)).where(Mention.topic_id == topic.id)
+            _date_window(
+                select(func.count(Mention.id)).where(Mention.topic_id == topic.id),
+                date_from,
+                date_to,
+            )
         )
         mentions_count = count_q.scalar() or 0
 
         reach_q = await db.execute(
-            select(func.coalesce(func.sum(Mention.reach), 0)).where(Mention.topic_id == topic.id)
+            _date_window(
+                select(func.coalesce(func.sum(Mention.reach), 0)).where(Mention.topic_id == topic.id),
+                date_from,
+                date_to,
+            )
         )
         reach = reach_q.scalar() or 0
+
+        # Sentiment distribution computed on-the-fly so date filter applies.
+        pos_q = await db.execute(
+            _date_window(
+                select(func.count(Mention.id)).where(
+                    Mention.topic_id == topic.id,
+                    Mention.sentiment_label == "positive",
+                ),
+                date_from,
+                date_to,
+            )
+        )
+        neu_q = await db.execute(
+            _date_window(
+                select(func.count(Mention.id)).where(
+                    Mention.topic_id == topic.id,
+                    Mention.sentiment_label == "neutral",
+                ),
+                date_from,
+                date_to,
+            )
+        )
+        neg_q = await db.execute(
+            _date_window(
+                select(func.count(Mention.id)).where(
+                    Mention.topic_id == topic.id,
+                    Mention.sentiment_label == "negative",
+                ),
+                date_from,
+                date_to,
+            )
+        )
+
+        sentiment_distribution = {
+            "positive": int(pos_q.scalar() or 0),
+            "neutral": int(neu_q.scalar() or 0),
+            "negative": int(neg_q.scalar() or 0),
+        }
 
         topics_data.append({
             "id": topic.id,
@@ -162,8 +303,8 @@ async def get_topics_data(db: AsyncSession, project_id: str) -> list:
             "parent_topic_id": topic.parent_topic_id,
             "mentions_count": mentions_count,
             "reach": reach,
-            "share_of_voice": round((mentions_count / total_mentions) * 100, 1),
-            "sentiment_distribution": topic.sentiment_distribution,
+            "share_of_voice": round((mentions_count / total_mentions) * 100, 1) if total_mentions else 0.0,
+            "sentiment_distribution": sentiment_distribution,
             "trend": [],
             "created_at": topic.created_at.isoformat() if topic.created_at else "",
         })
@@ -175,78 +316,218 @@ async def get_comparison(
     db: AsyncSession,
     project_id: str,
     comp_type: str,
-    item_ids: list,
+    item_ids: list[str],
     date_from: str | None = None,
     date_to: str | None = None,
 ) -> dict:
-    items = []
-    metrics_data = {
+    """Side-by-side comparison of multiple projects (or topics).
+
+    For each ``item_id`` returns:
+      - real project name (looked up from DB)
+      - 8 numeric metrics (filter-aware): total_mentions, total_reach,
+        positive_pct, neutral_pct, negative_pct, avg_influence,
+        avg_sentiment, share_of_voice
+      - per-item sentiment_distribution dict (positive/neutral/negative counts)
+      - per-item time_series array (last 30 days, daily mentions)
+    """
+    from app.models.project import Project  # local import to avoid cycle
+
+    if not item_ids:
+        return {"type": comp_type, "items": [], "metrics": [], "time_series": []}
+
+    df = _parse_date(date_from)
+    dt = _parse_date(date_to)
+
+    # Real project names in one query.
+    name_rows = (
+        await db.execute(
+            select(Project.id, Project.name).where(Project.id.in_(item_ids))
+        )
+    ).all()
+    name_map: dict[str, str] = {row.id: row.name for row in name_rows}
+
+    metrics_data: dict[str, list] = {
         "total_mentions": [],
         "total_reach": [],
         "positive_pct": [],
+        "neutral_pct": [],
         "negative_pct": [],
         "avg_influence": [],
+        "avg_sentiment": [],
+        "share_of_voice": [],
     }
 
+    items: list[dict] = []
+    sentiment_dist: list[dict] = []
+    time_series_per_item: list[dict] = []
+
+    # Helper that applies the same date window to every per-item query.
+    def _apply_window(q):
+        if df is not None:
+            q = q.where(Mention.published_at >= df)
+        if dt is not None:
+            q = q.where(Mention.published_at <= dt)
+        return q
+
+    # Pre-compute total mentions across ALL compared items for share_of_voice.
+    totals_per_item: dict[str, int] = {}
     for item_id in item_ids:
-        query = select(Mention).where(Mention.project_id == item_id)
-        if date_from:
-            query = query.where(Mention.published_at >= datetime.fromisoformat(date_from))
-        if date_to:
-            query = query.where(Mention.published_at <= datetime.fromisoformat(date_to))
-
-        count_q = await db.execute(
-            select(func.count(Mention.id)).select_from(query.subquery())
+        q = _apply_window(
+            select(func.count(Mention.id)).where(Mention.project_id == item_id)
         )
-        total = count_q.scalar() or 0
+        totals_per_item[item_id] = int((await db.execute(q)).scalar() or 0)
+    grand_total = sum(totals_per_item.values()) or 1
 
-        reach_q = await db.execute(
-            select(func.coalesce(func.sum(Mention.reach), 0)).where(Mention.project_id == item_id)
+    # 30-day window for the per-item time-series chart.
+    ts_start = df if df is not None else (datetime.now(timezone.utc) - timedelta(days=30))
+    ts_end = dt
+
+    for item_id in item_ids:
+        total = totals_per_item.get(item_id, 0)
+
+        reach = int(
+            (
+                await db.execute(
+                    _apply_window(
+                        select(func.coalesce(func.sum(Mention.reach), 0)).where(
+                            Mention.project_id == item_id
+                        )
+                    )
+                )
+            ).scalar() or 0
         )
-        reach = reach_q.scalar() or 0
+        pos = int(
+            (
+                await db.execute(
+                    _apply_window(
+                        select(func.count(Mention.id)).where(
+                            Mention.project_id == item_id,
+                            Mention.sentiment_label == "positive",
+                        )
+                    )
+                )
+            ).scalar() or 0
+        )
+        neu = int(
+            (
+                await db.execute(
+                    _apply_window(
+                        select(func.count(Mention.id)).where(
+                            Mention.project_id == item_id,
+                            Mention.sentiment_label == "neutral",
+                        )
+                    )
+                )
+            ).scalar() or 0
+        )
+        neg = int(
+            (
+                await db.execute(
+                    _apply_window(
+                        select(func.count(Mention.id)).where(
+                            Mention.project_id == item_id,
+                            Mention.sentiment_label == "negative",
+                        )
+                    )
+                )
+            ).scalar() or 0
+        )
+        avg_inf = float(
+            (
+                await db.execute(
+                    _apply_window(
+                        select(func.coalesce(func.avg(Mention.influence_score), 0)).where(
+                            Mention.project_id == item_id
+                        )
+                    )
+                )
+            ).scalar() or 0
+        )
+        avg_sent = float(
+            (
+                await db.execute(
+                    _apply_window(
+                        select(func.coalesce(func.avg(Mention.sentiment_score), 0.0)).where(
+                            Mention.project_id == item_id
+                        )
+                    )
+                )
+            ).scalar() or 0
+        )
 
-        pos_q = await db.execute(
-            select(func.count(Mention.id)).where(
-                Mention.project_id == item_id, Mention.sentiment_label == "positive"
+        # Per-item daily time series for the line chart.
+        ts_q = (
+            select(
+                func.date(Mention.published_at).label("date"),
+                func.count(Mention.id).label("count"),
             )
+            .where(Mention.project_id == item_id)
         )
-        pos = pos_q.scalar() or 0
-
-        neg_q = await db.execute(
-            select(func.count(Mention.id)).where(
-                Mention.project_id == item_id, Mention.sentiment_label == "negative"
-            )
+        ts_q = ts_q.where(Mention.published_at >= ts_start)
+        if ts_end is not None:
+            ts_q = ts_q.where(Mention.published_at <= ts_end)
+        ts_q = ts_q.group_by(func.date(Mention.published_at)).order_by(
+            func.date(Mention.published_at)
         )
-        neg = neg_q.scalar() or 0
+        ts_rows = (await db.execute(ts_q)).all()
+        series = [{"date": str(r.date), "mentions": int(r.count or 0)} for r in ts_rows]
 
-        avg_q = await db.execute(
-            select(func.coalesce(func.avg(Mention.influence_score), 0)).where(
-                Mention.project_id == item_id
-            )
-        )
-        avg_inf = avg_q.scalar() or 0
+        items.append({"id": item_id, "name": name_map.get(item_id, f"Project {item_id[:8]}")})
 
-        items.append({"id": item_id, "name": f"Project {item_id[:8]}"})
         metrics_data["total_mentions"].append({"itemId": item_id, "value": total})
         metrics_data["total_reach"].append({"itemId": item_id, "value": reach})
-        metrics_data["positive_pct"].append({"itemId": item_id, "value": round(pos / total * 100, 1) if total else 0})
-        metrics_data["negative_pct"].append({"itemId": item_id, "value": round(neg / total * 100, 1) if total else 0})
-        metrics_data["avg_influence"].append({"itemId": item_id, "value": round(float(avg_inf), 2)})
+        metrics_data["positive_pct"].append(
+            {"itemId": item_id, "value": round(pos / total * 100, 1) if total else 0.0}
+        )
+        metrics_data["neutral_pct"].append(
+            {"itemId": item_id, "value": round(neu / total * 100, 1) if total else 0.0}
+        )
+        metrics_data["negative_pct"].append(
+            {"itemId": item_id, "value": round(neg / total * 100, 1) if total else 0.0}
+        )
+        metrics_data["avg_influence"].append(
+            {"itemId": item_id, "value": round(avg_inf, 2)}
+        )
+        metrics_data["avg_sentiment"].append(
+            {"itemId": item_id, "value": round(avg_sent, 3)}
+        )
+        metrics_data["share_of_voice"].append(
+            {"itemId": item_id, "value": round((total / grand_total) * 100, 1)}
+        )
+
+        sentiment_dist.append(
+            {
+                "itemId": item_id,
+                "positive": pos,
+                "neutral": neu,
+                "negative": neg,
+            }
+        )
+
+        time_series_per_item.append({"itemId": item_id, "series": series})
 
     metrics = [
-        {"name": name, "values": values}
-        for name, values in metrics_data.items()
+        {"name": name, "values": values} for name, values in metrics_data.items()
     ]
 
-    return {"type": comp_type, "items": items, "metrics": metrics}
+    return {
+        "type": comp_type,
+        "items": items,
+        "metrics": metrics,
+        "sentiment_distribution": sentiment_dist,
+        "time_series": time_series_per_item,
+    }
 
 
 async def get_time_series(
-    db: AsyncSession, project_id: str, days: int = 30
+    db: AsyncSession,
+    project_id: str,
+    days: int = 30,
+    date_from: str | None = None,
+    date_to: str | None = None,
 ) -> list:
-    start_date = datetime.now(timezone.utc) - timedelta(days=days)
-
-    result = await db.execute(
+    """Daily time-series. Explicit date_from/date_to wins over `days`."""
+    base = (
         select(
             func.date(Mention.published_at).label("date"),
             func.count(Mention.id).label("mentions"),
@@ -255,11 +536,21 @@ async def get_time_series(
             func.count(Mention.id).filter(Mention.sentiment_label == "neutral").label("neutral"),
             func.count(Mention.id).filter(Mention.sentiment_label == "negative").label("negative"),
         )
-        .where(Mention.project_id == project_id, Mention.published_at >= start_date)
-        .group_by(func.date(Mention.published_at))
-        .order_by(func.date(Mention.published_at))
+        .where(Mention.project_id == project_id)
     )
-    rows = result.all()
+
+    df = _parse_date(date_from)
+    dt = _parse_date(date_to)
+    if df is None and dt is None:
+        df = datetime.now(timezone.utc) - timedelta(days=days)
+
+    if df is not None:
+        base = base.where(Mention.published_at >= df)
+    if dt is not None:
+        base = base.where(Mention.published_at <= dt)
+
+    base = base.group_by(func.date(Mention.published_at)).order_by(func.date(Mention.published_at))
+    rows = (await db.execute(base)).all()
 
     return [
         {
@@ -300,3 +591,217 @@ async def get_anomaly_events(
                 }
             )
     return events
+
+
+# ---------------------------------------------------------------------------
+# Sources breakdown (filter-aware) — used by Analysis › Overview/Sources tabs
+# ---------------------------------------------------------------------------
+async def get_sources_breakdown(
+    db: AsyncSession,
+    project_id: str,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    limit: int = 50,
+) -> list[dict]:
+    base = (
+        select(
+            Mention.source_id,
+            func.count(Mention.id).label("mentions_count"),
+            func.coalesce(func.sum(Mention.reach), 0).label("reach"),
+            func.coalesce(func.avg(Mention.sentiment_score), 0.0).label("avg_sentiment"),
+            func.max(Mention.published_at).label("last_published_at"),
+        )
+        .where(Mention.project_id == project_id)
+    )
+    base = _date_window(base, date_from, date_to).group_by(Mention.source_id)
+    rows = (await db.execute(base)).all()
+
+    if not rows:
+        return []
+
+    # Look up source metadata in one query.
+    source_ids = [r.source_id for r in rows if r.source_id]
+    sources_map: dict[str, Source] = {}
+    if source_ids:
+        srcs = (
+            await db.execute(select(Source).where(Source.id.in_(source_ids)))
+        ).scalars().all()
+        sources_map = {s.id: s for s in srcs}
+
+    total = sum(int(r.mentions_count or 0) for r in rows) or 1
+
+    items: list[dict] = []
+    for row in rows:
+        src = sources_map.get(row.source_id)
+        items.append({
+            "source_id": row.source_id,
+            "name": src.name if src else "Unknown",
+            "type": src.type if src else "news",
+            "base_url": src.base_url if src else "",
+            "icon": src.icon if src else None,
+            "country": src.country if src else None,
+            "language": src.language if src else None,
+            "mentions_count": int(row.mentions_count or 0),
+            "reach": int(row.reach or 0),
+            "share_pct": round((int(row.mentions_count or 0) / total) * 100, 1),
+            "avg_sentiment": round(float(row.avg_sentiment or 0.0), 3),
+            "last_published_at": row.last_published_at.isoformat() if row.last_published_at else None,
+        })
+
+    items.sort(key=lambda x: x["mentions_count"], reverse=True)
+    return items[:limit]
+
+
+# ---------------------------------------------------------------------------
+# Top keywords from mention text — for the Analysis › Keywords word cloud.
+# ---------------------------------------------------------------------------
+async def get_keywords(
+    db: AsyncSession,
+    project_id: str,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    limit: int = 50,
+) -> list[dict]:
+    base = select(Mention.title, Mention.body).where(Mention.project_id == project_id)
+    base = _date_window(base, date_from, date_to)
+    rows = (await db.execute(base)).all()
+
+    counter: Counter[str] = Counter()
+    for title, body in rows:
+        for word in _extract_keywords(f"{title or ''} {body or ''}"):
+            counter[word] += 1
+
+    if not counter:
+        return []
+
+    # Compare with previous window of same length when an explicit range was given.
+    prev_counter: Counter[str] = Counter()
+    df = _parse_date(date_from)
+    dt = _parse_date(date_to)
+    if df is not None and dt is not None and dt > df:
+        window = dt - df
+        prev_from = df - window
+        prev_to = df
+        prev_rows = (
+            await db.execute(
+                select(Mention.title, Mention.body)
+                .where(
+                    Mention.project_id == project_id,
+                    Mention.published_at >= prev_from,
+                    Mention.published_at < prev_to,
+                )
+            )
+        ).all()
+        for title, body in prev_rows:
+            for word in _extract_keywords(f"{title or ''} {body or ''}"):
+                prev_counter[word] += 1
+
+    out: list[dict] = []
+    for word, count in counter.most_common(limit):
+        prev = prev_counter.get(word, 0)
+        if prev == 0:
+            change_pct = 100.0 if count > 0 else 0.0
+        else:
+            change_pct = round(((count - prev) / prev) * 100, 1)
+        out.append({
+            "word": word,
+            "count": count,
+            "is_hashtag": word.startswith("#"),
+            "change_pct": change_pct,
+        })
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Top cited links — for the Analysis › Keywords › Top Links section.
+# ---------------------------------------------------------------------------
+async def get_top_links(
+    db: AsyncSession,
+    project_id: str,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    limit: int = 20,
+) -> list[dict]:
+    base = (
+        select(
+            Mention.url,
+            func.count(Mention.id).label("count"),
+            func.coalesce(func.sum(Mention.reach), 0).label("reach"),
+            func.max(Mention.published_at).label("last_seen"),
+        )
+        .where(Mention.project_id == project_id)
+    )
+    base = _date_window(base, date_from, date_to).group_by(Mention.url)
+    rows = (await db.execute(base.order_by(func.count(Mention.id).desc()).limit(limit))).all()
+
+    items: list[dict] = []
+    for row in rows:
+        domain = ""
+        try:
+            parsed = urlparse(row.url)
+            domain = parsed.netloc.replace("www.", "")
+        except Exception:
+            domain = ""
+        items.append({
+            "url": row.url,
+            "domain": domain,
+            "count": int(row.count or 0),
+            "reach": int(row.reach or 0),
+            "last_seen": row.last_seen.isoformat() if row.last_seen else None,
+        })
+    return items
+
+
+# ---------------------------------------------------------------------------
+# Languages breakdown — for the Analysis › Geo & Languages tab.
+# ---------------------------------------------------------------------------
+_LANG_DISPLAY: dict[str, str] = {
+    "en": "English",
+    "ru": "Russian",
+    "kk": "Kazakh",
+    "kz": "Kazakh",
+    "es": "Spanish",
+    "fr": "French",
+    "de": "German",
+    "tr": "Turkish",
+    "uk": "Ukrainian",
+    "zh": "Chinese",
+    "ja": "Japanese",
+    "ar": "Arabic",
+}
+
+
+async def get_languages_breakdown(
+    db: AsyncSession,
+    project_id: str,
+    date_from: str | None = None,
+    date_to: str | None = None,
+) -> list[dict]:
+    base = (
+        select(Mention.language, func.count(Mention.id).label("count"))
+        .where(Mention.project_id == project_id)
+    )
+    base = _date_window(base, date_from, date_to).group_by(Mention.language)
+    rows = (await db.execute(base)).all()
+
+    aggregated: dict[str, int] = {}
+    for row in rows:
+        code = (row.language or "other").lower().strip()
+        if code in {"kz", "kk"}:
+            code = "kk"  # canonical Kazakh ISO
+        if code not in _LANG_DISPLAY and code != "other":
+            code = "other"
+        aggregated[code] = aggregated.get(code, 0) + int(row.count or 0)
+
+    total = sum(aggregated.values()) or 1
+    out = [
+        {
+            "language": code,
+            "name": _LANG_DISPLAY.get(code, "Other"),
+            "count": count,
+            "share_pct": round((count / total) * 100, 1),
+        }
+        for code, count in aggregated.items()
+    ]
+    out.sort(key=lambda x: x["count"], reverse=True)
+    return out

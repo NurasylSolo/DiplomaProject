@@ -387,6 +387,10 @@ export interface ComparisonResult {
   type: "projects" | "periods";
   items: ComparisonItem[];
   metrics: ComparisonMetric[];
+  /** Per-item sentiment counts (added by extended /compare endpoint). */
+  sentiment_distribution?: ComparisonSentimentBucket[];
+  /** Per-item daily time-series (added by extended /compare endpoint). */
+  time_series?: ComparisonTimeSeries[];
 }
 
 export interface ComparisonItem {
@@ -405,6 +409,23 @@ export interface ComparisonMetric {
     value: number;
     change?: number;
   }[];
+}
+
+export interface ComparisonSentimentBucket {
+  itemId: string;
+  positive: number;
+  neutral: number;
+  negative: number;
+}
+
+export interface ComparisonTimeSeriesPoint {
+  date: string;
+  mentions: number;
+}
+
+export interface ComparisonTimeSeries {
+  itemId: string;
+  series: ComparisonTimeSeriesPoint[];
 }
 
 // ============================================

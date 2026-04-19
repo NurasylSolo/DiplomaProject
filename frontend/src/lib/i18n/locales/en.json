@@ -285,6 +285,9 @@
     "generating": "Generating...",
     "generateNew": "Generate Insights",
     "generated": "Insights regenerated",
+    "relatedMentions": {
+      "label": "Sources"
+    },
     "generateFailed": "Failed to generate insights",
     "sendToEmail": "Send to Email",
     "shareLink": "Share Link",
@@ -388,8 +391,77 @@
     "tabs": {
       "overview": "Overview",
       "sentiment": "Sentiment",
+      "keywords": "Keywords",
       "sources": "Sources",
-      "topics": "Topics"
+      "geoLang": "Geo & Languages",
+      "anomalies": "Anomalies"
+    },
+    "dateRange": {
+      "today": "Today",
+      "last7": "Last 7 days",
+      "last30": "Last 30 days",
+      "last90": "Last 90 days",
+      "allTime": "All time",
+      "custom": "Custom"
+    },
+    "kpi": {
+      "totalMentions": "Total mentions",
+      "totalReach": "Total reach",
+      "positive": "Positive",
+      "presenceScore": "Presence score",
+      "vsPrev": "vs. previous period",
+      "days": "days",
+      "source": "Source",
+      "type": "Type",
+      "mentions": "Mentions",
+      "mentionsLower": "mentions",
+      "reach": "Reach",
+      "reachLower": "reach",
+      "share": "Share",
+      "lastSeen": "Last seen"
+    },
+    "sections": {
+      "sentimentDistribution": "Sentiment distribution",
+      "presenceScore": "Presence score",
+      "dailyMentions": "Daily mentions",
+      "topSources": "Top sources",
+      "languages": "Languages",
+      "sentimentByTopic": "Sentiment by topic",
+      "dailySentiment": "Daily sentiment",
+      "topPositive": "Top positive articles",
+      "topNegative": "Top negative articles",
+      "wordCloud": "Word cloud",
+      "topHashtags": "Top hashtags",
+      "topLinks": "Top cited links",
+      "activeSources": "Most active sources",
+      "sourcesByType": "Sources by type",
+      "sourcesTable": "Sources breakdown",
+      "topCountries": "Top countries",
+      "anomaliesList": "Detected events"
+    },
+    "actions": {
+      "refresh": "Refresh",
+      "refreshDone": "Data refreshed",
+      "exportCsv": "Export CSV",
+      "exportDone": "CSV downloaded",
+      "openPdf": "Open PDF report",
+      "viewAll": "View all",
+      "openGeo": "Open Geo Analysis"
+    },
+    "empty": {
+      "noData": "No data for the selected period",
+      "noMentions": "No mentions yet",
+      "noTopics": "No topics yet",
+      "noKeywords": "No keywords detected",
+      "noHashtags": "No hashtags found",
+      "noLinks": "No cited links yet",
+      "noEvents": "No spikes or drops in this window",
+      "noGeo": "No geographic data yet",
+      "noDataExport": "Nothing to export for this tab"
+    },
+    "anomalies": {
+      "spike": "Spike",
+      "drop": "Drop"
     }
   },
   "assistant": {
@@ -408,7 +480,97 @@
     },
     "newChat": "New Chat",
     "chatHistory": "Chat History",
-    "noChats": "No chat history yet"
+    "noChats": "No chat history yet",
+    "quickPrompts": "Quick Prompts",
+    "inputPlaceholder": "Ask anything about your media data...",
+    "footerHint": "AI grounds answers on your real mentions. Press Enter to send.",
+    "empty": {
+      "title": "Start a conversation",
+      "description": "Ask me anything about your media mentions, sentiment, trends, or get recommendations grounded in real news.",
+      "noChats": "No chats yet — start with a question",
+      "noMessages": "No messages yet"
+    },
+    "actions": {
+      "rename": "Rename chat",
+      "delete": "Delete chat",
+      "save": "Save",
+      "generateReport": "Generate Report"
+    },
+    "citations": {
+      "label": "Sources"
+    },
+    "relative": {
+      "justNow": "just now",
+      "minutesAgo": "{{count}}m ago",
+      "hoursAgo": "{{count}}h ago",
+      "yesterday": "yesterday"
+    },
+    "toasts": {
+      "renamed": "Chat renamed",
+      "deleted": "Chat deleted",
+      "copied": "Copied to clipboard"
+    },
+    "errors": {
+      "failed": "AI request failed",
+      "reportFailed": "Could not generate report"
+    },
+    "confirm": {
+      "delete": "Delete this chat? Messages will be removed permanently."
+    },
+    "dialogs": {
+      "rename": {
+        "title": "Rename chat",
+        "description": "Pick a short title that summarises this conversation."
+      }
+    },
+    "report": {
+      "title": "AI Report",
+      "description": "Comprehensive report grounded on the most relevant news mentions for this project.",
+      "download": "Download as Markdown",
+      "sections": {
+        "executive": "Executive summary",
+        "sentiment": "Sentiment overview",
+        "findings": "Key findings",
+        "sources": "Top sources",
+        "risks": "Risks",
+        "opportunities": "Opportunities",
+        "recommendations": "Recommendations"
+      }
+    },
+    "prompts": {
+      "summarizeLast24h": {
+        "label": "Summarize last 24h",
+        "prompt": "Summarize all mentions from the last 24 hours, highlight sentiment shifts and notable events."
+      },
+      "draftPrReply": {
+        "label": "Draft PR reply",
+        "prompt": "Draft a professional PR response addressing the most negative mentions of this week."
+      },
+      "tweetThread": {
+        "label": "Create tweet thread",
+        "prompt": "Create a 3-5 tweet thread highlighting our most positive coverage."
+      },
+      "topInfluencers": {
+        "label": "Top influencers",
+        "prompt": "Identify the top influencers and outlets covering our brand this week."
+      },
+      "keyInsights": {
+        "label": "Key insights",
+        "prompt": "What are the 5 key insights from this week's coverage? Cite specific articles."
+      },
+      "recommendations": {
+        "label": "Recommendations",
+        "prompt": "Given current sentiment trends, what 3 actions should we take next week?"
+      },
+      "suggested": {
+        "0": "What's driving the negative sentiment spike?",
+        "1": "Compare our coverage to last month",
+        "2": "Which topics are trending in our mentions?",
+        "3": "Summarize competitor mentions",
+        "4": "Which sources are most influential right now?",
+        "5": "What unique angle should our PR team push?"
+      }
+    }
   },
   "topics": {
     "title": "Topic Analysis",
@@ -423,6 +585,79 @@
       "trend": "Trend"
     }
   },
+  "topicsPage": {
+    "filters": {
+      "searchPlaceholder": "Search topics, descriptions or keywords..."
+    },
+    "metrics": {
+      "mentions": "Mentions",
+      "sentiment": "Sentiment",
+      "positive": "Positive",
+      "negative": "Negative"
+    },
+    "actions": {
+      "create": "Create Topic",
+      "edit": "Edit",
+      "delete": "Delete",
+      "save": "Save",
+      "view": "View",
+      "viewMentions": "View mentions",
+      "refresh": "Refresh",
+      "reassign": "Reassign mentions",
+      "autoDiscover": "Auto-discover with AI",
+      "generateSummary": "Generate AI summary",
+      "regenerateSummary": "Regenerate summary"
+    },
+    "empty": {
+      "noTopicsTitle": "No topics yet",
+      "noTopicsDescription": "Let AI discover topics from your project mentions, or create them manually with keywords.",
+      "noMatchTitle": "No topics match your search",
+      "noMatchDescription": "Try a different keyword or clear the search field."
+    },
+    "confirm": {
+      "delete": "Delete topic \"{{name}}\"? Mentions tied to it will lose the topic link but stay in the project."
+    },
+    "toasts": {
+      "created": "Topic created",
+      "updated": "Topic updated",
+      "deleted": "Topic deleted",
+      "discovered": "AI discovered {{count}} topics and assigned mentions",
+      "reassigned": "{{reassigned}} mentions reassigned, {{unmatched}} unmatched",
+      "nameRequired": "Topic name is required"
+    },
+    "dialogs": {
+      "create": {
+        "title": "Create topic",
+        "description": "Add a new topic with keywords. New mentions will be auto-assigned by similarity."
+      },
+      "edit": {
+        "title": "Edit topic",
+        "description": "Update name, description or keywords. Click Reassign mentions afterwards if you change keywords."
+      },
+      "discover": {
+        "title": "Auto-discover topics with AI",
+        "description": "GPT will analyse the latest mentions of this project, propose 5-10 topics, and reassign every mention to its best match.",
+        "warning": "This will REPLACE all existing topics for this project. Manual topics will be removed.",
+        "submit": "Run AI discovery"
+      },
+      "fields": {
+        "name": "Topic name",
+        "description": "Description",
+        "descriptionPlaceholder": "Short description of what this topic is about",
+        "keywords": "Keywords",
+        "keywordsHint": "Comma separated. Used for fast matching when an embedding is unavailable."
+      }
+    },
+    "detail": {
+      "noDescription": "No description",
+      "aiSummary": "AI summary",
+      "noSummaryYet": "Click \"Generate AI summary\" to get a grounded analyst-style brief about this topic, with citations to specific mentions.",
+      "cited": "Cited mentions",
+      "topMentions": "Top mentions",
+      "noMentions": "No mentions linked to this topic yet",
+      "viewAllMentions": "View all mentions of this topic"
+    }
+  },
   "comparison": {
     "title": "Comparison",
     "subtitle": "Compare projects, periods, or competitors",
@@ -432,9 +667,9 @@
   },
   "sources": {
     "title": "Sources",
-    "subtitle": "Manage and monitor your data sources",
-    "addSource": "Add Source",
-    "totalSources": "Total Sources",
+    "subtitle": "Manage and monitor data sources for this project",
+    "addSource": "Add source",
+    "totalSources": "Total sources",
     "active": "Active",
     "trusted": "Trusted",
     "table": {
@@ -442,8 +677,52 @@
       "type": "Type",
       "mentions": "Mentions",
       "visits": "Visits",
+      "reach": "Reach",
+      "trust": "Trust",
+      "lastSeen": "Last seen",
       "score": "Score",
-      "status": "Status"
+      "status": "Active"
+    },
+    "stats": {
+      "total": "Total sources",
+      "active": "Active",
+      "trusted": "Trusted",
+      "totalMentions": "Total mentions"
+    },
+    "filters": {
+      "searchPlaceholder": "Search by name or URL...",
+      "type": "Type",
+      "allTypes": "All types",
+      "status": "Status",
+      "allStatus": "All status",
+      "activeOnly": "Active only",
+      "inactiveOnly": "Inactive only",
+      "trust": "Trust",
+      "allTrust": "All trust",
+      "trustedOnly": "Trusted only",
+      "untrustedOnly": "Untrusted only",
+      "country": "Country",
+      "allCountries": "All countries",
+      "language": "Language",
+      "allLanguages": "All languages"
+    },
+    "actions": {
+      "refresh": "Refresh",
+      "exportCsv": "Export CSV",
+      "attachCatalog": "Attach from catalog",
+      "goToSite": "Open website",
+      "markTrusted": "Mark as trusted",
+      "removeTrust": "Remove trust",
+      "delete": "Delete source"
+    },
+    "bulk": {
+      "selected": "selected",
+      "activate": "Activate",
+      "deactivate": "Deactivate",
+      "markTrusted": "Mark trusted",
+      "unmarkTrusted": "Unmark trusted",
+      "delete": "Delete",
+      "clear": "Clear"
     },
     "types": {
       "news": "News",
@@ -451,11 +730,56 @@
       "video": "Video",
       "blog": "Blogs"
     },
-    "actions": {
-      "goToSite": "Go to site",
-      "markTrusted": "Mark as trusted",
-      "removeTrust": "Remove trust",
-      "block": "Block source"
+    "charts": {
+      "topSources": "Top sources by mentions",
+      "byType": "Mentions by source type"
+    },
+    "empty": {
+      "message": "No sources found for the current filters. Try widening the filter or attaching new sources from the catalog."
+    },
+    "pagination": {
+      "showing": "Showing {{from}}–{{to}} of {{total}}"
+    },
+    "relative": {
+      "justNow": "just now",
+      "minutesAgo": "{{count}}m ago",
+      "hoursAgo": "{{count}}h ago",
+      "daysAgo": "{{count}}d ago"
+    },
+    "confirm": {
+      "deleteOne": "Delete source \"{{name}}\"? Mentions tied to it will remain but will lose source link.",
+      "deleteMany": "Delete {{count}} selected sources? This cannot be undone."
+    },
+    "toasts": {
+      "added": "Source added",
+      "deleted": "Source deleted",
+      "trusted": "Source marked as trusted",
+      "untrusted": "Trust removed",
+      "exported": "Sources CSV downloaded",
+      "noDataExport": "No sources to export",
+      "fillRequired": "Name and URL are required",
+      "attached": "Attached {{created}} new sources from catalog ({{matched}} matched)"
+    },
+    "dialogs": {
+      "add": {
+        "title": "Add new source",
+        "description": "Manually add a website, RSS feed or social account to monitor for this project.",
+        "name": "Name",
+        "baseUrl": "Base URL",
+        "type": "Type",
+        "country": "Country (ISO 2)",
+        "language": "Language code",
+        "submit": "Add source"
+      },
+      "attach": {
+        "title": "Attach sources from catalog",
+        "description": "Pick sources from the global catalog (1000+ news / blogs / social) to start monitoring.",
+        "languages": "Languages (comma separated)",
+        "countries": "Countries (comma separated)",
+        "limit": "Max sources to attach",
+        "hint": "Only active catalog sources will be attached. Already-existing sources are skipped.",
+        "submit": "Attach"
+      }
     }
   },
   "influencers": {
@@ -682,23 +1006,60 @@
   },
   "comparisonPage": {
     "title": "Comparison",
-    "subtitle": "Add competitors and similar topics for comparison",
+    "subtitle": "Compare your project against competitors or similar topics side by side",
     "exportCsv": "Export CSV",
     "addExistingPlaceholder": "Add existing competitor",
     "newCompetitorPlaceholder": "New similar topic or competitor",
     "comparingLabel": "Comparing:",
-    "metricsTitle": "Topic metrics comparison",
+    "helpAddOne": "Add at least one competitor to start comparing",
+    "metricsTitle": "Side-by-side metrics",
     "metricColumn": "Metric",
     "chartTitle": "Comparison chart",
+    "tabs": {
+      "overview": "Overview",
+      "sentiment": "Sentiment",
+      "timeSeries": "Time-series",
+      "reach": "Reach"
+    },
+    "dateRange": {
+      "today": "Today",
+      "last7": "Last 7 days",
+      "last30": "Last 30 days",
+      "last90": "Last 90 days",
+      "allTime": "All time"
+    },
+    "actions": {
+      "refresh": "Refresh"
+    },
+    "sections": {
+      "radar": "Strength radar (normalised 0-100)",
+      "shareOfVoice": "Share of voice",
+      "sentimentBreakdown": "Sentiment breakdown",
+      "dailyMentions": "Daily mentions",
+      "reach": "Total reach",
+      "totalMentions": "Total mentions"
+    },
+    "empty": {
+      "title": "No competitors yet",
+      "description": "Pick an existing project from the dropdown above or create a new competitor topic to start the comparison.",
+      "noTimeSeries": "No daily activity in this date range"
+    },
     "metrics": {
       "totalMentions": "Total Mentions",
+      "totalReach": "Total Reach",
       "socialReach": "Social Reach",
       "positive": "Positive %",
+      "neutral": "Neutral %",
       "negative": "Negative %",
-      "avgInfluence": "Avg Influence"
+      "avgInfluence": "Avg Influence",
+      "avgSentiment": "Avg Sentiment",
+      "shareOfVoice": "Share of Voice"
     },
     "toasts": {
-      "added": "Competitor/similar topic added to comparison"
+      "added": "Competitor/similar topic added to comparison",
+      "refreshed": "Comparison refreshed",
+      "exported": "Comparison CSV downloaded",
+      "noDataExport": "No data to export yet"
     }
   },
   "projectSettingsPage": {
@@ -897,5 +1258,166 @@
     "en": "English",
     "ru": "Русский",
     "kz": "Қазақша"
+  },
+  "legal": {
+    "backToApp": "Back to app",
+    "privacy": {
+      "eyebrow": "Privacy Policy",
+      "title": "Privacy Policy",
+      "lastUpdated": "Last updated: April 19, 2026",
+      "intro": "SentiNews is an academic research project developed as part of the Bachelor's thesis \"Development and Study of an Automated System and Web Platform for Topic Classification and Sentiment Analysis of News Articles\" at Astana IT University. This Privacy Policy explains in plain language what information we collect, how we use it, and what rights you have. The platform is operated for educational and research purposes only.",
+      "sections": [
+        {
+          "title": "Who we are",
+          "paragraphs": [
+            "SentiNews is an academic media-monitoring platform created by Nurasyl Kairkhanov and Akezhan Meirkhanov, students of Astana IT University, as part of their diploma project. The platform is non-commercial and is intended for research, demonstration, and educational use."
+          ]
+        },
+        {
+          "title": "Information we collect",
+          "paragraphs": [
+            "We collect only the minimum amount of data needed to operate the service:"
+          ],
+          "bullets": [
+            "Account data: your name, email address, password (stored as a salted bcrypt hash), preferred language, and avatar (if you sign in with Google).",
+            "Authentication data: refresh tokens, the device/browser that issued them and your IP address. This is used to power Active Sessions in your profile.",
+            "Project data: project names, search keywords and aliases, and other settings you choose.",
+            "Public news content: the platform fetches and stores publicly available news articles (title, URL, publication date, source, language, country, author when available)."
+          ]
+        },
+        {
+          "title": "How we use your data",
+          "paragraphs": [
+            "We use your data only to provide the platform's features:"
+          ],
+          "bullets": [
+            "To authenticate you and protect your account.",
+            "To collect and analyse public news mentions for the topics you create.",
+            "To compute analytics: sentiment, topics, geographical distribution, sources, influencers, and time-series.",
+            "To send transactional emails such as email verification codes."
+          ]
+        },
+        {
+          "title": "Cookies and local storage",
+          "paragraphs": [
+            "We do not use third-party tracking cookies. The platform stores access and refresh tokens, your selected language, theme, and the \"Remember me\" preference in your browser's localStorage so the website can remember you between visits."
+          ]
+        },
+        {
+          "title": "Third-party services",
+          "paragraphs": [
+            "To collect and analyse news, the platform sends queries to the following external APIs. We do not share your account data with them — only your search keywords:"
+          ],
+          "bullets": [
+            "OpenAI API — used for sentiment analysis and AI summaries.",
+            "Google OAuth — optional, used only if you choose to sign in with Google.",
+            "News APIs: NewsAPI.org, SerpAPI (Google News), NewsData.io, Event Registry (NewsAPI.ai), World News API.",
+            "SMTP provider — used to deliver verification emails."
+          ]
+        },
+        {
+          "title": "How we store your data",
+          "paragraphs": [
+            "All account and project data is stored in a PostgreSQL database hosted in a controlled academic environment. Passwords are never stored in plain text — only as a bcrypt hash. We do not sell, rent, or share personal data with any third party for advertising or commercial purposes."
+          ]
+        },
+        {
+          "title": "Data retention",
+          "paragraphs": [
+            "We keep your data for as long as your account is active. You can delete your account at any time from Profile → Settings → Delete account, which permanently removes your account, sessions, and projects."
+          ]
+        },
+        {
+          "title": "Your rights",
+          "paragraphs": [
+            "Because SentiNews is an academic project, you can at any time:"
+          ],
+          "bullets": [
+            "View and edit your profile in Profile → Settings.",
+            "Sign out of any active session.",
+            "Change your password.",
+            "Delete your account along with all associated data."
+          ]
+        },
+        {
+          "title": "Changes to this policy",
+          "paragraphs": [
+            "Because this is a research project, the platform and this policy may change as the project evolves. The latest version is always available at this page, and the date at the top reflects the most recent update."
+          ]
+        }
+      ],
+      "contact": {
+        "title": "Contact",
+        "body": "If you have any questions about this Privacy Policy or how your data is handled, you can contact the project authors directly.",
+        "authors": "SentiNews — Bachelor's diploma project. Authors: Nurasyl Kairkhanov & Akezhan Meirkhanov, Astana IT University."
+      }
+    },
+    "terms": {
+      "eyebrow": "Terms of Service",
+      "title": "Terms of Service",
+      "lastUpdated": "Last updated: April 19, 2026",
+      "intro": "These Terms of Service govern your use of SentiNews, an academic web platform for automatic news monitoring, topic classification, and sentiment analysis. The platform was developed as part of the Bachelor's diploma project \"Development and Study of an Automated System and Web Platform for Topic Classification and Sentiment Analysis of News Articles\" at Astana IT University.",
+      "sections": [
+        {
+          "title": "About the service",
+          "paragraphs": [
+            "SentiNews is a non-commercial, educational web platform. It allows authorised users to create projects on a topic or brand, collect publicly available news articles in English, Russian, and Kazakh, and view automated analytics such as sentiment, topics, geography, sources, and influencers."
+          ]
+        },
+        {
+          "title": "Eligibility and accounts",
+          "paragraphs": [
+            "To use the service you must be at least 16 years old. You agree to provide accurate information during registration and to keep your password confidential. You are responsible for all activity that happens under your account."
+          ]
+        },
+        {
+          "title": "Acceptable use",
+          "paragraphs": [
+            "By using SentiNews, you agree NOT to:"
+          ],
+          "bullets": [
+            "Use the platform for any unlawful purpose or in a way that could harm individuals or organisations.",
+            "Attempt to gain unauthorised access to other accounts, the database, or the underlying servers.",
+            "Try to overload, disrupt, or interfere with the platform's normal operation.",
+            "Re-publish or sell the analytical data produced by the platform for commercial purposes without prior consent of the authors."
+          ]
+        },
+        {
+          "title": "Content and data sources",
+          "paragraphs": [
+            "News articles displayed in the platform are fetched from publicly available sources via official APIs (NewsAPI.org, SerpAPI, NewsData.io, Event Registry, World News API). All article rights remain with their original publishers. SentiNews shows only a short excerpt and a link to the original article."
+          ]
+        },
+        {
+          "title": "Intellectual property",
+          "paragraphs": [
+            "The source code, design, analytical models, and documentation of SentiNews belong to the authors of the diploma project. You are granted a limited, non-exclusive, non-transferable right to use the platform for personal, academic, or research purposes."
+          ]
+        },
+        {
+          "title": "Disclaimer of warranties",
+          "paragraphs": [
+            "The platform is provided \"as is\" and \"as available\" for academic and demonstration purposes. The authors make no warranties about uptime, accuracy of sentiment scores, completeness of collected mentions, or fitness for any specific business purpose. Analytical results should not be treated as professional advice."
+          ]
+        },
+        {
+          "title": "Limitation of liability",
+          "paragraphs": [
+            "To the maximum extent permitted by law, the authors of the project shall not be liable for any indirect, incidental, or consequential damages arising from the use of, or inability to use, the platform. Because the platform is non-commercial, the authors' total liability is limited to providing access to the diploma project's source code and documentation."
+          ]
+        },
+        {
+          "title": "Changes to these terms",
+          "paragraphs": [
+            "We may update these Terms as the diploma project evolves. The most recent version is always published on this page. By continuing to use the platform after changes are posted, you agree to the updated Terms."
+          ]
+        }
+      ],
+      "contact": {
+        "title": "Contact",
+        "body": "For any questions about these Terms or about the project itself, please contact the authors.",
+        "authors": "SentiNews — Bachelor's diploma project. Authors: Nurasyl Kairkhanov & Akezhan Meirkhanov, Astana IT University."
+      }
+    }
   }
 }

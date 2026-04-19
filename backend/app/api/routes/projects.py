@@ -5,7 +5,7 @@ from app.api.deps import get_current_user
 from app.models.user import User
 from app.schemas.project import ProjectCreate, ProjectUpdate, ProjectResponse, ProjectStatsResponse
 from app.schemas.auth import MessageResponse
-from app.services import project_service, ingestion_service
+from app.services import project_service, ingestion_service, embedding_service
 from app.tasks.dispatcher import enqueue_refresh_project_mentions
 
 router = APIRouter()
@@ -145,6 +145,22 @@ async def delete_project(
 ):
     await project_service.delete_project(db, project_id, current_user.id)
     return {"message": "Project deleted successfully"}
+
+
+@router.post("/{project_id}/embeddings/backfill")
+async def backfill_embeddings(
+    project_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Compute OpenAI embeddings for every mention of the project that doesn't
+    have one yet. Used by the AI Assistant / Insights / Topic AI features
+    to enable RAG retrieval over the full corpus.
+    """
+    # Verify ownership via the service helper (the local `get_project` here
+    # is a route handler, not the service function).
+    await project_service.get_project(db, project_id, current_user.id)
+    return await embedding_service.backfill_project(db, project_id)
 
 
 @router.post("/{project_id}/refresh")

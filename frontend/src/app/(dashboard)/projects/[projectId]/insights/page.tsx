@@ -459,6 +459,24 @@ export default function InsightsPage({ params }: InsightsPageProps) {
                                 )}
                               </div>
 
+                              {Array.isArray(insight.relatedMentionIds) && insight.relatedMentionIds.length > 0 && (
+                                <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                                  <span className="text-[10px] uppercase tracking-wide text-muted-foreground mr-1">
+                                    {t("insights.relatedMentions.label")} ({insight.relatedMentionIds.length})
+                                  </span>
+                                  {insight.relatedMentionIds.slice(0, 5).map((mid: string) => (
+                                    <a
+                                      key={mid}
+                                      href={`/projects/${projectId}/mentions?highlight=${mid}`}
+                                      className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] rounded bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                                    >
+                                      m:{mid.slice(0, 6)}
+                                      <ExternalLink className="h-2.5 w-2.5" />
+                                    </a>
+                                  ))}
+                                </div>
+                              )}
+
                               <div className="flex gap-2 mt-3">
                                 <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => handleTakeAction(insight)}>
                                   {t("insights.actions.takeAction")}
