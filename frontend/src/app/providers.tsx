@@ -5,6 +5,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { useState, type ReactNode } from "react";
 import "@/lib/i18n/config"; // Initialize i18n
+import { installZrenderErrorSuppressor } from "@/lib/zrender-error-suppressor";
+
+// Install once on the client. Must run BEFORE Next.js dev overlay
+// installs its own error listener (i.e. before any chart renders).
+if (typeof window !== "undefined") {
+  installZrenderErrorSuppressor();
+}
 
 interface ProvidersProps {
   children: ReactNode;

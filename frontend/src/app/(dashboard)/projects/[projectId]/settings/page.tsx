@@ -1,19 +1,19 @@
 "use client";
 
-import { use, useMemo, useState } from "react";
+import { use, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   Save,
-  Upload,
   Plus,
   X,
   Trash2,
   Globe,
   Bell,
   Key,
-  Users,
+  User as UserIcon,
   FileText,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -27,13 +27,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { getErrorMessage } from "@/lib/api";
-import { useDeleteProject, useProject, useUpdateProject, useTranslation } from "@/hooks";
+import {
+  useDeleteProject,
+  useProject,
+  useRefreshProject,
+  useTranslation,
+  useUpdateProject,
+  useUser,
+} from "@/hooks";
 
 interface SettingsPageProps {
   params: Promise<{ projectId: string }>;
 }
 
-const accentColors = [
+const ACCENT_COLORS = [
   { name: "Cyan", value: "#00A3E0" },
   { name: "Emerald", value: "#10B981" },
   { name: "Amber", value: "#F59E0B" },
@@ -42,15 +49,45 @@ const accentColors = [
   { name: "Blue", value: "#3B82F6" },
 ];
 
+// Source category ids stored in `project.settings.activeSources`. Names &
+// descriptions are pulled from i18n in render.
+const SOURCE_CATEGORIES = [
+  "news_sites",
+  "social_media",
+  "blogs",
+  "video_platforms",
+  "podcasts",
+  "review_sites",
+] as const;
+
+type SourceCategory = (typeof SOURCE_CATEGORIES)[number];
+
+const ALERT_LEVELS = ["low", "medium", "high"] as const;
+
+interface Draft {
+  projectName: string;
+  projectDescription: string;
+  selectedColor: string;
+  keywords: string[];
+  aliases: string[];
+  excludedKeywords: string[];
+  activeSources: string[];
+  emailNotifications: boolean;
+  alertThreshold: string;
+  webhookUrl: string;
+}
+
 export default function SettingsPage({ params }: SettingsPageProps) {
   const { projectId } = use(params);
   const { t } = useTranslation();
   const router = useRouter();
   const { data: project, isLoading } = useProject(projectId);
+  const { data: currentUser } = useUser();
   const updateProjectMutation = useUpdateProject();
   const deleteProjectMutation = useDeleteProject();
+  const refreshMutation = useRefreshProject();
 
-  const initialDraft = useMemo(
+  const initialDraft = useMemo<Draft>(
     () => ({
       projectName: project?.name || "",
       projectDescription: project?.description || "",
@@ -60,84 +97,149 @@ export default function SettingsPage({ params }: SettingsPageProps) {
       excludedKeywords: Array.isArray(project?.settings?.excludedKeywords)
         ? project.settings.excludedKeywords
         : [],
+      activeSources: Array.isArray(project?.settings?.activeSources)
+        ? project.settings.activeSources
+        : ([...SOURCE_CATEGORIES.slice(0, 3)] as string[]),
       emailNotifications: Boolean(project?.settings?.notifications?.email ?? true),
       alertThreshold: String(project?.settings?.notifications?.alertThreshold || "high"),
+      webhookUrl: project?.settings?.notifications?.webhookUrl || "",
     }),
     [project]
   );
-  const [draft, setDraft] = useState(initialDraft);
-  const [newKeyword, setNewKeyword] = useState("");
-  const values = draft.projectName || draft.keywords.length > 0 ? draft : initialDraft;
-  
-  const addKeyword = (type: "required" | "excluded" | "alias") => {
-    if (!newKeyword.trim()) return;
-    const value = newKeyword.trim();
 
-    if (type === "required") {
-      setDraft((prev) => ({ ...prev, keywords: [...values.keywords, value] }));
-    } else if (type === "alias") {
-      setDraft((prev) => ({ ...prev, aliases: [...values.aliases, value] }));
-    } else {
-      setDraft((prev) => ({
-        ...prev,
-        excludedKeywords: [...values.excludedKeywords, value],
-      }));
-    }
-    setNewKeyword("");
+  const [draft, setDraft] = useState<Draft>(initialDraft);
+  const [keywordInput, setKeywordInput] = useState("");
+  const [aliasInput, setAliasInput] = useState("");
+  const [excludedInput, setExcludedInput] = useState("");
+
+  // Re-seed draft when the project finishes loading or refetches with a
+  // different revision. Simple ref-equality on `project` is fine because
+  // useProject returns a fresh object on refetch only.
+  useEffect(() => {
+    setDraft(initialDraft);
+  }, [initialDraft]);
+
+  const addKeyword = (type: "required" | "excluded" | "alias") => {
+    const value =
+      type === "required"
+        ? keywordInput.trim()
+        : type === "alias"
+          ? aliasInput.trim()
+          : excludedInput.trim();
+    if (!value) return;
+
+    setDraft((prev) => {
+      if (type === "required") {
+        if (prev.keywords.includes(value)) return prev;
+        return { ...prev, keywords: [...prev.keywords, value] };
+      }
+      if (type === "alias") {
+        if (prev.aliases.includes(value)) return prev;
+        return { ...prev, aliases: [...prev.aliases, value] };
+      }
+      if (prev.excludedKeywords.includes(value)) return prev;
+      return { ...prev, excludedKeywords: [...prev.excludedKeywords, value] };
+    });
+
+    if (type === "required") setKeywordInput("");
+    else if (type === "alias") setAliasInput("");
+    else setExcludedInput("");
   };
 
   const removeKeyword = (keyword: string, type: "required" | "excluded" | "alias") => {
-    if (type === "required") {
-      setDraft((prev) => ({
-        ...prev,
-        keywords: values.keywords.filter((k) => k !== keyword),
-      }));
-    } else if (type === "alias") {
-      setDraft((prev) => ({
-        ...prev,
-        aliases: values.aliases.filter((k) => k !== keyword),
-      }));
-    } else {
-      setDraft((prev) => ({
-        ...prev,
-        excludedKeywords: values.excludedKeywords.filter((k) => k !== keyword),
-      }));
-    }
+    setDraft((prev) => {
+      if (type === "required") {
+        return { ...prev, keywords: prev.keywords.filter((k) => k !== keyword) };
+      }
+      if (type === "alias") {
+        return { ...prev, aliases: prev.aliases.filter((k) => k !== keyword) };
+      }
+      return { ...prev, excludedKeywords: prev.excludedKeywords.filter((k) => k !== keyword) };
+    });
+  };
+
+  const toggleSource = (category: SourceCategory, enabled: boolean) => {
+    setDraft((prev) => {
+      const set = new Set(prev.activeSources);
+      if (enabled) set.add(category);
+      else set.delete(category);
+      return { ...prev, activeSources: Array.from(set) };
+    });
+  };
+
+  // Triggers a fresh ingestion run on the backend. The backend creates a
+  // `refresh_project_mentions` crawl job and the user can watch new mentions
+  // arrive on the dashboard / mentions page.
+  const triggerRefresh = (reason: "name-changed" | "manual") => {
+    refreshMutation.mutate(projectId, {
+      onSuccess: () => {
+        toast.success(
+          reason === "name-changed"
+            ? t("projectSettingsPage.toasts.refetchTriggered", {
+                defaultValue: "Topic renamed — fetching fresh mentions in background",
+              })
+            : t("projectSettingsPage.toasts.refreshStarted", {
+                defaultValue: "Refreshing mentions in background",
+              })
+        );
+      },
+      onError: (error) => toast.error(getErrorMessage(error)),
+    });
   };
 
   const handleSave = () => {
+    const trimmedName = draft.projectName.trim();
+    if (!trimmedName) {
+      toast.error(
+        t("projectSettingsPage.errors.nameRequired", {
+          defaultValue: "Project name cannot be empty",
+        })
+      );
+      return;
+    }
+
+    const previousName = (project?.name || "").trim();
+    const nameChanged = trimmedName !== previousName;
+
     updateProjectMutation.mutate(
       {
         id: projectId,
         data: {
-          name: values.projectName.trim(),
-          description: values.projectDescription.trim() || undefined,
-          accent_color: values.selectedColor,
+          name: trimmedName,
+          description: draft.projectDescription.trim() || undefined,
+          accent_color: draft.selectedColor,
           settings: {
             ...(project?.settings || {}),
-            keywords: values.keywords,
-            aliases: values.aliases,
-            excludedKeywords: values.excludedKeywords,
-            topicQuery: values.projectName.trim(),
+            keywords: draft.keywords,
+            aliases: draft.aliases,
+            excludedKeywords: draft.excludedKeywords,
+            activeSources: draft.activeSources,
+            // Re-seed the topic query so the ingestion pipeline picks up the
+            // renamed brand on its next refresh.
+            topicQuery: trimmedName,
             notifications: {
               ...(project?.settings?.notifications || {}),
-              email: values.emailNotifications,
-              alertThreshold: values.alertThreshold,
+              email: draft.emailNotifications,
+              alertThreshold: draft.alertThreshold,
+              webhookUrl: draft.webhookUrl.trim() || undefined,
             },
           },
         },
       },
       {
-        onSuccess: () => toast.success(t("projectSettingsPage.toasts.updated")),
+        onSuccess: () => {
+          toast.success(t("projectSettingsPage.toasts.updated"));
+          // Auto-trigger refetch when the topic name changed — new name
+          // means new search query against news APIs.
+          if (nameChanged) triggerRefresh("name-changed");
+        },
         onError: (error) => toast.error(getErrorMessage(error)),
       }
     );
   };
 
   const handleDelete = () => {
-    const ok = window.confirm(
-      t("projectSettingsPage.confirmDelete")
-    );
+    const ok = window.confirm(t("projectSettingsPage.confirmDelete"));
     if (!ok) return;
     deleteProjectMutation.mutate(projectId, {
       onSuccess: () => {
@@ -150,20 +252,29 @@ export default function SettingsPage({ params }: SettingsPageProps) {
 
   const isSaving = updateProjectMutation.isPending;
   const isDeleting = deleteProjectMutation.isPending;
-  
+  const isRefreshing = refreshMutation.isPending;
+
   return (
     <div className="space-y-6 max-w-4xl">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight">
             {t("projectSettingsPage.title")}
           </h1>
-          <p className="text-muted-foreground mt-1">
-            {t("projectSettingsPage.subtitle")}
-          </p>
+          <p className="text-muted-foreground mt-1">{t("projectSettingsPage.subtitle")}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            variant="outline"
+            onClick={() => triggerRefresh("manual")}
+            disabled={isLoading || isRefreshing || isSaving || isDeleting}
+          >
+            <RefreshCw className={cn("h-4 w-4 mr-2", isRefreshing && "animate-spin")} />
+            {isRefreshing
+              ? t("projectSettingsPage.refreshing", { defaultValue: "Refreshing..." })
+              : t("projectSettingsPage.refreshNow", { defaultValue: "Refresh mentions" })}
+          </Button>
           <Button
             variant="destructive"
             onClick={handleDelete}
@@ -172,13 +283,17 @@ export default function SettingsPage({ params }: SettingsPageProps) {
             <Trash2 className="h-4 w-4 mr-2" />
             {t("projectSettingsPage.deleteTopic")}
           </Button>
-          <Button className="glow-sm" onClick={handleSave} disabled={isLoading || isSaving || isDeleting}>
-          <Save className="h-4 w-4 mr-2" />
-          {isSaving ? t("projectSettingsPage.saving") : t("projectSettingsPage.saveChanges")}
+          <Button
+            className="glow-sm"
+            onClick={handleSave}
+            disabled={isLoading || isSaving || isDeleting}
+          >
+            <Save className="h-4 w-4 mr-2" />
+            {isSaving ? t("projectSettingsPage.saving") : t("projectSettingsPage.saveChanges")}
           </Button>
         </div>
       </div>
-      
+
       <Tabs defaultValue="general" className="space-y-6">
         <TabsList className="glass">
           <TabsTrigger value="general" className="gap-2">
@@ -197,41 +312,46 @@ export default function SettingsPage({ params }: SettingsPageProps) {
             <Bell className="h-4 w-4" />
             {t("projectSettingsPage.tabs.notifications")}
           </TabsTrigger>
-          <TabsTrigger value="team" className="gap-2">
-            <Users className="h-4 w-4" />
-            {t("projectSettingsPage.tabs.team")}
+          <TabsTrigger value="owner" className="gap-2">
+            <UserIcon className="h-4 w-4" />
+            {t("projectSettingsPage.tabs.owner", { defaultValue: "Owner" })}
           </TabsTrigger>
         </TabsList>
-        
+
         {/* General Settings */}
         <TabsContent value="general" className="space-y-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <Card className="glass">
               <CardHeader>
                 <CardTitle>{t("projectSettingsPage.general.title")}</CardTitle>
-                <CardDescription>
-                  {t("projectSettingsPage.general.description")}
-                </CardDescription>
+                <CardDescription>{t("projectSettingsPage.general.description")}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="name">{t("projectSettingsPage.general.projectName")}</Label>
                   <Input
                     id="name"
-                    value={values.projectName}
-                    onChange={(e) => setDraft((prev) => ({ ...prev, projectName: e.target.value }))}
+                    value={draft.projectName}
+                    onChange={(e) =>
+                      setDraft((prev) => ({ ...prev, projectName: e.target.value }))
+                    }
                     className="max-w-md"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    {t("projectSettingsPage.general.nameRefetchHint", {
+                      defaultValue:
+                        "Renaming the topic triggers a fresh news search after saving.",
+                    })}
+                  </p>
                 </div>
-                
+
                 <div className="space-y-2">
-                  <Label htmlFor="description">{t("projectSettingsPage.general.descriptionLabel")}</Label>
+                  <Label htmlFor="description">
+                    {t("projectSettingsPage.general.descriptionLabel")}
+                  </Label>
                   <Textarea
                     id="description"
-                    value={values.projectDescription}
+                    value={draft.projectDescription}
                     onChange={(e) =>
                       setDraft((prev) => ({ ...prev, projectDescription: e.target.value }))
                     }
@@ -239,32 +359,22 @@ export default function SettingsPage({ params }: SettingsPageProps) {
                     rows={3}
                   />
                 </div>
-                
-                <div className="space-y-2">
-                  <Label>{t("projectSettingsPage.general.projectLogo")}</Label>
-                  <div className="flex items-center gap-4">
-                    <div className="w-20 h-20 rounded-xl bg-primary/10 flex items-center justify-center border-2 border-dashed border-border hover:border-primary/50 transition-colors cursor-pointer">
-                      <Upload className="h-6 w-6 text-muted-foreground" />
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      <p>{t("projectSettingsPage.general.uploadLogo")}</p>
-                      <p className="text-xs">{t("projectSettingsPage.general.logoFormat")}</p>
-                    </div>
-                  </div>
-                </div>
-                
+
                 <Separator />
-                
+
                 <div className="space-y-3">
                   <Label>{t("projectSettingsPage.general.accentColor")}</Label>
-                  <div className="flex items-center gap-3">
-                    {accentColors.map((color) => (
+                  <div className="flex items-center gap-3 flex-wrap">
+                    {ACCENT_COLORS.map((color) => (
                       <button
                         key={color.value}
-                        onClick={() => setDraft((prev) => ({ ...prev, selectedColor: color.value }))}
+                        type="button"
+                        onClick={() =>
+                          setDraft((prev) => ({ ...prev, selectedColor: color.value }))
+                        }
                         className={cn(
                           "w-8 h-8 rounded-full transition-all",
-                          values.selectedColor === color.value &&
+                          draft.selectedColor === color.value &&
                             "ring-2 ring-offset-2 ring-offset-background ring-primary"
                         )}
                         style={{ backgroundColor: color.value }}
@@ -277,13 +387,10 @@ export default function SettingsPage({ params }: SettingsPageProps) {
             </Card>
           </motion.div>
         </TabsContent>
-        
+
         {/* Keywords Settings */}
         <TabsContent value="keywords" className="space-y-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <Card className="glass">
               <CardHeader>
                 <CardTitle>{t("projectSettingsPage.keywords.requiredTitle")}</CardTitle>
@@ -293,7 +400,14 @@ export default function SettingsPage({ params }: SettingsPageProps) {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex flex-wrap gap-2">
-                  {values.keywords.map((keyword) => (
+                  {draft.keywords.length === 0 && (
+                    <span className="text-sm text-muted-foreground">
+                      {t("projectSettingsPage.keywords.noKeywords", {
+                        defaultValue: "No keywords yet",
+                      })}
+                    </span>
+                  )}
+                  {draft.keywords.map((keyword) => (
                     <Badge
                       key={keyword}
                       variant="secondary"
@@ -301,6 +415,7 @@ export default function SettingsPage({ params }: SettingsPageProps) {
                     >
                       {keyword}
                       <button
+                        type="button"
                         onClick={() => removeKeyword(keyword, "required")}
                         className="ml-1 hover:bg-destructive/20 rounded p-0.5"
                       >
@@ -309,22 +424,22 @@ export default function SettingsPage({ params }: SettingsPageProps) {
                     </Badge>
                   ))}
                 </div>
-                
+
                 <div className="flex gap-2 max-w-md">
                   <Input
                     placeholder={t("projectSettingsPage.keywords.addKeyword")}
-                    value={newKeyword}
-                    onChange={(e) => setNewKeyword(e.target.value)}
+                    value={keywordInput}
+                    onChange={(e) => setKeywordInput(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && addKeyword("required")}
                   />
-                  <Button onClick={() => addKeyword("required")}>
+                  <Button onClick={() => addKeyword("required")} type="button">
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
               </CardContent>
             </Card>
           </motion.div>
-          
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -346,12 +461,12 @@ export default function SettingsPage({ params }: SettingsPageProps) {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex flex-wrap gap-2">
-                  {values.aliases.length === 0 && (
+                  {draft.aliases.length === 0 && (
                     <span className="text-sm text-muted-foreground">
                       {t("projectSettingsPage.keywords.noAliases", { defaultValue: "No aliases yet" })}
                     </span>
                   )}
-                  {values.aliases.map((alias) => (
+                  {draft.aliases.map((alias) => (
                     <Badge
                       key={alias}
                       variant="secondary"
@@ -359,6 +474,7 @@ export default function SettingsPage({ params }: SettingsPageProps) {
                     >
                       {alias}
                       <button
+                        type="button"
                         onClick={() => removeKeyword(alias, "alias")}
                         className="ml-1 hover:bg-destructive/20 rounded p-0.5"
                       >
@@ -371,13 +487,13 @@ export default function SettingsPage({ params }: SettingsPageProps) {
                 <div className="flex gap-2 max-w-md">
                   <Input
                     placeholder={t("projectSettingsPage.keywords.addAlias", {
-                      defaultValue: "Add an alias (e.g. Arman Tsarukyan)",
+                      defaultValue: "Add an alias (e.g. global warming)",
                     })}
-                    value={newKeyword}
-                    onChange={(e) => setNewKeyword(e.target.value)}
+                    value={aliasInput}
+                    onChange={(e) => setAliasInput(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && addKeyword("alias")}
                   />
-                  <Button onClick={() => addKeyword("alias")}>
+                  <Button onClick={() => addKeyword("alias")} type="button">
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
@@ -399,7 +515,14 @@ export default function SettingsPage({ params }: SettingsPageProps) {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex flex-wrap gap-2">
-                  {values.excludedKeywords.map((keyword) => (
+                  {draft.excludedKeywords.length === 0 && (
+                    <span className="text-sm text-muted-foreground">
+                      {t("projectSettingsPage.keywords.noExcluded", {
+                        defaultValue: "No excluded keywords yet",
+                      })}
+                    </span>
+                  )}
+                  {draft.excludedKeywords.map((keyword) => (
                     <Badge
                       key={keyword}
                       variant="outline"
@@ -407,6 +530,7 @@ export default function SettingsPage({ params }: SettingsPageProps) {
                     >
                       {keyword}
                       <button
+                        type="button"
                         onClick={() => removeKeyword(keyword, "excluded")}
                         className="ml-1 hover:bg-destructive/20 rounded p-0.5"
                       >
@@ -415,15 +539,15 @@ export default function SettingsPage({ params }: SettingsPageProps) {
                     </Badge>
                   ))}
                 </div>
-                
+
                 <div className="flex gap-2 max-w-md">
                   <Input
                     placeholder={t("projectSettingsPage.keywords.addExcludedKeyword")}
-                    value={newKeyword}
-                    onChange={(e) => setNewKeyword(e.target.value)}
+                    value={excludedInput}
+                    onChange={(e) => setExcludedInput(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && addKeyword("excluded")}
                   />
-                  <Button variant="outline" onClick={() => addKeyword("excluded")}>
+                  <Button variant="outline" onClick={() => addKeyword("excluded")} type="button">
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
@@ -431,51 +555,44 @@ export default function SettingsPage({ params }: SettingsPageProps) {
             </Card>
           </motion.div>
         </TabsContent>
-        
+
         {/* Sources Settings */}
         <TabsContent value="sources" className="space-y-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <Card className="glass">
               <CardHeader>
                 <CardTitle>{t("projectSettingsPage.sources.title")}</CardTitle>
-                <CardDescription>
-                  {t("projectSettingsPage.sources.description")}
-                </CardDescription>
+                <CardDescription>{t("projectSettingsPage.sources.description")}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {[
-                  { name: t("projectSettingsPage.sources.newsSites"), description: t("projectSettingsPage.sources.newsSitesDesc"), enabled: true },
-                  { name: t("projectSettingsPage.sources.socialMedia"), description: t("projectSettingsPage.sources.socialMediaDesc"), enabled: true },
-                  { name: t("projectSettingsPage.sources.blogs"), description: t("projectSettingsPage.sources.blogsDesc"), enabled: true },
-                  { name: t("projectSettingsPage.sources.videoPlatforms"), description: t("projectSettingsPage.sources.videoPlatformsDesc"), enabled: false },
-                  { name: t("projectSettingsPage.sources.podcasts"), description: t("projectSettingsPage.sources.podcastsDesc"), enabled: false },
-                  { name: t("projectSettingsPage.sources.reviewSites"), description: t("projectSettingsPage.sources.reviewSitesDesc"), enabled: false },
-                ].map((source) => (
-                  <div
-                    key={source.name}
-                    className="flex items-center justify-between p-4 rounded-lg bg-muted/30"
-                  >
-                    <div>
-                      <p className="font-medium">{source.name}</p>
-                      <p className="text-sm text-muted-foreground">{source.description}</p>
+                {SOURCE_CATEGORIES.map((category) => {
+                  const labelKey = sourceLabelKey(category);
+                  const descKey = sourceDescKey(category);
+                  const enabled = draft.activeSources.includes(category);
+                  return (
+                    <div
+                      key={category}
+                      className="flex items-center justify-between p-4 rounded-lg bg-muted/30"
+                    >
+                      <div>
+                        <p className="font-medium">{t(labelKey)}</p>
+                        <p className="text-sm text-muted-foreground">{t(descKey)}</p>
+                      </div>
+                      <Switch
+                        checked={enabled}
+                        onCheckedChange={(checked) => toggleSource(category, checked)}
+                      />
                     </div>
-                    <Switch defaultChecked={source.enabled} />
-                  </div>
-                ))}
+                  );
+                })}
               </CardContent>
             </Card>
           </motion.div>
         </TabsContent>
-        
+
         {/* Notifications Settings */}
         <TabsContent value="notifications" className="space-y-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <Card className="glass">
               <CardHeader>
                 <CardTitle>{t("projectSettingsPage.notifications.title")}</CardTitle>
@@ -486,33 +603,38 @@ export default function SettingsPage({ params }: SettingsPageProps) {
               <CardContent className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium">{t("projectSettingsPage.notifications.emailTitle")}</p>
+                    <p className="font-medium">
+                      {t("projectSettingsPage.notifications.emailTitle")}
+                    </p>
                     <p className="text-sm text-muted-foreground">
                       {t("projectSettingsPage.notifications.emailAlerts")}
                     </p>
                   </div>
                   <Switch
-                    checked={values.emailNotifications}
+                    checked={draft.emailNotifications}
                     onCheckedChange={(checked) =>
                       setDraft((prev) => ({ ...prev, emailNotifications: checked }))
                     }
                   />
                 </div>
-                
+
                 <Separator />
-                
+
                 <div className="space-y-3">
                   <Label>{t("projectSettingsPage.notifications.alertThreshold")}</Label>
                   <p className="text-sm text-muted-foreground">
                     {t("projectSettingsPage.notifications.alertThresholdHelp")}
                   </p>
                   <div className="flex gap-2">
-                    {["low", "medium", "high"].map((level) => (
+                    {ALERT_LEVELS.map((level) => (
                       <Button
                         key={level}
-                        variant={values.alertThreshold === level ? "default" : "outline"}
+                        type="button"
+                        variant={draft.alertThreshold === level ? "default" : "outline"}
                         size="sm"
-                        onClick={() => setDraft((prev) => ({ ...prev, alertThreshold: level }))}
+                        onClick={() =>
+                          setDraft((prev) => ({ ...prev, alertThreshold: level }))
+                        }
                         className="capitalize"
                       >
                         {t(`projectSettingsPage.levels.${level}`)}
@@ -520,15 +642,22 @@ export default function SettingsPage({ params }: SettingsPageProps) {
                     ))}
                   </div>
                 </div>
-                
+
                 <Separator />
-                
+
                 <div className="space-y-2">
-                  <Label htmlFor="webhook">{t("projectSettingsPage.notifications.webhookUrl")}</Label>
+                  <Label htmlFor="webhook">
+                    {t("projectSettingsPage.notifications.webhookUrl")}
+                  </Label>
                   <Input
                     id="webhook"
+                    type="url"
                     placeholder={t("projectSettingsPage.notifications.webhookPlaceholder")}
                     className="max-w-md"
+                    value={draft.webhookUrl}
+                    onChange={(e) =>
+                      setDraft((prev) => ({ ...prev, webhookUrl: e.target.value }))
+                    }
                   />
                   <p className="text-xs text-muted-foreground">
                     {t("projectSettingsPage.notifications.webhookHelp")}
@@ -538,47 +667,62 @@ export default function SettingsPage({ params }: SettingsPageProps) {
             </Card>
           </motion.div>
         </TabsContent>
-        
-        {/* Team Settings */}
-        <TabsContent value="team" className="space-y-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
+
+        {/* Owner Info (replaces hardcoded "Team" tab — multi-user is not
+            wired in the backend yet, so we just show the actual project
+            owner from the current user's identity). */}
+        <TabsContent value="owner" className="space-y-6">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <Card className="glass">
               <CardHeader>
-                <CardTitle>{t("projectSettingsPage.team.title")}</CardTitle>
+                <CardTitle>
+                  {t("projectSettingsPage.ownerCard.title", {
+                    defaultValue: "Project owner",
+                  })}
+                </CardTitle>
                 <CardDescription>
-                  {t("projectSettingsPage.team.description")}
+                  {t("projectSettingsPage.ownerCard.description", {
+                    defaultValue:
+                      "You are the sole owner of this project. Multi-user collaboration is coming soon.",
+                  })}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {[
-                  { name: "John Doe", email: "john@company.com", role: "Owner" },
-                  { name: "Jane Smith", email: "jane@company.com", role: "Manager" },
-                  { name: "Bob Wilson", email: "bob@company.com", role: "Analyst" },
-                ].map((member) => (
-                  <div
-                    key={member.email}
-                    className="flex items-center justify-between p-4 rounded-lg bg-muted/30"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-medium">
-                        {member.name.split(" ").map((n) => n[0]).join("")}
-                      </div>
-                      <div>
-                        <p className="font-medium">{member.name}</p>
-                        <p className="text-sm text-muted-foreground">{member.email}</p>
-                      </div>
-                    </div>
-                    <Badge variant="outline">{member.role}</Badge>
+                <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/30">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center font-medium text-lg">
+                    {(currentUser?.name || currentUser?.email || "?")
+                      .split(" ")
+                      .map((s) => s[0])
+                      .join("")
+                      .slice(0, 2)
+                      .toUpperCase()}
                   </div>
-                ))}
-                
-                <Button variant="outline" className="w-full">
-                  <Plus className="h-4 w-4 mr-2" />
-                  {t("projectSettingsPage.team.invite")}
-                </Button>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">
+                      {currentUser?.name ||
+                        t("projectSettingsPage.ownerCard.unnamed", {
+                          defaultValue: "Unnamed user",
+                        })}
+                    </p>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {currentUser?.email || "—"}
+                    </p>
+                  </div>
+                  <Badge variant="outline">
+                    {t("projectSettingsPage.ownerCard.ownerBadge", {
+                      defaultValue: "Owner",
+                    })}
+                  </Badge>
+                </div>
+
+                {project?.createdAt && (
+                  <p className="text-xs text-muted-foreground">
+                    {t("projectSettingsPage.ownerCard.createdOn", {
+                      defaultValue: "Project created on {{date}}",
+                      date: new Date(project.createdAt).toLocaleDateString(),
+                    })}
+                  </p>
+                )}
               </CardContent>
             </Card>
           </motion.div>
@@ -588,3 +732,36 @@ export default function SettingsPage({ params }: SettingsPageProps) {
   );
 }
 
+function sourceLabelKey(category: SourceCategory): string {
+  switch (category) {
+    case "news_sites":
+      return "projectSettingsPage.sources.newsSites";
+    case "social_media":
+      return "projectSettingsPage.sources.socialMedia";
+    case "blogs":
+      return "projectSettingsPage.sources.blogs";
+    case "video_platforms":
+      return "projectSettingsPage.sources.videoPlatforms";
+    case "podcasts":
+      return "projectSettingsPage.sources.podcasts";
+    case "review_sites":
+      return "projectSettingsPage.sources.reviewSites";
+  }
+}
+
+function sourceDescKey(category: SourceCategory): string {
+  switch (category) {
+    case "news_sites":
+      return "projectSettingsPage.sources.newsSitesDesc";
+    case "social_media":
+      return "projectSettingsPage.sources.socialMediaDesc";
+    case "blogs":
+      return "projectSettingsPage.sources.blogsDesc";
+    case "video_platforms":
+      return "projectSettingsPage.sources.videoPlatformsDesc";
+    case "podcasts":
+      return "projectSettingsPage.sources.podcastsDesc";
+    case "review_sites":
+      return "projectSettingsPage.sources.reviewSitesDesc";
+  }
+}

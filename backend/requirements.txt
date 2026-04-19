@@ -12,6 +12,7 @@ httpx
 openai
 reportlab
 openpyxl
+matplotlib
 aiosmtplib
 python-dotenv
 email-validator

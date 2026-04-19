@@ -86,7 +86,12 @@ export default function LoginPage() {
     onSuccess: async (tokenResponse) => {
       setGoogleLoading(true);
       try {
-        const result = await authApi.googleLogin(tokenResponse.access_token);
+        // Honor the same "Remember me" checkbox as the email login form —
+        // pass it through so the backend issues a 30-day vs 7-day refresh.
+        const result = await authApi.googleLogin(
+          tokenResponse.access_token,
+          !!rememberMe
+        );
         setUser(result.user);
         toast.success(`Welcome, ${result.user.name}!`);
         router.push("/dashboard");

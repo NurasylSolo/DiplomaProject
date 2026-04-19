@@ -31,6 +31,20 @@ export function useDownloadReport(projectId: string) {
   });
 }
 
+export function useReportPreview(projectId: string) {
+  return useQuery({
+    queryKey: ["report-preview", projectId],
+    queryFn: () => reportsApi.preview(projectId),
+    enabled: !!projectId,
+    // Preview is computed from the same KPI sources as the dashboard;
+    // 60s cache is plenty and avoids hammering /reports/preview every
+    // time the user toggles a section.
+    staleTime: 60_000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
+}
+
 export function useEmailSchedules(projectId: string) {
   return useQuery({
     queryKey: ["email-schedules", projectId],

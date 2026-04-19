@@ -4,7 +4,7 @@ from app.database import get_db
 from app.api.deps import get_current_user
 from app.models.user import User
 from app.schemas.analytics import ComparisonRequest
-from app.services import analytics_service
+from app.services import analytics_service, emotion_service
 from app.services.project_service import get_project
 
 router = APIRouter()
@@ -27,21 +27,60 @@ async def geo_data(
 @router.get("/projects/{project_id}/analytics/hot-hours")
 async def hot_hours(
     project_id: str,
+    timezone: str = Query("UTC", description="IANA timezone, e.g. Asia/Almaty"),
+    date_from: str | None = None,
+    date_to: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    """Per-(day-of-week, hour) heatmap data with reach + sentiment,
+    bucketed in the requested IANA timezone (defaults to UTC)."""
     await get_project(db, project_id, current_user.id)
-    return await analytics_service.get_hot_hours(db, project_id)
+    return await analytics_service.get_hot_hours(
+        db,
+        project_id,
+        timezone=timezone,
+        date_from=date_from,
+        date_to=date_to,
+    )
 
 
 @router.get("/projects/{project_id}/analytics/emotions")
 async def emotions(
     project_id: str,
+    date_from: str | None = None,
+    date_to: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    """Aggregated 8-emotion (Plutchik) distribution for the project,
+    optionally constrained by ``date_from`` / ``date_to``.
+
+    Returns averages, daily timeline and top mentions per emotion in a
+    single payload — see ``emotion_service.aggregate_emotions``.
+    """
     await get_project(db, project_id, current_user.id)
-    return await analytics_service.get_emotions_data(db, project_id)
+    return await emotion_service.aggregate_emotions(
+        db, project_id, date_from=date_from, date_to=date_to
+    )
+
+
+@router.post("/projects/{project_id}/emotions/backfill")
+async def backfill_emotions(
+    project_id: str,
+    limit: int | None = Query(None, ge=1, le=10_000),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Re-classify mentions whose ``mention.emotions`` is empty / NULL /
+    legacy rule-based zeros. Trigger from the UI; the work is done
+    inline so the user sees immediate progress in the toast.
+
+    ``limit`` lets the operator dry-run on a small slice before
+    committing tokens to the entire backlog.
+    """
+    await get_project(db, project_id, current_user.id)
+    return await emotion_service.backfill_project(db, project_id, limit=limit)
 
 
 @router.get("/projects/{project_id}/analytics/topics")

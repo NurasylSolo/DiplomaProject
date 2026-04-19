@@ -175,11 +175,15 @@ async def google_login(
     google_credential: str,
     user_agent: str | None = None,
     ip_address: str | None = None,
+    remember_me: bool = True,
 ) -> dict:
     """Sign in or sign up via Google OAuth.
 
     Lookup order: by ``google_id`` → by ``email`` (and link in that case)
     → create a new user with ``auth_provider="google"`` and verified email.
+
+    The ``remember_me`` flag controls refresh-token TTL exactly the same way
+    as the email/password login: True → 30 days, False → 7 days.
     """
     profile = await _verify_google_token(google_credential)
     if not profile or not profile.get("email") or not profile.get("sub"):
@@ -215,7 +219,18 @@ async def google_login(
             db.add(user)
             await db.flush()
 
-    tokens = await _create_tokens(db, user, user_agent=user_agent, ip_address=ip_address)
+    refresh_days = (
+        settings.REFRESH_TOKEN_EXPIRE_DAYS
+        if remember_me
+        else settings.REFRESH_TOKEN_SHORT_DAYS
+    )
+    tokens = await _create_tokens(
+        db,
+        user,
+        user_agent=user_agent,
+        ip_address=ip_address,
+        refresh_expires_days=refresh_days,
+    )
     return {"user": user, **tokens}
 
 

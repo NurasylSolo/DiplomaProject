@@ -133,13 +133,17 @@ export const authApi = {
     return response.data;
   },
 
-  async googleLogin(credential: string): Promise<AuthResponse> {
-    const response = await apiClient.post<AuthResponse>("/auth/google", { credential });
+  async googleLogin(credential: string, rememberMe: boolean = true): Promise<AuthResponse> {
+    const response = await apiClient.post<AuthResponse>("/auth/google", {
+      credential,
+      remember_me: rememberMe,
+    });
     const { access_token, refresh_token } = response.data;
-    // Google login is treated as long-lived (same as Remember me).
+    // Mirror the user's "Remember me" choice on the client so the local
+    // expiry tracker matches the backend-issued refresh TTL.
     tokenManager.setTokens(access_token, refresh_token, {
-      rememberMe: true,
-      refreshExpiresInDays: REFRESH_DAYS_REMEMBER,
+      rememberMe,
+      refreshExpiresInDays: rememberMe ? REFRESH_DAYS_REMEMBER : REFRESH_DAYS_DEFAULT,
     });
     return response.data;
   },

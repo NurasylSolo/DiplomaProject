@@ -1,9 +1,36 @@
 import { apiClient } from "../client";
-import type { GeoData, HotHoursData, TimeSeriesData, Topic, ComparisonResult } from "@/types";
+import type { GeoData, TimeSeriesData, Topic, ComparisonResult } from "@/types";
 
 export interface DateRangeParams {
   date_from?: string;
   date_to?: string;
+}
+
+export interface HotHoursParams extends DateRangeParams {
+  /** IANA timezone, e.g. "Asia/Almaty". Defaults to UTC server-side. */
+  timezone?: string;
+}
+
+/** Single (day-of-week, hour) bucket of mentions in the caller's TZ. */
+export interface HotHoursCell {
+  day: number; // 0 = Sunday (Postgres `dow`)
+  hour: number; // 0..23 in selected TZ
+  mentions: number;
+  reach: number;
+  avg_sentiment: number;
+  positive: number;
+  neutral: number;
+  negative: number;
+}
+
+export interface HotHoursAggregate {
+  timezone: string;
+  total_mentions: number;
+  cells: HotHoursCell[];
+  peak: HotHoursCell | null;
+  top_cells: HotHoursCell[];
+  active_days: { day: number; mentions: number }[];
+  quietest_cells: HotHoursCell[];
 }
 
 export interface SourceBreakdownItem {
@@ -59,8 +86,11 @@ export const analyticsApi = {
     return response.data;
   },
 
-  async getHotHours(projectId: string, params: DateRangeParams = {}): Promise<HotHoursData[]> {
-    const response = await apiClient.get<HotHoursData[]>(
+  async getHotHours(
+    projectId: string,
+    params: HotHoursParams = {}
+  ): Promise<HotHoursAggregate> {
+    const response = await apiClient.get<HotHoursAggregate>(
       `/projects/${projectId}/analytics/hot-hours`,
       { params }
     );

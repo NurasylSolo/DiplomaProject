@@ -10,3 +10,4 @@ export { influencersApi } from "./influencers";
 export { filtersApi } from "./filters";
 export { alertsApi } from "./alerts";
 export { topicsApi } from "./topics";
+export { emotionsApi } from "./emotions";

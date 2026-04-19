@@ -224,6 +224,7 @@
     "bulkActions": "Жалпы әрекеттер",
     "recentMentions": "Соңғы атаулар",
     "last7days": "Соңғы 7 күн",
+    "resultsCount": "{{count}} нәтиже",
     "filters": {
       "title": "Сүзгілер",
       "dateRange": "Кезең",
@@ -241,12 +242,44 @@
       "min": "Мин",
       "max": "Макс",
       "searchByAuthor": "Автор бойынша іздеу...",
-      "noSavedFilters": "Сақталған сүзгілер жоқ"
+      "noSavedFilters": "Сақталған сүзгілер жоқ",
+      "selectRange": "Кезеңді таңдаңыз",
+      "selectDateRange": "Күн аралығын таңдаңыз",
+      "allInDatabase": "Дерекқордағы барлық ескертулер",
+      "presets": {
+        "all": "Барлық уақыт",
+        "today": "Бүгін",
+        "yesterday": "Кеше",
+        "7days": "Соңғы 7 күн",
+        "30days": "Соңғы 30 күн",
+        "90days": "Соңғы 90 күн",
+        "custom": "Өзіңіз көрсетіңіз"
+      },
+      "sourceTypes": {
+        "facebook": "Facebook",
+        "twitter": "X (Twitter)",
+        "tiktok": "TikTok",
+        "youtube": "YouTube",
+        "instagram": "Instagram",
+        "linkedin": "LinkedIn",
+        "telegram": "Telegram",
+        "news": "Жаңалықтар",
+        "blogs": "Блогтар",
+        "podcasts": "Подкасттар",
+        "videos": "Бейне",
+        "websites": "Веб-сайттар",
+        "other": "Басқа"
+      }
     },
     "sentiment": {
       "positive": "Оң",
       "neutral": "Бейтарап",
       "negative": "Теріс"
+    },
+    "sentiments": {
+      "positive": "Оң пікірлер",
+      "neutral": "Бейтарап",
+      "negative": "Теріс пікірлер"
     },
     "table": {
       "mention": "Атау",
@@ -256,7 +289,13 @@
       "location": "Локация",
       "actions": "Әрекеттер",
       "influence": "ықпал",
-      "noMentionsFound": "Сүзгілеріңізге сәйкес атаулар табылмады."
+      "noMentionsFound": "Сүзгілеріңізге сәйкес атаулар табылмады.",
+      "noMentionsFoundShort": "Атаулар табылмады",
+      "tryAdjustingFilters": "Сүзгі параметрлерін өзгертіп көріңіз",
+      "loading": "Атаулар жүктелуде...",
+      "loadError": "Атауларды жүктеу мүмкін болмады. Қайталап көріңіз.",
+      "showing": "{{total}} атаудың {{from}}-{{to}} көрсетіліп тұр",
+      "perPage": "{{count}} / бет"
     },
     "actions": {
       "goToSource": "Көзге өту",
@@ -266,7 +305,8 @@
       "save": "Сақтау",
       "unsave": "Сақталғаннан алып тастау",
       "muteSource": "Көзді жасыру",
-      "delete": "Жою"
+      "delete": "Жою",
+      "markAsRead": "Оқылғанды белгілеу"
     },
     "charts": {
       "mentionsOverTime": "Уақыт бойынша атаулар",
@@ -783,8 +823,8 @@
     }
   },
   "influencers": {
-    "title": "Инфлюенсерлер",
-    "subtitle": "Негізгі инфлюенсерлерді бақылау және талдау",
+    "title": "Топ дауыстар",
+    "subtitle": "Сіздің бренд туралы пікір қалыптастыратын дереккөздер мен авторлар",
     "table": {
       "influencer": "Инфлюенсер",
       "platform": "Платформа",
@@ -792,6 +832,61 @@
       "mentions": "Атаулар",
       "reach": "Қамту",
       "sentiment": "Тональдық"
+    }
+  },
+  "influencersPage": {
+    "actions": {
+      "refresh": "Жаңарту",
+      "exportCsv": "CSV экспорт",
+      "viewDetails": "Толығырақ",
+      "openSite": "Сайтты ашу"
+    },
+    "stats": {
+      "total": "Дауыстар",
+      "totalReach": "Жалпы қамту",
+      "totalMentions": "Барлық атаулар",
+      "topPlatform": "Топ платформа",
+      "avgScore": "Орташа скор"
+    },
+    "charts": {
+      "topInfluencers": "Атаулар бойынша топ дауыстар",
+      "byPlatform": "Түрі бойынша"
+    },
+    "filters": {
+      "searchPlaceholder": "Атау немесе домен бойынша іздеу…",
+      "platform": "Түрі",
+      "allPlatforms": "Барлық түрлері"
+    },
+    "table": {
+      "influencer": "Дауыс",
+      "platform": "Түрі",
+      "mentions": "Атаулар",
+      "reach": "Қамту",
+      "shareOfVoice": "Дауыс үлесі",
+      "score": "Скор",
+      "lastSeen": "Соңғы белсенділік"
+    },
+    "metrics": {
+      "mentions": "Атаулар",
+      "reach": "Қамту",
+      "shareOfVoice": "Дауыс үлесі",
+      "score": "Әсер индексі"
+    },
+    "detail": {
+      "sentimentDistribution": "Тональдық бөлінісі",
+      "recentPosts": "Соңғы атаулар",
+      "noMentions": "Бұл дереккөзден әлі атау жоқ"
+    },
+    "empty": {
+      "message": "Көрсететін дауыстар жоқ. Атаулар жиналған соң пайда болады."
+    },
+    "pagination": {
+      "showing": "{{total}}-нан {{from}}–{{to}} көрсетілуде"
+    },
+    "toasts": {
+      "exported": "Инфлюенсерлер CSV-ге экспортталды",
+      "noDataExport": "Экспортқа дерек жоқ",
+      "refreshed": "Жаңартылды"
     }
   },
   "reports": {
@@ -820,6 +915,220 @@
       "generate": "Инфографика жасау"
     }
   },
+  "reportsPage": {
+    "pdf": {
+      "title": "PDF есеп",
+      "subtitle": "Графиктер мен кестелері бар көп бөлімді PDF жасаңыз",
+      "sectionsTitle": "Есеп бөлімдері",
+      "actions": {
+        "generate": "Жасау және жүктеу",
+        "generating": "Жасалуда…"
+      },
+      "options": {
+        "title": "Қосымша опциялар",
+        "language": "Есеп тілі",
+        "description": "Сипаттама",
+        "descriptionPlaceholder": "Есеп үшін кастомды сипаттама қосыңыз…",
+        "accentColor": "Акцент түсі"
+      },
+      "preview": {
+        "title": "Алдын ала қарау",
+        "heading": "Медиа мониторинг есебі",
+        "loadingProject": "Жоба жүктелуде…",
+        "mentions": "Атаулар",
+        "reach": "Қамту",
+        "topSources": "Топ дереккөздер",
+        "included": "Қосылған бөлімдер"
+      },
+      "sections": {
+        "summary": "Атаулар жиынтығы",
+        "socialReach": "Тональдық / Қамту",
+        "volumeChart": "Атаулар көлемі",
+        "topSources": "Топ дереккөздер",
+        "topProfiles": "Топ дауыстар",
+        "topics": "Топ тақырыптар",
+        "keywords": "Танымал кілт сөздер",
+        "recentMentions": "Соңғы атаулар",
+        "popularMentions": "Танымал атаулар",
+        "context": "Талқылау контексті",
+        "numericSummary": "Сандық жиынтық",
+        "activeProfiles": "Белсенді профильдер",
+        "geo": "Географиялық бөлініс",
+        "emotions": "Эмоция талдауы",
+        "hotHours": "Ыстық сағаттар",
+        "languages": "Тілдер"
+      },
+      "toasts": {
+        "success": "PDF есеп жүктелді",
+        "error": "PDF есепті жасау сәтсіз"
+      }
+    },
+    "excel": {
+      "title": "Excel экспорт",
+      "subtitle": "Деректерді бірнеше парақты кітапқа экспорттау",
+      "exportType": "Экспорт түрі",
+      "includeSheets": "Парақтарды қосу",
+      "actions": {
+        "export": "Excel-ге экспорт",
+        "exporting": "Экспорттау…"
+      },
+      "types": {
+        "current": {
+          "title": "Ағымдағы сүзгілер",
+          "description": "Ағымдағы сүзгілерге сәйкес деректерді экспорттау"
+        },
+        "full": {
+          "title": "Толық деректер",
+          "description": "Сүзгісіз барлық атаулар"
+        },
+        "summary": {
+          "title": "Жиынтық есеп",
+          "description": "Агрегацияланған статистика"
+        }
+      },
+      "sheets": {
+        "mentions": "Атаулар",
+        "sources": "Дереккөздер",
+        "sentiment": "Тональдық",
+        "influencers": "Инфлюенсерлер",
+        "trends": "Тақырыптар / Трендтер",
+        "dailyStats": "Күнделікті статистика",
+        "geo": "Географиялық бөлініс",
+        "emotions": "Эмоция талдауы",
+        "hotHours": "Ыстық сағаттар",
+        "languages": "Тілдер"
+      },
+      "toasts": {
+        "success": "Excel есеп жүктелді",
+        "error": "Excel экспорт сәтсіз"
+      }
+    },
+    "email": {
+      "title": "Email есептер",
+      "subtitle": "Алушыларға PDF есепті сұраныс бойынша жіберіңіз",
+      "actions": {
+        "createSchedule": "Кесте құру"
+      },
+      "stats": {
+        "scheduled": "Кестелер",
+        "active": "Белсенді",
+        "recipients": "Алушылар"
+      },
+      "list": {
+        "title": "Жоспарланған есептер",
+        "loading": "Кестелер жүктелуде…",
+        "empty": "Әзірге кестелер жоқ. «Кесте құру» түймесін басыңыз."
+      },
+      "row": {
+        "active": "Белсенді",
+        "paused": "Тоқтатылған",
+        "sendTime": "Жіберу уақыты",
+        "timezone": "Уақыт белдеуі",
+        "recipients": "алушы(лар)",
+        "lastSent": "Соңғы жіберу",
+        "sendNow": "Қазір жіберу",
+        "delete": "Жою"
+      },
+      "dialog": {
+        "title": "Есеп кестесін құру",
+        "recipients": "Алушылар",
+        "add": "Қосу",
+        "frequency": "Жиілік",
+        "sendTime": "Жіберу уақыты",
+        "contents": "Есеп мазмұны",
+        "language": "Есеп тілі",
+        "create": "Кесте құру",
+        "atLeastOneRecipient": "Кемінде бір алушыны қосыңыз",
+        "invalidEmail": "Дұрыс email енгізіңіз",
+        "duplicateEmail": "Бұл email тізімде бар",
+        "frequencies": {
+          "daily": "Күнделікті",
+          "weekly": "Апта сайын",
+          "monthly": "Ай сайын",
+          "on_event": "Оқиға бойынша"
+        },
+        "contentOptions": {
+          "summary": "Атқарушы жиынтық",
+          "mentions": "Соңғы атаулар",
+          "sentiment": "Тональдық талдауы",
+          "trends": "Танымал тақырыптар",
+          "influencers": "Топ дауыстар"
+        }
+      },
+      "confirm": {
+        "delete": "Бұл кестені жою керек пе?"
+      },
+      "toasts": {
+        "created": "Кесте құрылды",
+        "createFailed": "Кестені құру сәтсіз",
+        "updateFailed": "Кестені жаңарту сәтсіз",
+        "deleted": "Кесте жойылды",
+        "deleteFailed": "Кестені жою сәтсіз",
+        "sent": "Есеп {{count}} алушыға жіберілді",
+        "sendFailed": "Есепті жіберу сәтсіз",
+        "smtpNotConfigured": "Бэкендте SMTP конфигурацияланбаған",
+        "noRecipients": "Дұрыс алушылар жоқ"
+      }
+    },
+    "infographic": {
+      "title": "Инфографика",
+      "subtitle": "Медиа-болуыңыздың бөлісуге арналған визуалды снапшоты",
+      "actions": {
+        "regenerate": "Жаңарту",
+        "share": "Бөлісу",
+        "exportPng": "PNG экспорт"
+      },
+      "kpi": {
+        "mentions": "Атаулар",
+        "reach": "Қамту",
+        "score": "Балл",
+        "positive": "Позитив"
+      },
+      "sentiment": {
+        "title": "Тональдық бөлінісі"
+      },
+      "topics": {
+        "title": "Топ тақырыптар"
+      },
+      "influencers": {
+        "title": "Топ дауыстар"
+      },
+      "geo": {
+        "title": "Топ елдер"
+      },
+      "emotions": {
+        "title": "Эмоция талдауы"
+      },
+      "hotHours": {
+        "title": "Ыстық сағаттар"
+      },
+      "languages": {
+        "title": "Тілдер"
+      },
+      "topSources": {
+        "title": "Топ дереккөздер"
+      },
+      "footer": {
+        "generated": "Жасалды"
+      },
+      "empty": {
+        "topics": "Әзірге тақырыптар жоқ",
+        "influencers": "Әзірге топ дауыстар жоқ",
+        "sources": "Әзірге дереккөздер жоқ",
+        "emotions": "Әзірге эмоция деректері жоқ",
+        "hotHours": "Шарықтау әлі анықталмады",
+        "geo": "Әзірге гео деректер жоқ"
+      },
+      "toasts": {
+        "exported": "Инфографика сақталды",
+        "exportFailed": "Инфографиканы сақтау сәтсіз",
+        "shared": "Бөлісілді",
+        "linkCopied": "Сілтеме буферге көшірілді",
+        "shareFailed": "Бөлісу сәтсіз",
+        "refreshed": "Жаңартылды"
+      }
+    }
+  },
   "geo": {
     "title": "Гео талдау",
     "subtitle": "Брендіңіздің медиа атауларының географиялық таралуы",
@@ -834,17 +1143,114 @@
       "sentiment": "Тональдық",
       "change": "Өзгеріс"
     },
-    "loadingMap": "Карта жүктелуде...",
-    "mapError": "Әлем картасын жүктеу сәтсіз аяқталды. Кейінірек қайталаңыз."
+    "loadingMap": "Әлем картасы жүктелуде...",
+    "mapError": "Әлем картасын жүктеу сәтсіз аяқталды. Кейінірек қайталаңыз.",
+    "mapUnavailable": "Карта көрсетілуі қолжетімсіз",
+    "mapUnavailableHint": "Географиялық деректер үшін төмендегі елдер кестесін қараңыз"
   },
   "influencerAnalysis": {
     "title": "Инфлюенсер талдауы",
-    "subtitle": "Инфлюенсерлердің өнімділігіне терең талдау"
+    "subtitle": "Инфлюенсерлердің өнімділігіне терең талдау",
+    "exportReport": "Есепті экспорттау",
+    "ranking": "Инфлюенсер рейтингі",
+    "stats": {
+      "totalInfluencers": "Барлық инфлюенсерлер",
+      "avgInfluenceScore": "Орташа ықпал индексі",
+      "totalReach": "Жалпы қамту",
+      "avgEngagement": "Орташа белсенділік"
+    },
+    "tabs": {
+      "overview": "Шолу",
+      "posts": "Жазба үлгілері",
+      "trends": "Трендтер"
+    },
+    "metrics": {
+      "mentions": "Атаулар",
+      "reach": "Қамту",
+      "engagement": "Белсенділік",
+      "positive": "Оң"
+    },
+    "charts": {
+      "engagement": "Белсенділік",
+      "growth": "Өсу"
+    },
+    "sentimentWhenMentioning": "Брендті атаған кездегі тональдық",
+    "noSamplePosts": "Жазба үлгілері жоқ",
+    "engagementTrend": "Белсенділік үрдісі",
+    "followerGrowth": "Жазылушылар саны өсуі",
+    "thisMonth": "+{{value}}% осы айда",
+    "engagements": "өзара әрекет",
+    "followerGrowthComparison": "Жазылушылар өсуін салыстыру"
   },
   "hotHours": {
     "title": "Ыстық сағаттар",
     "subtitle": "Брендіңіз үшін шамадан тыс белсенділік уақыттары",
     "heatmap": "Белсенділік жылу картасы"
+  },
+  "hotHoursPage": {
+    "title": "Ыстық сағаттар",
+    "subtitle": "Брендіңіз туралы қашан сөз болады — апта күні мен сағат бойынша",
+    "actions": {
+      "refresh": "Жаңарту",
+      "exportCsv": "CSV экспорт"
+    },
+    "stats": {
+      "peak": "Шарықтау сағаты",
+      "total": "Барлық атаулар",
+      "activeDays": "Белсенді күндер",
+      "quietest": "Ең тыныш сағат"
+    },
+    "heatmap": {
+      "title": "Белсенділік жылу картасы",
+      "hint": "Күн мен сағат бойынша атауларды сүзу үшін кез келген ұяшықты басыңыз. Шарықтау: {{peak}} атау, барлығы {{total}}."
+    },
+    "legend": {
+      "more": "Көп",
+      "less": "Аз"
+    },
+    "tooltip": {
+      "mentions": "Атаулар",
+      "reach": "Қамту",
+      "sentiment": "Тональдық"
+    },
+    "sidebar": {
+      "topHours": "Топ сағаттар",
+      "bestTimes": "Жариялау үшін ең жақсы уақыт"
+    },
+    "bestTimes": {
+      "reasons": {
+        "positivePeak": "Максималды атаулар × позитивті тональдық — аудитория ең қабылдағыш сәт.",
+        "highVolume": "Үлкен атаулар көлемі — аудитория онлайн.",
+        "activeDiscussion": "Белсенді талқылау — брендіңіз әңгіме орталығында."
+      }
+    },
+    "days": {
+      "sun": "Жс",
+      "mon": "Дс",
+      "tue": "Сс",
+      "wed": "Ср",
+      "thu": "Бс",
+      "fri": "Жм",
+      "sat": "Сб"
+    },
+    "daysLong": {
+      "sun": "Жексенбі",
+      "mon": "Дүйсенбі",
+      "tue": "Сейсенбі",
+      "wed": "Сәрсенбі",
+      "thu": "Бейсенбі",
+      "fri": "Жұма",
+      "sat": "Сенбі"
+    },
+    "empty": {
+      "noActivity": "Таңдалған кезеңде белсенділік жоқ.",
+      "noSuggestions": "Ұсыныс беру үшін деректер жеткіліксіз."
+    },
+    "toasts": {
+      "exported": "CSV экспортталды",
+      "noDataExport": "Экспортқа дерек жоқ",
+      "refreshed": "Жаңартылды"
+    }
   },
   "emotions": {
     "title": "Эмоция талдауы",
@@ -856,6 +1262,49 @@
       "fear": "Қорқыныш",
       "surprise": "Таңқалғыштық",
       "disgust": "Жек көру"
+    }
+  },
+  "emotionsPage": {
+    "title": "Эмоция талдауы",
+    "subtitle": "{{count}} талданған атаулардағы эмоциялар",
+    "scoreLabel": "балл",
+    "names": {
+      "joy": "Қуаныш",
+      "trust": "Сенім",
+      "fear": "Қорқыныш",
+      "surprise": "Таңқалу",
+      "sadness": "Қайғы",
+      "disgust": "Жек көру",
+      "anger": "Ашу",
+      "anticipation": "Күту"
+    },
+    "actions": {
+      "refresh": "Жаңарту",
+      "backfill": "ИИ-мен қайта талдау",
+      "backfillHint": "Эмоциялары бос атауларды қайта жіктеу",
+      "exportCsv": "CSV экспорт"
+    },
+    "charts": {
+      "distribution": "Эмоция бөлінісі",
+      "timeline": "Эмоция хронологиясы",
+      "breakdown": "Эмоция бөлінісі"
+    },
+    "topMentions": {
+      "title": "Эмоция бойынша топ атаулар",
+      "focusedTitle": "«{{emotion}}» эмоциясы үшін топ атаулар",
+      "empty": "Әзірге атаулар жоқ"
+    },
+    "empty": {
+      "noData": "Эмоция деректері әлі жоқ.",
+      "noTimeline": "Таңдалған кезең үшін хронология деректері жоқ.",
+      "hint": "Бар атауларды жіктеу үшін «ИИ-мен қайта талдау» түймесін басыңыз немесе келесі ингест жиналымын күтіңіз."
+    },
+    "toasts": {
+      "refreshed": "Жаңартылды",
+      "exported": "CSV экспортталды",
+      "noDataExport": "Экспортқа дерек жоқ",
+      "backfillDone": "{{candidates}}-нан {{processed}} атау қайта жіктелді ({{updated}} енді эмоциялары бар)",
+      "backfillFailed": "ИИ қайта талдауы сәтсіз"
     }
   },
   "settings": {
@@ -909,13 +1358,17 @@
     "title": "Профиль",
     "subtitle": "Аккаунт ақпараты және белсенділік",
     "edit": "Профильді өңдеу",
+    "editProfile": "Профильді өңдеу",
     "settings": "Параметрлер",
-    "joined": "Қосылды",
+    "joined": "{{date}} қосылды",
     "bio": "Био",
     "location": "Орналасқан жері",
     "website": "Веб-сайт",
     "company": "Компания",
     "role": "Рөл",
+    "recentActivity": "Соңғы белсенділік",
+    "recentActivityDescription": "Сіздің соңғы әрекеттеріңіз бен оқиғаларыңыз",
+    "viewAll": "Барлығын көрсету",
     "stats": {
       "projects": "Жобалар",
       "reportsGenerated": "Жасалған есептер",
@@ -924,17 +1377,35 @@
     },
     "activity": {
       "title": "Соңғы белсенділік",
-      "projectCreated": "Жаңа жоба жасалды",
-      "reportGenerated": "PDF есеп жасалды",
-      "mentionsAnalyzed": "Атаулар талданды",
-      "alertTriggered": "Тональдық ескертуі іске қосылды",
-      "insightsGenerated": "AI инсайттар жасалды"
+      "projectCreated": {
+        "title": "Жаңа жоба жасалды",
+        "description": "Tech Brand Monitor"
+      },
+      "reportGenerated": {
+        "title": "PDF есеп жасалды",
+        "description": "Апталық қорытынды есеп"
+      },
+      "mentionsAnalyzed": {
+        "title": "1 234 атау талданды",
+        "description": "AI инсайттар жасалды"
+      },
+      "alertTriggered": {
+        "title": "Тональдық ескертуі іске қосылды",
+        "description": "Теріс шарықтау анықталды"
+      },
+      "time": {
+        "hoursAgo": "{{count}} сағ бұрын",
+        "daysAgo": "{{count}} күн бұрын"
+      }
     },
     "quickActions": {
       "title": "Жылдам әрекеттер",
       "createProject": "Жоба жасау",
       "generateReport": "Есеп жасау",
-      "viewInsights": "Инсайттарды көру"
+      "viewInsights": "Инсайттарды көру",
+      "dashboard": "Дашбордқа өту",
+      "accountSettings": "Аккаунт параметрлері",
+      "activityLog": "Белсенділік журналы"
     }
   },
   "profileSettings": {
@@ -984,7 +1455,7 @@
     "title": "Жаңа мониторинг жобасы",
     "subtitle": "Тақырып немесе бренд енгізіңіз. Жүйе тек осы тақырып бойынша атауларды жинап, талдайды.",
     "topicLabel": "Тақырып / Бренд",
-    "topicPlaceholder": "Мысалы: Kaspi Bank",
+    "topicPlaceholder": "Мысалы: климаттың өзгеруі",
     "descriptionLabel": "Сипаттама (міндетті емес)",
     "descriptionPlaceholder": "Нені бақылау керек: өнім, қызмет, аймақ, контекст...",
     "creating": "Жоба жасалып, талдау іске қосылуда...",
@@ -1068,26 +1539,31 @@
     "deleteTopic": "Тақырыпты жою",
     "saving": "Сақталуда...",
     "saveChanges": "Өзгерістерді сақтау",
+    "refreshNow": "Атауларды жаңарту",
+    "refreshing": "Жаңартылуда...",
     "confirmDelete": "Осы тақырыпты/жобаны жою керек пе? Бұл әрекет қайтарылмайды және атаулар мен аналитика өшіріледі.",
     "toasts": {
       "updated": "Тақырып сәтті жаңартылды",
-      "deleted": "Тақырып жойылды"
+      "deleted": "Тақырып жойылды",
+      "refetchTriggered": "Тақырып атауы өзгертілді — жаңа атаулар іздеу басталды",
+      "refreshStarted": "Атауларды фондық режимде жаңарту басталды"
+    },
+    "errors": {
+      "nameRequired": "Жоба атауы бос болмауы керек"
     },
     "tabs": {
       "general": "Жалпы",
       "keywords": "Кілт сөздер",
       "sources": "Көздер",
       "notifications": "Хабарламалар",
-      "team": "Команда"
+      "owner": "Иесі"
     },
     "general": {
       "title": "Жоба туралы ақпарат",
       "description": "Мониторинг жобаңыз туралы негізгі ақпарат",
       "projectName": "Жоба атауы",
+      "nameRefetchHint": "Жаңа атау сақталғаннан кейін жаңа жаңалықтар іздеу автоматты түрде іске қосылады.",
       "descriptionLabel": "Сипаттама",
-      "projectLogo": "Жоба логотипі",
-      "uploadLogo": "Жобаға логотип жүктеңіз",
-      "logoFormat": "PNG, JPG 2MB дейін",
       "accentColor": "Негізгі түс"
     },
     "keywords": {
@@ -1096,11 +1572,17 @@
       "excludedTitle": "Алып тасталатын кілт сөздер",
       "excludedDescription": "Осы сөздер бар атаулар сүзгіден шығарылады",
       "addKeyword": "Кілт сөз қосу...",
-      "addExcludedKeyword": "Алып тастау сөзін қосу..."
+      "addExcludedKeyword": "Алып тастау сөзін қосу...",
+      "addAlias": "Алиас қосу (мысалы, ғаламдық жылыну)",
+      "aliasesTitle": "Алиастар және балама жазылулар",
+      "aliasesDescription": "Тақырыптың басқа аталу нұсқаларын (транслитерациялар, қысқартулар, аудармалар) қосып, неғұрлым көп тиісті мақалаларды табыңыз.",
+      "noKeywords": "Әзірге кілт сөздер жоқ",
+      "noAliases": "Әзірге алиастар жоқ",
+      "noExcluded": "Әзірге алып тасталған сөздер жоқ"
     },
     "sources": {
       "title": "Дереккөздер",
-      "description": "Қандай көздерді бақылау керегін баптаңыз",
+      "description": "Бақыланатын дереккөз санаттарын таңдаңыз. Тек қосылған санаттар сканерленеді.",
       "newsSites": "Жаңалық сайттары",
       "newsSitesDesc": "Ірі жаңалық басылымдары мен жарияланымдар",
       "socialMedia": "Әлеуметтік желілер",
@@ -1130,10 +1612,12 @@
       "medium": "Орташа",
       "high": "Жоғары"
     },
-    "team": {
-      "title": "Команда мүшелері",
-      "description": "Жобаға кімнің қолжетімділігі барын басқарыңыз",
-      "invite": "Команда мүшесін шақыру"
+    "ownerCard": {
+      "title": "Жоба иесі",
+      "description": "Сіз — осы жобаның жалғыз иесісіз. Команданың бірлескен жұмысы кейінірек қосылады.",
+      "ownerBadge": "Иесі",
+      "unnamed": "Атаусыз пайдаланушы",
+      "createdOn": "Жоба {{date}} жасалған"
     }
   },
   "accountSettingsPage": {

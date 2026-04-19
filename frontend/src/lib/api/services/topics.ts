@@ -7,7 +7,16 @@ export interface TopicDto {
   description: string | null;
   keywords: string[];
   parent_topic_id: string | null;
+  /**
+   * Live aggregate of `{positive, neutral, negative}` counts computed by the
+   * backend from the mentions table. May be empty for brand-new / unmatched
+   * topics — components should default to zero.
+   */
   sentiment_distribution: Record<string, number>;
+  /** Total mentions linked to this topic (sum of sentiment_distribution). */
+  mentions_count?: number;
+  /** Sum of `reach` for all mentions linked to this topic. */
+  total_reach?: number;
   created_at: string;
 }
 

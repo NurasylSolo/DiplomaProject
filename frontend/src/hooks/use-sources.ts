@@ -6,9 +6,12 @@ export function useSources(projectId: string) {
     queryKey: ["sources", projectId],
     queryFn: () => sourcesApi.list(projectId),
     enabled: !!projectId,
-    staleTime: 0,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true,
+    // Source list is essentially static between user actions; mutations
+    // (useCreateSource / useUpdateSource / useBulkSourcesAction) explicitly
+    // invalidate this cache.
+    staleTime: 2 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 }
 

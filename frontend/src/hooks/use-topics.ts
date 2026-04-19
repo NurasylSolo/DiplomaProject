@@ -6,9 +6,12 @@ import type {
 } from "@/lib/api/services/topics";
 
 const FRESH = {
-  staleTime: 0,
-  refetchOnMount: "always" as const,
-  refetchOnWindowFocus: true,
+  // Topics + their mentions barely change between page visits. Cache 2 min;
+  // the create / update / delete / auto-discover / reassign mutations
+  // explicitly invalidate the cache via _invalidate().
+  staleTime: 2 * 60 * 1000,
+  refetchOnMount: false,
+  refetchOnWindowFocus: false,
 };
 
 export function useProjectTopics(projectId: string) {

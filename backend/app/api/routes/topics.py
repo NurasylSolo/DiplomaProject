@@ -17,7 +17,21 @@ from app.services.project_service import get_project
 router = APIRouter()
 
 
-def _topic_to_dict(t) -> dict:
+_EMPTY_SENTIMENT = {"positive": 0, "neutral": 0, "negative": 0}
+
+
+def _topic_to_dict(t, stats: dict | None = None) -> dict:
+    """Serialize a Topic. If ``stats`` is provided (live aggregate from
+    ``aggregate_topic_stats``) — use it; otherwise fall back to the
+    persisted columns and zeros so the response shape stays stable.
+    """
+    sentiment = (
+        stats.get("sentiment_distribution")
+        if stats
+        else (t.sentiment_distribution or _EMPTY_SENTIMENT.copy())
+    )
+    mentions_count = stats.get("mentions_count") if stats else 0
+    total_reach = stats.get("total_reach") if stats else 0
     return {
         "id": t.id,
         "project_id": t.project_id,
@@ -25,9 +39,17 @@ def _topic_to_dict(t) -> dict:
         "description": t.description,
         "keywords": t.keywords or [],
         "parent_topic_id": t.parent_topic_id,
-        "sentiment_distribution": t.sentiment_distribution or {},
+        "sentiment_distribution": sentiment,
+        "mentions_count": mentions_count,
+        "total_reach": total_reach,
         "created_at": t.created_at.isoformat() if t.created_at else "",
     }
+
+
+async def _topic_to_dict_with_live_stats(db, project_id: str, topic) -> dict:
+    """Helper for single-topic endpoints (create / update / detail)."""
+    stats_map = await topic_service.aggregate_topic_stats(db, project_id)
+    return _topic_to_dict(topic, stats_map.get(topic.id))
 
 
 @router.get("/projects/{project_id}/topics")
@@ -38,7 +60,8 @@ async def list_topics(
 ):
     await get_project(db, project_id, current_user.id)
     topics = await topic_service.list_topics(db, project_id)
-    return [_topic_to_dict(t) for t in topics]
+    stats_map = await topic_service.aggregate_topic_stats(db, project_id)
+    return [_topic_to_dict(t, stats_map.get(t.id)) for t in topics]
 
 
 @router.post("/projects/{project_id}/topics")
@@ -56,7 +79,7 @@ async def create_topic(
         description=data.description,
         keywords=data.keywords,
     )
-    return _topic_to_dict(topic)
+    return await _topic_to_dict_with_live_stats(db, project_id, topic)
 
 
 @router.patch("/projects/{project_id}/topics/{topic_id}")
@@ -76,7 +99,7 @@ async def update_topic(
         description=data.description,
         keywords=data.keywords,
     )
-    return _topic_to_dict(topic)
+    return await _topic_to_dict_with_live_stats(db, project_id, topic)
 
 
 @router.delete(
@@ -105,9 +128,10 @@ async def auto_discover(
     """
     await get_project(db, project_id, current_user.id)
     topics = await topic_service.auto_discover_topics(db, project_id)
+    stats_map = await topic_service.aggregate_topic_stats(db, project_id)
     return {
         "created": len(topics),
-        "topics": [_topic_to_dict(t) for t in topics],
+        "topics": [_topic_to_dict(t, stats_map.get(t.id)) for t in topics],
     }
 
 

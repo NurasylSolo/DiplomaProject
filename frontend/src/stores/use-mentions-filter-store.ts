@@ -33,22 +33,40 @@ export function buildFilterQuery(filters: MentionsFilters | null | undefined): R
   return q;
 }
 
-/** Format date range for display (e.g. "Jan 1 – Jan 15, 2025") */
+type Translator = (
+  key: string,
+  options?: { defaultValue?: string }
+) => string;
+
+/**
+ * Format date range for display.
+ *
+ * Pass an i18n `t` function to get a localized label; otherwise falls back
+ * to the English defaults so the function stays usable from non-React code.
+ */
 export function formatDateRangeLabel(
-  dateRange: MentionsFilters["dateRange"] | null | undefined
+  dateRange: MentionsFilters["dateRange"] | null | undefined,
+  t?: Translator
 ): string {
-  if (!dateRange?.from && !dateRange?.to) return "All time";
+  const tt: Translator = t
+    ? t
+    : (_key, opts) => opts?.defaultValue ?? "";
+
+  const allTime = tt("mentions.filters.presets.all", {
+    defaultValue: "All time",
+  });
+  if (!dateRange?.from && !dateRange?.to) return allTime;
   const preset = dateRange.preset ?? "all";
-  if (preset === "all") return "All time";
+  if (preset === "all") return allTime;
   const from = dateRange.from;
   const to = dateRange.to;
-  if (!from && !to) return "All time";
+  if (!from && !to) return allTime;
   const fmt = (d: Date) =>
     `${d.toLocaleDateString("default", { month: "short" })} ${d.getDate()}, ${d.getFullYear()}`;
   if (from && to) return `${fmt(from)} – ${fmt(to)}`;
-  if (from) return `From ${fmt(from)}`;
-  if (to) return `Until ${fmt(to)}`;
-  return "Custom range";
+  if (from) return `${tt("mentions.filters.from", { defaultValue: "From" })} ${fmt(from)}`;
+  if (to) return `${tt("mentions.filters.to", { defaultValue: "Until" })} ${fmt(to)}`;
+  return tt("mentions.filters.presets.custom", { defaultValue: "Custom range" });
 }
 
 export interface MentionsFilters {

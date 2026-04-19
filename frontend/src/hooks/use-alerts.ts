@@ -6,7 +6,11 @@ export function useAlertEvents(projectId: string, limit = 50) {
     queryKey: ["alert-events", projectId, limit],
     queryFn: () => alertsApi.getEvents(projectId, limit),
     enabled: !!projectId,
-    refetchInterval: 30_000,
+    // Poll every 90s in foreground only — was 30s on every mounted instance
+    // (header was hammering the API). React Query stops the interval when
+    // the tab is hidden when refetchIntervalInBackground is false (default).
+    refetchInterval: 90_000,
+    refetchIntervalInBackground: false,
   });
 }
 

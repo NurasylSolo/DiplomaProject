@@ -1,10 +1,15 @@
 from fastapi import APIRouter, Depends, Query
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
+
 from app.database import get_db
 from app.api.deps import get_current_user
+from app.models.mention import Mention
 from app.models.user import User
 from app.schemas.mention import MentionResponse, BulkActionRequest, SourceBrief
 from app.services import mention_service
+from app.services.nlp_service import _normalise_emotion_dict
 from app.services.project_service import get_project
 
 router = APIRouter()
@@ -32,7 +37,9 @@ def _mention_to_dict(m) -> dict:
         "visited": m.visited,
         "saved": m.saved,
         "summary": m.summary,
-        "emotions": m.emotions,
+        # Always serialise the full 8-key Plutchik dict so the frontend
+        # never has to special-case missing emotions for legacy rows.
+        "emotions": _normalise_emotion_dict(m.emotions),
         "entities": m.entities,
         "tags": m.tags,
         "clusterId": m.cluster_id,
@@ -72,6 +79,12 @@ async def list_mentions(
     languages: str | None = None,
     countries: str | None = None,
     topic: str | None = None,
+    # Hot Hours drill-down: caller passes day_of_week (0..6, Sunday=0 to
+    # match Postgres `dow`) and hour (0..23) computed in `tz`. Both must
+    # be present together — a stray hour without a day is ignored.
+    day_of_week: int | None = Query(None, ge=0, le=6),
+    hour: int | None = Query(None, ge=0, le=23),
+    tz: str | None = None,
     sort_by: str = "published_at",
     sort_order: str = "desc",
     db: AsyncSession = Depends(get_db),
@@ -87,6 +100,7 @@ async def list_mentions(
         influence_max=influence_max, visited=visited,
         saved=saved, languages=languages,
         countries=countries, topic=topic,
+        day_of_week=day_of_week, hour=hour, tz=tz,
         sort_by=sort_by, sort_order=sort_order,
     )
 
@@ -120,6 +134,35 @@ async def mentions_stats(
         sources=sources, sentiment=sentiment,
         search=search, languages=languages, countries=countries,
     )
+
+
+@router.get("/projects/{project_id}/mentions/by-ids")
+async def get_mentions_by_ids(
+    project_id: str,
+    ids: str = Query(..., description="Comma-separated mention IDs"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Batch fetch of mentions by id list. Used by the AI Assistant chat to
+    resolve `[m:abc12345]` citations to real article URLs and titles in a
+    single round-trip.
+
+    Foreign or non-existent ids are silently dropped. Result preserves the
+    requested order so the UI can render badges in the same order as cited.
+    """
+    await get_project(db, project_id, current_user.id)
+    raw_ids = [x.strip() for x in ids.split(",") if x.strip()]
+    if not raw_ids:
+        return []
+    rows = (
+        await db.execute(
+            select(Mention)
+            .options(joinedload(Mention.source))
+            .where(Mention.project_id == project_id, Mention.id.in_(raw_ids))
+        )
+    ).scalars().all()
+    by_id = {m.id: m for m in rows}
+    return [_mention_to_dict(by_id[i]) for i in raw_ids if i in by_id]
 
 
 @router.get("/projects/{project_id}/mentions/{mention_id}")

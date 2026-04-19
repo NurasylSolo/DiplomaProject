@@ -1,13 +1,4 @@
-export { useDebounce, useDebouncedCallback } from "./use-debounce";
-export { 
-  useMediaQuery, 
-  useIsMobile, 
-  useIsTablet, 
-  useIsDesktop, 
-  useIsLargeDesktop,
-  usePrefersReducedMotion,
-  usePrefersDarkMode,
-} from "./use-media-query";
+export { useMediaQuery, usePrefersReducedMotion } from "./use-media-query";
 export { useLocalStorage } from "./use-local-storage";
 export { useTranslation } from "./use-translation";
 export { useUser, useLogin, useRegister, useLogout } from "./use-auth";
@@ -20,7 +11,7 @@ export {
   useDeletePreviousProjects,
   useRefreshProject,
 } from "./use-projects";
-export { useMentions, useMention, useBulkAction, useMentionsStats } from "./use-mentions";
+export { useMentions, useMention, useMentionsByIds, useBulkAction, useMentionsStats } from "./use-mentions";
 export {
   useSources,
   useCreateSource,
@@ -30,10 +21,10 @@ export {
   useAttachCatalogSources,
   useSourceCatalogSummary,
 } from "./use-sources";
+export { useEmotionsData, useBackfillEmotions } from "./use-emotions";
 export {
   useGeoData,
   useHotHours,
-  useEmotions,
   useTopics,
   useTimeSeries,
   useAnomalies,
@@ -46,6 +37,7 @@ export {
   useGenerateInsights,
   useDismissInsight,
   useInfluencers,
+  useInfluencerMentions,
 } from "./use-analytics";
 export {
   useAiChat,
@@ -70,6 +62,7 @@ export {
   useCreatePdfReport,
   useCreateExcelReport,
   useDownloadReport,
+  useReportPreview,
   useEmailSchedules,
   useCreateEmailSchedule,
   useUpdateEmailSchedule,

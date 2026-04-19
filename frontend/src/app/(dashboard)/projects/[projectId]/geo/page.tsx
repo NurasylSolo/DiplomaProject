@@ -2,7 +2,7 @@
 
 import { use, useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import ReactECharts from "echarts-for-react";
+import { SafeECharts as ReactECharts } from "@/components/ui/safe-echarts";
 import * as echarts from "echarts";
 import { useTheme } from "next-themes";
 import {
@@ -67,45 +67,57 @@ export default function GeoAnalysisPage({ params }: GeoAnalysisPageProps) {
   }).filter((c: { code: string }) => c.code && c.code !== "XX");
 
   useEffect(() => {
+    // AbortController + cancelled flag protect against:
+    //  - state updates after unmount
+    //  - duplicate registerMap when StrictMode double-invokes effects in dev
+    const controller = new AbortController();
+    let cancelled = false;
+
     const loadMap = async () => {
-      try {
-        // Try local file first, then CDN fallbacks
-        const urls = [
-          "/data/world.json",
-          "https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json",
-        ];
-        
-        let geoJson = null;
-        for (const url of urls) {
-          try {
-            const res = await fetch(url);
-            if (res.ok) {
-              const text = await res.text();
-              // Check if it's valid JSON
-              if (text.startsWith("{") || text.startsWith("[")) {
-                geoJson = JSON.parse(text);
-                break;
-              }
-            }
-          } catch {
-            continue;
+      const urls = [
+        "/data/world.json",
+        "https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json",
+      ];
+
+      let geoJson: unknown = null;
+      for (const url of urls) {
+        if (cancelled) return;
+        try {
+          const res = await fetch(url, { signal: controller.signal });
+          if (!res.ok) continue;
+          const text = await res.text();
+          if (text.startsWith("{") || text.startsWith("[")) {
+            geoJson = JSON.parse(text);
+            break;
           }
+        } catch (err) {
+          // Ignore aborts entirely; log other errors and try next URL.
+          if ((err as Error)?.name === "AbortError") return;
+          continue;
         }
-        
-        if (geoJson) {
-          echarts.registerMap("world", geoJson);
+      }
+
+      if (cancelled) return;
+
+      if (geoJson) {
+        try {
+          echarts.registerMap("world", geoJson as Parameters<typeof echarts.registerMap>[1]);
           setMapLoaded(true);
-        } else {
-          console.error("Failed to load world map from all sources");
+        } catch (err) {
+          console.error("Failed to register world map:", err);
           setMapError(true);
         }
-      } catch (err) {
-        console.error("Failed to load world map:", err);
+      } else {
+        console.error("Failed to load world map from all sources");
         setMapError(true);
       }
     };
-    
+
     loadMap();
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   }, []);
   
   const filteredCountries = countriesData.filter(c => !excludedCountries.includes(c.code));
@@ -246,15 +258,28 @@ export default function GeoAnalysisPage({ params }: GeoAnalysisPageProps) {
               <div className="h-[400px] flex items-center justify-center">
                 <div className="text-center">
                   <Globe className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
-                  <p className="text-muted-foreground mb-2">Map visualization unavailable</p>
-                  <p className="text-sm text-muted-foreground/70">View the countries table below for geographic data</p>
+                  <p className="text-muted-foreground mb-2">
+                    {t("geo.mapUnavailable", {
+                      defaultValue: "Map visualization unavailable",
+                    })}
+                  </p>
+                  <p className="text-sm text-muted-foreground/70">
+                    {t("geo.mapUnavailableHint", {
+                      defaultValue:
+                        "View the countries table below for geographic data",
+                    })}
+                  </p>
                 </div>
               </div>
             ) : (
               <div className="h-[500px] flex items-center justify-center">
                 <div className="flex flex-col items-center gap-3">
                   <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                  <p className="text-sm text-muted-foreground">Loading world map...</p>
+                  <p className="text-sm text-muted-foreground">
+                    {t("geo.loadingMap", {
+                      defaultValue: "Loading world map...",
+                    })}
+                  </p>
                 </div>
               </div>
             )}
@@ -276,11 +301,11 @@ export default function GeoAnalysisPage({ params }: GeoAnalysisPageProps) {
               <thead>
                 <tr className="text-left text-xs text-muted-foreground uppercase border-b border-border/50">
                   <th className="p-4">#</th>
-                  <th className="p-4">Country</th>
-                  <th className="p-4 text-right">Mentions</th>
-                  <th className="p-4 text-right">Reach</th>
-                  <th className="p-4 text-center">Sentiment</th>
-                  <th className="p-4 text-center">Change</th>
+                  <th className="p-4">{t("geo.table.country")}</th>
+                  <th className="p-4 text-right">{t("geo.table.mentions")}</th>
+                  <th className="p-4 text-right">{t("geo.table.reach")}</th>
+                  <th className="p-4 text-center">{t("geo.table.sentiment")}</th>
+                  <th className="p-4 text-center">{t("geo.table.change")}</th>
                 </tr>
               </thead>
               <tbody>

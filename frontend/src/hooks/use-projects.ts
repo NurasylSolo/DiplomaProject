@@ -1,13 +1,18 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { projectsApi } from "@/lib/api/services";
+import { tokenManager } from "@/lib/api";
 import { useProjectStore } from "@/stores";
 
-// Common settings so every project-related screen pulls fresh data on
-// page enter / tab focus, instead of showing 5-minute-old cached data.
+/**
+ * Projects rarely change once created. Cache for 5 minutes so navigating
+ * between pages of the same project doesn't re-fetch the project list /
+ * project detail every time. Mutations (`useCreateProject`,
+ * `useDeleteProject`, etc.) explicitly invalidate this cache.
+ */
 const FRESH_QUERY_OPTS = {
-  staleTime: 0,
-  refetchOnMount: "always" as const,
-  refetchOnWindowFocus: true,
+  staleTime: 5 * 60 * 1000,
+  refetchOnMount: false,
+  refetchOnWindowFocus: false,
 } as const;
 
 export function useProjects() {
@@ -20,6 +25,8 @@ export function useProjects() {
       setProjects(projects);
       return projects;
     },
+    // Don't fire 401-bound /projects requests before the user is logged in.
+    enabled: tokenManager.isAuthenticated(),
     ...FRESH_QUERY_OPTS,
   });
 }
@@ -28,7 +35,7 @@ export function useProject(projectId: string) {
   return useQuery({
     queryKey: ["projects", projectId],
     queryFn: () => projectsApi.get(projectId),
-    enabled: !!projectId,
+    enabled: !!projectId && tokenManager.isAuthenticated(),
     ...FRESH_QUERY_OPTS,
   });
 }

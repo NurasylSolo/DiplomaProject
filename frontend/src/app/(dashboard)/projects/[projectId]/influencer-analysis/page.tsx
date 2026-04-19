@@ -2,7 +2,7 @@
 
 import { use, useState } from "react";
 import { motion } from "framer-motion";
-import ReactECharts from "echarts-for-react";
+import { SafeECharts as ReactECharts } from "@/components/ui/safe-echarts";
 import { useTheme } from "next-themes";
 import {
   UserCheck,
@@ -93,11 +93,11 @@ const influencerRanking = [
   },
 ];
 
-const overviewStats = [
-  { label: "Total Influencers", value: "156", icon: Users, change: 12 },
-  { label: "Avg. Influence Score", value: "7.2", icon: Star, change: 5 },
-  { label: "Total Reach", value: "12.5M", icon: Eye, change: 18 },
-  { label: "Avg. Engagement", value: "5.8%", icon: MessageSquare, change: -3 },
+const overviewStatsConfig = [
+  { labelKey: "influencerAnalysis.stats.totalInfluencers", value: "156", icon: Users, change: 12 },
+  { labelKey: "influencerAnalysis.stats.avgInfluenceScore", value: "7.2", icon: Star, change: 5 },
+  { labelKey: "influencerAnalysis.stats.totalReach", value: "12.5M", icon: Eye, change: 18 },
+  { labelKey: "influencerAnalysis.stats.avgEngagement", value: "5.8%", icon: MessageSquare, change: -3 },
 ];
 
 export default function InfluencerAnalysisPage({ params }: InfluencerAnalysisPageProps) {
@@ -121,7 +121,7 @@ export default function InfluencerAnalysisPage({ params }: InfluencerAnalysisPag
       splitLine: { lineStyle: { color: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" } }
     },
     series: [
-      { name: "Engagement", type: "line", smooth: true, data: [5.2, 6.8, 7.5, 8.5], areaStyle: { opacity: 0.3 }, itemStyle: { color: "oklch(0.70 0.15 195)" } }
+      { name: t("influencerAnalysis.charts.engagement", { defaultValue: "Engagement" }), type: "line", smooth: true, data: [5.2, 6.8, 7.5, 8.5], areaStyle: { opacity: 0.3 }, itemStyle: { color: "oklch(0.70 0.15 195)" } }
     ]
   };
   
@@ -139,9 +139,9 @@ export default function InfluencerAnalysisPage({ params }: InfluencerAnalysisPag
       splitLine: { lineStyle: { color: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" } }
     },
     series: [
-      { 
-        name: "Growth", 
-        type: "bar", 
+      {
+        name: t("influencerAnalysis.charts.growth", { defaultValue: "Growth" }),
+        type: "bar",
         data: influencerRanking.slice(0, 5).map(i => ({
           value: i.followerGrowth,
           itemStyle: { color: i.followerGrowth >= 10 ? "oklch(0.65 0.17 155)" : "oklch(0.70 0.15 195)" }
@@ -166,15 +166,15 @@ export default function InfluencerAnalysisPage({ params }: InfluencerAnalysisPag
         
         <Button variant="outline" size="sm">
           <Download className="h-4 w-4 mr-2" />
-          Export Report
+          {t("influencerAnalysis.exportReport", { defaultValue: "Export Report" })}
         </Button>
       </div>
-      
+
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {overviewStats.map((stat, i) => (
-          <motion.div 
-            key={stat.label}
+        {overviewStatsConfig.map((stat, i) => (
+          <motion.div
+            key={stat.labelKey}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
@@ -185,8 +185,8 @@ export default function InfluencerAnalysisPage({ params }: InfluencerAnalysisPag
                   <div className="p-2 rounded-lg bg-primary/10">
                     <stat.icon className="h-4 w-4 text-primary" />
                   </div>
-                  <Badge 
-                    variant="outline" 
+                  <Badge
+                    variant="outline"
                     className={cn(
                       "text-xs",
                       stat.change >= 0 ? "border-green-500/30 text-green-500" : "border-red-500/30 text-red-500"
@@ -196,7 +196,7 @@ export default function InfluencerAnalysisPage({ params }: InfluencerAnalysisPag
                   </Badge>
                 </div>
                 <p className="text-2xl font-bold">{stat.value}</p>
-                <p className="text-xs text-muted-foreground">{stat.label}</p>
+                <p className="text-xs text-muted-foreground">{t(stat.labelKey)}</p>
               </CardContent>
             </Card>
           </motion.div>
@@ -209,7 +209,7 @@ export default function InfluencerAnalysisPage({ params }: InfluencerAnalysisPag
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-medium flex items-center gap-2">
               <Star className="h-4 w-4 text-primary" />
-              Influencer Ranking
+              {t("influencerAnalysis.ranking", { defaultValue: "Influencer Ranking" })}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
@@ -265,33 +265,51 @@ export default function InfluencerAnalysisPage({ params }: InfluencerAnalysisPag
           <CardContent>
             <Tabs defaultValue="overview">
               <TabsList className="mb-4">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="posts">Sample Posts</TabsTrigger>
-                <TabsTrigger value="trends">Trends</TabsTrigger>
+                <TabsTrigger value="overview">
+                  {t("influencerAnalysis.tabs.overview", { defaultValue: "Overview" })}
+                </TabsTrigger>
+                <TabsTrigger value="posts">
+                  {t("influencerAnalysis.tabs.posts", { defaultValue: "Sample Posts" })}
+                </TabsTrigger>
+                <TabsTrigger value="trends">
+                  {t("influencerAnalysis.tabs.trends", { defaultValue: "Trends" })}
+                </TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="overview" className="space-y-4">
                 <div className="grid grid-cols-4 gap-4">
                   <div className="p-3 rounded-lg bg-muted/30 text-center">
                     <p className="text-lg font-bold">{selectedInfluencer.mentions}</p>
-                    <p className="text-xs text-muted-foreground">Mentions</p>
+                    <p className="text-xs text-muted-foreground">
+                      {t("influencerAnalysis.metrics.mentions", { defaultValue: "Mentions" })}
+                    </p>
                   </div>
                   <div className="p-3 rounded-lg bg-muted/30 text-center">
                     <p className="text-lg font-bold">{selectedInfluencer.reach}</p>
-                    <p className="text-xs text-muted-foreground">Reach</p>
+                    <p className="text-xs text-muted-foreground">
+                      {t("influencerAnalysis.metrics.reach", { defaultValue: "Reach" })}
+                    </p>
                   </div>
                   <div className="p-3 rounded-lg bg-muted/30 text-center">
                     <p className="text-lg font-bold">{selectedInfluencer.engagement}</p>
-                    <p className="text-xs text-muted-foreground">Engagement</p>
+                    <p className="text-xs text-muted-foreground">
+                      {t("influencerAnalysis.metrics.engagement", { defaultValue: "Engagement" })}
+                    </p>
                   </div>
                   <div className="p-3 rounded-lg bg-muted/30 text-center">
                     <p className="text-lg font-bold">{selectedInfluencer.sentiment}%</p>
-                    <p className="text-xs text-muted-foreground">Positive</p>
+                    <p className="text-xs text-muted-foreground">
+                      {t("influencerAnalysis.metrics.positive", { defaultValue: "Positive" })}
+                    </p>
                   </div>
                 </div>
-                
+
                 <div>
-                  <h4 className="font-medium mb-2">Sentiment when mentioning brand</h4>
+                  <h4 className="font-medium mb-2">
+                    {t("influencerAnalysis.sentimentWhenMentioning", {
+                      defaultValue: "Sentiment when mentioning brand",
+                    })}
+                  </h4>
                   <div className="flex h-4 rounded-full overflow-hidden">
                     <div className="bg-green-500" style={{ width: `${selectedInfluencer.sentiment}%` }} />
                     <div className="bg-gray-400" style={{ width: `${100 - selectedInfluencer.sentiment - 5}%` }} />
@@ -299,33 +317,51 @@ export default function InfluencerAnalysisPage({ params }: InfluencerAnalysisPag
                   </div>
                 </div>
               </TabsContent>
-              
+
               <TabsContent value="posts">
                 {selectedInfluencer.posts.length > 0 ? (
                   <div className="space-y-3">
                     {selectedInfluencer.posts.map((post, i) => (
-                      <div key={i} className="p-4 rounded-lg bg-muted/30">
+                      <div
+                        key={`${(post.content || "").slice(0, 40)}-${i}`}
+                        className="p-4 rounded-lg bg-muted/30"
+                      >
                         <p className="text-sm mb-2">{post.content}</p>
-                        <p className="text-xs text-muted-foreground">❤️ {post.engagement} engagements</p>
+                        <p className="text-xs text-muted-foreground">
+                          ❤️ {post.engagement} {t("influencerAnalysis.engagements", { defaultValue: "engagements" })}
+                        </p>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground text-center py-8">No sample posts available</p>
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    {t("influencerAnalysis.noSamplePosts", {
+                      defaultValue: "No sample posts available",
+                    })}
+                  </p>
                 )}
               </TabsContent>
-              
+
               <TabsContent value="trends">
                 <div className="space-y-4">
                   <div>
-                    <h4 className="font-medium mb-2">Engagement Trend</h4>
+                    <h4 className="font-medium mb-2">
+                      {t("influencerAnalysis.engagementTrend", { defaultValue: "Engagement Trend" })}
+                    </h4>
                     <ReactECharts option={engagementChartOption} style={{ height: "150px" }} opts={{ renderer: "svg" }} />
                   </div>
                   <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30">
                     <TrendingUp className="h-5 w-5 text-green-500" />
                     <div>
-                      <p className="font-medium">Follower Growth</p>
-                      <p className="text-sm text-muted-foreground">+{selectedInfluencer.followerGrowth}% this month</p>
+                      <p className="font-medium">
+                        {t("influencerAnalysis.followerGrowth", { defaultValue: "Follower Growth" })}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {t("influencerAnalysis.thisMonth", {
+                          value: selectedInfluencer.followerGrowth,
+                          defaultValue: "+{{value}}% this month",
+                        })}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -340,7 +376,9 @@ export default function InfluencerAnalysisPage({ params }: InfluencerAnalysisPag
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-medium flex items-center gap-2">
             <BarChart3 className="h-4 w-4 text-primary" />
-            Follower Growth Comparison
+            {t("influencerAnalysis.followerGrowthComparison", {
+              defaultValue: "Follower Growth Comparison",
+            })}
           </CardTitle>
         </CardHeader>
         <CardContent>

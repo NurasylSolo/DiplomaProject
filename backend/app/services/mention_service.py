@@ -1,11 +1,23 @@
 from datetime import datetime, timezone
-from sqlalchemy import select, and_, or_, func
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+from sqlalchemy import select, and_, or_, func, extract
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 from app.models.mention import Mention
 from app.models.source import Source
 from app.utils.pagination import paginate
 from app.core.exceptions import NotFoundError
+
+
+def _safe_tz(name: str | None) -> str:
+    """Validate IANA tz, fall back to UTC. Mirrors the analytics_service
+    helper but kept local to avoid a circular import."""
+    candidate = (name or "UTC").strip() or "UTC"
+    try:
+        ZoneInfo(candidate)
+        return candidate
+    except (ZoneInfoNotFoundError, ValueError, KeyError):
+        return "UTC"
 
 
 def _parse_date(raw: str) -> datetime:
@@ -36,6 +48,9 @@ async def get_mentions(
     languages: str | None = None,
     countries: str | None = None,
     topic: str | None = None,
+    day_of_week: int | None = None,
+    hour: int | None = None,
+    tz: str | None = None,
     sort_by: str = "published_at",
     sort_order: str = "desc",
 ) -> dict:
@@ -77,6 +92,16 @@ async def get_mentions(
         query = query.where(Mention.country.in_(ctrs))
     if topic:
         query = query.where(Mention.topic_id == topic)
+    # Hot Hours drill-down: filter mentions to a specific weekday + hour
+    # bucket in the caller's timezone. Both must be present together — a
+    # lone `hour` would cross every day of the week and surprise the user.
+    if day_of_week is not None and hour is not None:
+        zone = _safe_tz(tz)
+        local_ts = func.timezone(zone, Mention.published_at)
+        query = query.where(
+            extract("dow", local_ts) == int(day_of_week),
+            extract("hour", local_ts) == int(hour),
+        )
 
     sort_column = getattr(Mention, sort_by, Mention.published_at)
     if sort_order == "asc":

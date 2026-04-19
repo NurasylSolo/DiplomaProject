@@ -2,13 +2,25 @@ import re
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlparse
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from sqlalchemy import select, func, and_, extract
+from sqlalchemy import case, select, func, and_, extract
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.mention import Mention
 from app.models.topic import Topic
 from app.models.source import Source
 from app.services import nlp_service
+
+
+def _safe_zone(name: str | None) -> str:
+    """Validate IANA timezone string; fall back to UTC for unknown / empty
+    inputs so we never blow up on a malformed query parameter."""
+    candidate = (name or "UTC").strip() or "UTC"
+    try:
+        ZoneInfo(candidate)
+        return candidate
+    except (ZoneInfoNotFoundError, ValueError, KeyError):
+        return "UTC"
 
 
 def _parse_date(raw: str | None) -> datetime | None:
@@ -177,22 +189,106 @@ async def get_geo_data(
     return output
 
 
-async def get_hot_hours(db: AsyncSession, project_id: str) -> list:
-    result = await db.execute(
+async def get_hot_hours(
+    db: AsyncSession,
+    project_id: str,
+    *,
+    timezone: str = "UTC",
+    date_from: str | None = None,
+    date_to: str | None = None,
+) -> dict:
+    """Per-(day-of-week, hour) aggregates with reach + sentiment, all
+    bucketed in the caller's IANA timezone (defaults to UTC).
+
+    Postgres expression: ``timezone(zone, ts_with_tz)`` returns a naive
+    timestamp shifted into the requested zone, after which ``extract`` gives
+    the right local day-of-week / hour. So the same UTC-stored mention
+    appears in different cells depending on the caller's tz, which is what
+    the user wants on the Hot Hours page.
+
+    Returns:
+        {
+          "timezone": str,
+          "total_mentions": int,
+          "cells": [{day, hour, mentions, reach, avg_sentiment,
+                     positive, neutral, negative}],
+          "peak": {day, hour, mentions} | None,
+          "top_cells": [...up to 5...],
+          "active_days": [{day, mentions}]    # sorted desc, all 7 days
+          "quietest_cells": [...3 lowest non-zero cells...]
+        }
+    """
+    tz = _safe_zone(timezone)
+    local_ts = func.timezone(tz, Mention.published_at)
+    day_col = extract("dow", local_ts)
+    hour_col = extract("hour", local_ts)
+
+    pos_case = func.sum(case((Mention.sentiment_label == "positive", 1), else_=0))
+    neu_case = func.sum(case((Mention.sentiment_label == "neutral", 1), else_=0))
+    neg_case = func.sum(case((Mention.sentiment_label == "negative", 1), else_=0))
+
+    query = (
         select(
-            extract("dow", Mention.published_at).label("day"),
-            extract("hour", Mention.published_at).label("hour"),
+            day_col.label("day"),
+            hour_col.label("hour"),
             func.count(Mention.id).label("mentions"),
+            func.coalesce(func.sum(Mention.reach), 0).label("reach"),
+            func.coalesce(func.avg(Mention.sentiment_score), 0.0).label(
+                "avg_sentiment"
+            ),
+            pos_case.label("positive"),
+            neu_case.label("neutral"),
+            neg_case.label("negative"),
         )
         .where(Mention.project_id == project_id)
         .group_by("day", "hour")
         .order_by("day", "hour")
     )
-    rows = result.all()
-    return [
-        {"day": int(row.day), "hour": int(row.hour), "mentions": row.mentions}
-        for row in rows
+    query = _date_window(query, date_from, date_to)
+
+    rows = (await db.execute(query)).all()
+
+    cells = [
+        {
+            "day": int(r.day),
+            "hour": int(r.hour),
+            "mentions": int(r.mentions or 0),
+            "reach": int(r.reach or 0),
+            "avg_sentiment": round(float(r.avg_sentiment or 0.0), 3),
+            "positive": int(r.positive or 0),
+            "neutral": int(r.neutral or 0),
+            "negative": int(r.negative or 0),
+        }
+        for r in rows
+        if int(r.mentions or 0) > 0
     ]
+    total = sum(c["mentions"] for c in cells)
+
+    sorted_by_mentions = sorted(cells, key=lambda c: c["mentions"], reverse=True)
+    peak = sorted_by_mentions[0] if sorted_by_mentions else None
+    top_cells = sorted_by_mentions[:5]
+    quietest = sorted(cells, key=lambda c: c["mentions"])[:3]
+
+    # Sum mentions per day-of-week — show all 7 days even when zero so the
+    # frontend doesn't have to gap-fill.
+    per_day: dict[int, int] = {d: 0 for d in range(7)}
+    for c in cells:
+        per_day[c["day"]] += c["mentions"]
+    active_days = sorted(
+        [{"day": d, "mentions": m} for d, m in per_day.items()],
+        key=lambda x: x["mentions"],
+        reverse=True,
+    )
+
+    return {
+        "timezone": tz,
+        "total_mentions": total,
+        "cells": cells,
+        "peak": peak,
+        "top_cells": top_cells,
+        "active_days": active_days,
+        "quietest_cells": quietest,
+    }
 
 
 async def get_emotions_data(db: AsyncSession, project_id: str) -> dict:

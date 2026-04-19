@@ -765,7 +765,14 @@ async def analyze_mention(
     mention.sentiment_label = sentiment_label
     mention.sentiment_score = float(sentiment_score)
     mention.language = nlp_service.detect_language(text, fallback=mention.language or "ru")
-    mention.emotions = nlp_service.emotion_scores(text)
+    # Use GPT-based emotion scoring; the helper internally falls back to
+    # the rule-based scorer if OpenAI is unavailable, so we never block
+    # a re-analyse on a flaky network.
+    try:
+        mention.emotions = nlp_service.score_emotions_gpt(text)
+    except Exception as exc:
+        logger.warning("emotion scoring failed for mention %s: %s", mention.id, exc)
+        mention.emotions = nlp_service.emotion_scores(text)
     mention.entities = nlp_service.extract_entities(text)
     mention.tags = nlp_service.topic_tags(text, [])
     if crawl_job_id:
@@ -945,7 +952,11 @@ async def _process_article(
     full_text = f"{title}\n{body}".strip()
     language = nlp_service.detect_language(full_text, fallback="en")
     sentiment_label, sentiment_score = nlp_service.score_sentiment_gpt(full_text)
-    emotions = nlp_service.emotion_scores(full_text)
+    try:
+        emotions = nlp_service.score_emotions_gpt(full_text)
+    except Exception as exc:
+        logger.warning("emotion scoring failed during ingest: %s", exc)
+        emotions = nlp_service.emotion_scores(full_text)
     entities = nlp_service.extract_entities(full_text)
 
     proj_settings = dict(project.settings or {})

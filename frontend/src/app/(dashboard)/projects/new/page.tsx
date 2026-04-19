@@ -151,7 +151,7 @@ export default function NewProjectPage() {
   const onSubmit = async (data: CreateProjectForm) => {
     const topic = data.topic.trim();
 
-    // User-provided synonyms / variants (e.g. "Арман Царукян, Arman Tsarukyan")
+    // User-provided synonyms / variants (e.g. "global warming, climate crisis")
     const aliases = (data.aliases || "")
       .split(/[,\n;|]+/)
       .map((t) => t.trim())
@@ -374,7 +374,8 @@ export default function NewProjectPage() {
                     <Textarea
                       id="aliases"
                       placeholder={t("newProjectPage.aliasesPlaceholder", {
-                        defaultValue: "Comma-separated synonyms: Arman Tsarukyan, Арман Царукян, Tsarukyan",
+                        defaultValue:
+                          "Comma-separated synonyms: global warming, climate crisis",
                       })}
                       disabled={isLoading}
                       rows={2}
@@ -382,7 +383,8 @@ export default function NewProjectPage() {
                     />
                     <p className="text-xs text-muted-foreground">
                       {t("newProjectPage.aliasesHelp", {
-                        defaultValue: "Add other spellings or translations to find more mentions of the same person/brand.",
+                        defaultValue:
+                          "Add other spellings or translations to find more mentions of the same topic.",
                       })}
                     </p>
                     {errors.aliases && (

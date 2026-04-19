@@ -36,23 +36,25 @@ import {
 import { cn } from "@/lib/utils";
 import { SOURCE_TYPES, SENTIMENT_TYPES, DATE_RANGE_PRESETS } from "@/lib/constants";
 import { useMentionsFilterStore } from "@/stores";
+import { useTranslation } from "@/hooks";
 
 interface MentionsFiltersProps {
   projectId: string;
 }
 
 export function MentionsFilters({ projectId }: MentionsFiltersProps) {
-  const { 
-    filters, 
+  const { t } = useTranslation();
+  const {
+    filters,
     setDateRange,
-    toggleSource, 
-    toggleSentiment, 
+    toggleSource,
+    toggleSentiment,
     setInfluenceRange,
     setAuthor,
     resetFilters,
     getActiveFiltersCount,
   } = useMentionsFilterStore();
-  
+
   const activeFiltersCount = getActiveFiltersCount();
   
   // Safe defaults for hydration
@@ -133,7 +135,7 @@ export function MentionsFilters({ projectId }: MentionsFiltersProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h3 className="font-semibold text-sm">Filters</h3>
+          <h3 className="font-semibold text-sm">{t("mentions.filters.title")}</h3>
           {activeFiltersCount > 0 && (
             <Badge variant="secondary" className="text-xs px-1.5">
               {activeFiltersCount}
@@ -159,24 +161,30 @@ export function MentionsFilters({ projectId }: MentionsFiltersProps) {
       <ScrollArea className="h-[calc(100vh-220px)] pr-4">
         <div className="space-y-6">
           {/* Date Range */}
-          <FilterSection title="Date Range" defaultOpen>
+          <FilterSection title={t("mentions.filters.dateRange")} defaultOpen>
             <div className="space-y-3">
-              <Select 
-                value={dateRange.preset} 
+              <Select
+                value={dateRange.preset}
                 onValueChange={handleDatePresetChange}
               >
                 <SelectTrigger className="h-9">
-                  <SelectValue placeholder="Select range" />
+                  <SelectValue
+                    placeholder={t("mentions.filters.selectRange", {
+                      defaultValue: "Select range",
+                    })}
+                  />
                 </SelectTrigger>
                 <SelectContent>
                   {DATE_RANGE_PRESETS.map((preset) => (
                     <SelectItem key={preset.id} value={preset.id}>
-                      {preset.label}
+                      {t(`mentions.filters.presets.${preset.id}`, {
+                        defaultValue: preset.label,
+                      })}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              
+
               {dateRange.preset === "custom" ? (
                 <Popover>
                   <PopoverTrigger asChild>
@@ -189,11 +197,15 @@ export function MentionsFilters({ projectId }: MentionsFiltersProps) {
                       {dateRange.from && dateRange.to ? (
                         `${format(dateRange.from, "MMM dd, yyyy")} – ${format(dateRange.to, "MMM dd, yyyy")}`
                       ) : dateRange.from ? (
-                        `From ${format(dateRange.from, "MMM dd, yyyy")}`
+                        `${t("mentions.filters.from")} ${format(dateRange.from, "MMM dd, yyyy")}`
                       ) : dateRange.to ? (
-                        `Until ${format(dateRange.to, "MMM dd, yyyy")}`
+                        `${t("mentions.filters.to")} ${format(dateRange.to, "MMM dd, yyyy")}`
                       ) : (
-                        <span className="text-muted-foreground">Select date range</span>
+                        <span className="text-muted-foreground">
+                          {t("mentions.filters.selectDateRange", {
+                            defaultValue: "Select date range",
+                          })}
+                        </span>
                       )}
                     </Button>
                   </PopoverTrigger>
@@ -209,19 +221,28 @@ export function MentionsFilters({ projectId }: MentionsFiltersProps) {
               ) : (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   {dateRange.preset === "all" ? (
-                    <span>All mentions in database</span>
+                    <span>
+                      {t("mentions.filters.allInDatabase", {
+                        defaultValue: "All mentions in database",
+                      })}
+                    </span>
                   ) : dateRange.from && dateRange.to ? (
                     <span>
-                      {format(dateRange.from, "MMM dd")} – {format(dateRange.to, "MMM dd")}
+                      {format(dateRange.from, "MMM dd")} –{" "}
+                      {format(dateRange.to, "MMM dd")}
                     </span>
                   ) : null}
                 </div>
               )}
             </div>
           </FilterSection>
-          
+
           {/* Sources */}
-          <FilterSection title="Sources" badge={sources.length} defaultOpen>
+          <FilterSection
+            title={t("mentions.filters.sources")}
+            badge={sources.length}
+            defaultOpen
+          >
             <div className="space-y-2">
               {Object.values(SOURCE_TYPES).slice(0, 8).map((source) => (
                 <label
@@ -232,23 +253,28 @@ export function MentionsFilters({ projectId }: MentionsFiltersProps) {
                     checked={sources.includes(source.id)}
                     onCheckedChange={() => toggleSource(source.id)}
                   />
-                  <span 
+                  <span
                     className="w-2 h-2 rounded-full flex-shrink-0"
                     style={{ backgroundColor: source.color }}
                   />
                   <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
-                    {source.label}
+                    {t(`mentions.filters.sourceTypes.${source.id}`, {
+                      defaultValue: source.label,
+                    })}
                   </span>
                 </label>
               ))}
               <Button variant="ghost" size="sm" className="w-full text-xs mt-1">
-                Show all sources
+                {t("mentions.filters.showAll")}
               </Button>
             </div>
           </FilterSection>
-          
+
           {/* Sentiment */}
-          <FilterSection title="Sentiment" badge={sentiments.length}>
+          <FilterSection
+            title={t("mentions.filters.sentiment")}
+            badge={sentiments.length}
+          >
             <div className="flex flex-wrap gap-2">
               {Object.values(SENTIMENT_TYPES).map((sentiment) => (
                 <button
@@ -261,55 +287,63 @@ export function MentionsFilters({ projectId }: MentionsFiltersProps) {
                       ? sentiment.id === "positive"
                         ? "bg-green-500/20 border-green-500/50 text-green-600 dark:text-green-400"
                         : sentiment.id === "negative"
-                        ? "bg-red-500/20 border-red-500/50 text-red-600 dark:text-red-400"
-                        : "bg-gray-500/20 border-gray-500/50 text-gray-600 dark:text-gray-400"
+                          ? "bg-red-500/20 border-red-500/50 text-red-600 dark:text-red-400"
+                          : "bg-gray-500/20 border-gray-500/50 text-gray-600 dark:text-gray-400"
                       : "border-border hover:border-primary/50 text-muted-foreground"
                   )}
                 >
-                  {sentiment.label}
+                  {t(`mentions.sentiment.${sentiment.id}`, {
+                    defaultValue: sentiment.label,
+                  })}
                 </button>
               ))}
             </div>
           </FilterSection>
           
           {/* Influence Score */}
-          <FilterSection title="Influence Score">
+          <FilterSection title={t("mentions.filters.influenceScore")}>
             <div className="space-y-4 pt-2">
               <Slider
                 value={influenceRange}
-                onValueChange={(value) => setInfluenceRange(value as [number, number])}
+                onValueChange={(value) =>
+                  setInfluenceRange(value as [number, number])
+                }
                 max={10}
                 step={1}
                 className="w-full"
               />
               <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>Min: {influenceRange[0]}</span>
-                <span>Max: {influenceRange[1]}</span>
+                <span>
+                  {t("mentions.filters.min")}: {influenceRange[0]}
+                </span>
+                <span>
+                  {t("mentions.filters.max")}: {influenceRange[1]}
+                </span>
               </div>
             </div>
           </FilterSection>
-          
+
           {/* Author */}
-          <FilterSection title="Author">
+          <FilterSection title={t("mentions.filters.author")}>
             <Input
-              placeholder="Search by author..."
+              placeholder={t("mentions.filters.searchByAuthor")}
               value={author}
               onChange={(e) => setAuthor(e.target.value)}
               className="h-9"
             />
           </FilterSection>
-          
+
           {/* Saved Filters */}
-          <FilterSection title="Saved Filters">
+          <FilterSection title={t("mentions.filters.savedFilters")}>
             <div className="space-y-2">
               <div className="p-2 rounded-lg border border-dashed border-border hover:border-primary/50 cursor-pointer transition-colors">
                 <p className="text-xs text-center text-muted-foreground">
-                  No saved filters yet
+                  {t("mentions.filters.noSavedFilters")}
                 </p>
               </div>
               <Button variant="outline" size="sm" className="w-full">
                 <Save className="h-3.5 w-3.5 mr-2" />
-                Save Current Filter
+                {t("mentions.filters.saveFilter")}
               </Button>
             </div>
           </FilterSection>

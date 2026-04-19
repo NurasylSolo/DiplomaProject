@@ -1,53 +1,26 @@
 import { useState, useEffect } from "react";
 
+/**
+ * Listen to a CSS media query and return whether it currently matches.
+ * Only the hooks actually used by the app are exported — old breakpoint
+ * shortcuts (useIsMobile/Tablet/Desktop, etc.) were removed because nothing
+ * imported them. Add them back here if a real consumer appears.
+ */
 export function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState(false);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
     const media = window.matchMedia(query);
-    
-    // Set initial value
     setMatches(media.matches);
-
-    // Create listener
-    const listener = (event: MediaQueryListEvent) => {
-      setMatches(event.matches);
-    };
-
-    // Add listener
+    const listener = (event: MediaQueryListEvent) => setMatches(event.matches);
     media.addEventListener("change", listener);
-
-    // Cleanup
-    return () => {
-      media.removeEventListener("change", listener);
-    };
+    return () => media.removeEventListener("change", listener);
   }, [query]);
 
   return matches;
 }
 
-// Preset breakpoint hooks
-export function useIsMobile(): boolean {
-  return useMediaQuery("(max-width: 767px)");
-}
-
-export function useIsTablet(): boolean {
-  return useMediaQuery("(min-width: 768px) and (max-width: 1023px)");
-}
-
-export function useIsDesktop(): boolean {
-  return useMediaQuery("(min-width: 1024px)");
-}
-
-export function useIsLargeDesktop(): boolean {
-  return useMediaQuery("(min-width: 1280px)");
-}
-
 export function usePrefersReducedMotion(): boolean {
   return useMediaQuery("(prefers-reduced-motion: reduce)");
 }
-
-export function usePrefersDarkMode(): boolean {
-  return useMediaQuery("(prefers-color-scheme: dark)");
-}
-

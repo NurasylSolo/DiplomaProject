@@ -45,10 +45,18 @@ export interface Project {
 
 export interface ProjectSettings {
   keywords: string[];
+  /** Alias keywords that broaden the search (e.g. "global warming", "climate crisis"). */
+  aliases?: string[];
   excludedKeywords: string[];
   activeSources: string[];
   excludedSites: string[];
   notifications: NotificationSettings;
+  /** Free-form topic query if the user typed it as a sentence. */
+  topicQuery?: string;
+  /** Synonym map used by ingestion. */
+  synonyms?: Record<string, string[]>;
+  /** Min relevance threshold used to drop noisy mentions. */
+  relevanceThreshold?: number;
 }
 
 export interface ProjectStats {
@@ -62,7 +70,8 @@ export interface ProjectStats {
 export interface NotificationSettings {
   email: boolean;
   webhookUrl?: string;
-  alertThreshold?: number;
+  /** Alert importance level — "low" | "medium" | "high". */
+  alertThreshold?: string;
 }
 
 // ============================================

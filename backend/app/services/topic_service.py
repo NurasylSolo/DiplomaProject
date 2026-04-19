@@ -17,7 +17,7 @@ import logging
 import re
 from typing import Any
 
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import case, delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
@@ -42,6 +42,173 @@ async def list_topics(db: AsyncSession, project_id: str) -> list[Topic]:
         )
     ).scalars().all()
     return list(rows)
+
+
+# ---------------------------------------------------------------------------
+# Aggregated stats for the topics list page (mentions count, sentiment
+# distribution, total reach). Computed on the fly from the mentions table
+# so we don't have to keep a denormalised cache in sync.
+#
+# Two paths:
+# 1. **Assigned**: count mentions where ``Mention.topic_id == topic.id``.
+#    This is the canonical source after a successful auto-discover/reassign.
+# 2. **Keyword fallback**: when no mentions are assigned to a topic yet
+#    (e.g. user just created the topic, or reassign hasn't been triggered
+#    after ingest), fall back to ILIKE matching of mention title/body
+#    against the topic's keywords + name. This guarantees the topics page
+#    shows real numbers immediately and never displays "0 mentions" for a
+#    topic that obviously has matching news.
+# ---------------------------------------------------------------------------
+def _sentiment_aggregates():
+    return (
+        func.sum(case((Mention.sentiment_label == "positive", 1), else_=0)),
+        func.sum(case((Mention.sentiment_label == "neutral", 1), else_=0)),
+        func.sum(case((Mention.sentiment_label == "negative", 1), else_=0)),
+    )
+
+
+def _topic_match_terms(topic: Topic) -> list[str]:
+    """Build a deduplicated, length-filtered list of search terms for
+    keyword-fallback matching. Includes the topic name and all keywords.
+    """
+    terms: list[str] = []
+    seen: set[str] = set()
+    for raw in (topic.keywords or []) + ([topic.name] if topic.name else []):
+        s = (raw or "").strip()
+        if len(s) < 3:
+            continue
+        key = s.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        terms.append(s)
+    return terms
+
+
+async def _stats_by_assigned_topic_id(
+    db: AsyncSession, project_id: str
+) -> dict[str, dict]:
+    pos, neu, neg = _sentiment_aggregates()
+    rows = (
+        await db.execute(
+            select(
+                Mention.topic_id,
+                func.count(Mention.id).label("count"),
+                pos.label("positive"),
+                neu.label("neutral"),
+                neg.label("negative"),
+                func.coalesce(func.sum(Mention.reach), 0).label("reach"),
+            )
+            .where(
+                Mention.project_id == project_id,
+                Mention.topic_id.is_not(None),
+            )
+            .group_by(Mention.topic_id)
+        )
+    ).all()
+    return {
+        r.topic_id: {
+            "mentions_count": int(r.count or 0),
+            "sentiment_distribution": {
+                "positive": int(r.positive or 0),
+                "neutral": int(r.neutral or 0),
+                "negative": int(r.negative or 0),
+            },
+            "total_reach": int(r.reach or 0),
+        }
+        for r in rows
+    }
+
+
+async def _stats_by_keyword_match_bulk(
+    db: AsyncSession, project_id: str, topics: list[Topic]
+) -> dict[str, dict]:
+    """Compute keyword-fallback stats for many topics in a single
+    round-trip: pull every project mention once (id, label, reach,
+    title+body lowercased), then run the keyword matching in Python.
+
+    This replaces the previous N+1 (one SELECT per topic) implementation
+    that visibly slowed down the topics page.
+    """
+    if not topics:
+        return {}
+
+    # Pre-compute lowercase term lists per topic.
+    topic_terms: list[tuple[str, list[str]]] = []
+    for t in topics:
+        terms = [term.lower() for term in _topic_match_terms(t)]
+        if terms:
+            topic_terms.append((t.id, terms[:12]))
+    if not topic_terms:
+        return {}
+
+    rows = (
+        await db.execute(
+            select(
+                Mention.id,
+                Mention.sentiment_label,
+                Mention.reach,
+                Mention.title,
+                Mention.body,
+            ).where(Mention.project_id == project_id)
+        )
+    ).all()
+    if not rows:
+        return {}
+
+    out: dict[str, dict] = {
+        tid: {
+            "mentions_count": 0,
+            "sentiment_distribution": {"positive": 0, "neutral": 0, "negative": 0},
+            "total_reach": 0,
+        }
+        for tid, _ in topic_terms
+    }
+
+    for r in rows:
+        haystack = f"{r.title or ''} {r.body or ''}".lower()
+        if not haystack:
+            continue
+        reach = int(r.reach or 0)
+        label = r.sentiment_label or "neutral"
+        for tid, terms in topic_terms:
+            if any(term in haystack for term in terms):
+                bucket = out[tid]
+                bucket["mentions_count"] += 1
+                bucket["total_reach"] += reach
+                if label in bucket["sentiment_distribution"]:
+                    bucket["sentiment_distribution"][label] += 1
+
+    # Drop topics that ended up empty so the caller treats them as "no data".
+    return {tid: stats for tid, stats in out.items() if stats["mentions_count"] > 0}
+
+
+async def aggregate_topic_stats(
+    db: AsyncSession, project_id: str
+) -> dict[str, dict]:
+    """Return ``{topic_id: {mentions_count, sentiment_distribution,
+    total_reach}}`` for every topic. Combines the assigned-id aggregate
+    (single GROUP BY query) with a bulk keyword-match fallback (one full
+    mentions scan in Python) for topics that have no assigned mentions
+    yet.
+    """
+    assigned = await _stats_by_assigned_topic_id(db, project_id)
+    topics = await list_topics(db, project_id)
+
+    unassigned = [t for t in topics if t.id not in assigned]
+    fallback = (
+        await _stats_by_keyword_match_bulk(db, project_id, unassigned)
+        if unassigned
+        else {}
+    )
+
+    out: dict[str, dict] = {}
+    for t in topics:
+        if t.id in assigned:
+            out[t.id] = assigned[t.id]
+        elif t.id in fallback:
+            out[t.id] = fallback[t.id]
+    return out
 
 
 async def get_topic(db: AsyncSession, project_id: str, topic_id: str) -> Topic:

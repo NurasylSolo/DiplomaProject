@@ -1,7 +1,7 @@
 import { apiClient } from "../client";
 import type { Mention, PaginatedResponse, MentionFilters } from "@/types";
 
-interface MentionsQuery {
+export interface MentionsQuery {
   page?: number;
   per_page?: number;
   date_from?: string;
@@ -18,6 +18,8 @@ interface MentionsQuery {
   topic?: string;
   sort_by?: string;
   sort_order?: string;
+  // Permit dynamic params built upstream (buildFilterQuery → Record<string, unknown>).
+  [k: string]: unknown;
 }
 
 interface BulkActionRequest {
@@ -54,6 +56,15 @@ export const mentionsApi = {
   async get(projectId: string, mentionId: string): Promise<Mention> {
     const response = await apiClient.get<Mention>(
       `/projects/${projectId}/mentions/${mentionId}`
+    );
+    return response.data;
+  },
+
+  async getByIds(projectId: string, ids: string[]): Promise<Mention[]> {
+    if (!ids || ids.length === 0) return [];
+    const response = await apiClient.get<Mention[]>(
+      `/projects/${projectId}/mentions/by-ids`,
+      { params: { ids: ids.join(",") } }
     );
     return response.data;
   },

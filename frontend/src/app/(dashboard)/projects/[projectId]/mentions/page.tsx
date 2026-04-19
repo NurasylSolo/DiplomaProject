@@ -49,7 +49,7 @@ export default function MentionsPage({ params }: MentionsPageProps) {
   const socialReach = Math.round(totalReach * 0.3);
   const nonSocialReach = Math.max(0, totalReach - socialReach);
 
-  const dateLabel = formatDateRangeLabel(filters?.dateRange);
+  const dateLabel = formatDateRangeLabel(filters?.dateRange, t);
 
   const statsCards = [
     {
@@ -108,21 +108,23 @@ export default function MentionsPage({ params }: MentionsPageProps) {
         </div>
       </div>
 
-      <div className="flex gap-6">
+      <div className="flex gap-6 min-w-0">
         <AnimatePresence mode="wait">
           {showFilters && (
-            <motion.div
+            <motion.aside
               key="filters"
               initial={{ width: 0, opacity: 0 }}
-              animate={{ width: 280, opacity: 1 }}
+              animate={{ width: 260, opacity: 1 }}
               exit={{ width: 0, opacity: 0 }}
-              transition={{ duration: 0.3, ease: "easeInOut" }}
+              transition={{ duration: 0.25, ease: "easeInOut" }}
+              // 260px keeps room for the chart cards on common laptop
+              // widths; the sidebar still scrolls vertically on its own.
               className="flex-shrink-0 overflow-hidden"
             >
-              <div className="w-[280px]">
+              <div className="w-[260px]">
                 <MentionsFilters projectId={projectId} />
               </div>
-            </motion.div>
+            </motion.aside>
           )}
         </AnimatePresence>
 
@@ -140,10 +142,17 @@ export default function MentionsPage({ params }: MentionsPageProps) {
             ))}
           </div>
 
-          <div className="grid lg:grid-cols-3 gap-6">
-            <Card className="lg:col-span-2 glass">
+          {/*
+            min-w-0 + overflow-hidden are critical here. When the filter
+            sidebar is open the parent flex item shrinks aggressively,
+            and without these the ECharts SVG keeps its initial width and
+            spills outside the card (axis labels clip, "mentions" text
+            jumps off the card border).
+          */}
+          <div className="grid lg:grid-cols-3 gap-6 min-w-0">
+            <Card className="lg:col-span-2 glass min-w-0 overflow-hidden">
               <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-2">
                   <CardTitle className="text-base font-medium">
                     {t("mentions.charts.mentionsOverTime")}
                   </CardTitle>
@@ -159,18 +168,18 @@ export default function MentionsPage({ params }: MentionsPageProps) {
                   </Tabs>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="min-w-0">
                 <MentionsChart />
               </CardContent>
             </Card>
 
-            <Card className="glass">
+            <Card className="glass min-w-0 overflow-hidden">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base font-medium">
                   {t("mentions.charts.sentimentDistribution")}
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="min-w-0">
                 <SentimentChart />
               </CardContent>
             </Card>
@@ -184,7 +193,11 @@ export default function MentionsPage({ params }: MentionsPageProps) {
                     {t("mentions.recentMentions")}
                   </CardTitle>
                   <Badge variant="secondary" className="text-xs">
-                    {dateLabel} &middot; {totalMentions} results
+                    {dateLabel} &middot;{" "}
+                    {t("mentions.resultsCount", {
+                      count: totalMentions,
+                      defaultValue: "{{count}} results",
+                    })}
                   </Badge>
                 </div>
               </div>

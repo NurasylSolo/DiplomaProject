@@ -30,8 +30,8 @@ export function useChats(projectId: string) {
     queryKey: ["ai", "chats", projectId],
     queryFn: () => aiApi.listChats(projectId),
     enabled: !!projectId,
-    staleTime: 0,
-    refetchOnWindowFocus: true,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -40,7 +40,11 @@ export function useChatMessages(projectId: string, chatId: string | null) {
     queryKey: ["ai", "chat-messages", projectId, chatId],
     queryFn: () => aiApi.getChatMessages(projectId, chatId as string),
     enabled: !!projectId && !!chatId,
-    staleTime: 0,
+    // Cache chat history for a minute. New user/assistant turns invalidate
+    // this key via useAiChat()'s onSuccess, so we never get stale.
+    staleTime: 60_000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 }
 

@@ -32,7 +32,9 @@ export interface SidebarSection {
   items: SidebarItem[];
 }
 
-export const getSidebarData = (projectId: string, t: (key: string) => string): SidebarSection[] => [
+type Translator = (key: string, options?: { defaultValue?: string; [k: string]: unknown }) => string;
+
+export const getSidebarData = (projectId: string, t: Translator): SidebarSection[] => [
   {
     items: [
       {

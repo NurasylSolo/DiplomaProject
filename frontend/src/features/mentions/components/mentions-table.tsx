@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { 
   ExternalLink, 
   MoreHorizontal, 
@@ -36,7 +36,7 @@ import {
 import { cn } from "@/lib/utils";
 import { getCountryName } from "@/lib/utils/countries";
 import { CountryFlag } from "@/components/ui/country-flag";
-import { useMentions, useBulkAction } from "@/hooks";
+import { useMentions, useBulkAction, useTranslation } from "@/hooks";
 import { useMentionsFilterStore } from "@/stores";
 import { buildFilterQuery } from "@/stores/use-mentions-filter-store";
 import type { Mention } from "@/types";
@@ -58,22 +58,33 @@ const sourceIcons: Record<string, string> = {
 };
 
 export function MentionsTable({ projectId }: MentionsTableProps) {
+  const { t } = useTranslation();
   const { filters } = useMentionsFilterStore();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(25);
 
-  useEffect(() => {
+  // Reset page to 1 whenever the filter object changes — using the
+  // "store previous in render" pattern from the React docs to avoid an
+  // effect that would otherwise cascade into an extra render.
+  const [prevFilters, setPrevFilters] = useState(filters);
+  if (filters !== prevFilters) {
+    setPrevFilters(filters);
     setCurrentPage(1);
-  }, [filters]);
+  }
 
-  const queryParams: Record<string, unknown> = {
-    ...buildFilterQuery(filters),
-    page: currentPage,
-    per_page: perPage,
-  };
+  // Memoize so the queryKey doesn't change ref-equality on every render and
+  // doesn't trigger spurious refetches in TanStack Query.
+  const queryParams = useMemo(
+    () => ({
+      ...buildFilterQuery(filters),
+      page: currentPage,
+      per_page: perPage,
+    }),
+    [filters, currentPage, perPage]
+  );
 
-  const { data, isLoading, isError } = useMentions(projectId, queryParams as any);
+  const { data, isLoading, isError } = useMentions(projectId, queryParams);
   const bulkAction = useBulkAction(projectId);
 
   const mentions = data?.items || [];
@@ -104,7 +115,9 @@ export function MentionsTable({ projectId }: MentionsTableProps) {
     return (
       <div className="flex items-center justify-center py-16">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        <span className="ml-2 text-muted-foreground">Loading mentions...</span>
+        <span className="ml-2 text-muted-foreground">
+          {t("mentions.table.loading", { defaultValue: "Loading mentions..." })}
+        </span>
       </div>
     );
   }
@@ -112,7 +125,11 @@ export function MentionsTable({ projectId }: MentionsTableProps) {
   if (isError) {
     return (
       <div className="flex items-center justify-center py-16">
-        <p className="text-muted-foreground">Failed to load mentions. Please try again.</p>
+        <p className="text-muted-foreground">
+          {t("mentions.table.loadError", {
+            defaultValue: "Failed to load mentions. Please try again.",
+          })}
+        </p>
       </div>
     );
   }
@@ -129,19 +146,19 @@ export function MentionsTable({ projectId }: MentionsTableProps) {
               />
             </th>
             <th className="p-4 text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              Mention
+              {t("mentions.table.mention")}
             </th>
             <th className="p-4 text-xs font-medium text-muted-foreground uppercase tracking-wide w-24">
-              Sentiment
+              {t("mentions.table.sentiment")}
             </th>
             <th className="p-4 text-xs font-medium text-muted-foreground uppercase tracking-wide w-20 text-center">
-              Score
+              {t("mentions.table.score")}
             </th>
             <th className="p-4 text-xs font-medium text-muted-foreground uppercase tracking-wide w-24 text-right">
-              Reach
+              {t("mentions.table.reach")}
             </th>
             <th className="p-4 text-xs font-medium text-muted-foreground uppercase tracking-wide w-20 text-center">
-              Location
+              {t("mentions.table.location")}
             </th>
             <th className="p-4 w-12"></th>
           </tr>
@@ -151,8 +168,16 @@ export function MentionsTable({ projectId }: MentionsTableProps) {
             <tr>
               <td colSpan={7} className="p-8 text-center">
                 <div className="flex flex-col items-center gap-2">
-                  <p className="text-muted-foreground">No mentions found</p>
-                  <p className="text-sm text-muted-foreground/70">Try adjusting your filter criteria</p>
+                  <p className="text-muted-foreground">
+                    {t("mentions.table.noMentionsFoundShort", {
+                      defaultValue: "No mentions found",
+                    })}
+                  </p>
+                  <p className="text-sm text-muted-foreground/70">
+                    {t("mentions.table.tryAdjustingFilters", {
+                      defaultValue: "Try adjusting your filter criteria",
+                    })}
+                  </p>
                 </div>
               </td>
             </tr>
@@ -223,7 +248,7 @@ export function MentionsTable({ projectId }: MentionsTableProps) {
                         {mention.influenceScore?.toFixed(1) || "0.0"}
                       </span>
                       <span className="text-[10px] text-muted-foreground">
-                        influence
+                        {t("mentions.table.influence")}
                       </span>
                     </div>
                   </td>
@@ -247,20 +272,24 @@ export function MentionsTable({ projectId }: MentionsTableProps) {
                       <DropdownMenuContent align="end" className="w-48">
                         <DropdownMenuItem onClick={() => window.open(mention.url, "_blank")}>
                           <ExternalLink className="h-4 w-4 mr-2" />
-                          Go to source
+                          {t("mentions.actions.goToSource")}
                         </DropdownMenuItem>
                         <DropdownMenuItem>
                           <Eye className="h-4 w-4 mr-2" />
-                          View details
+                          {t("mentions.actions.viewDetails")}
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => bulkAction.mutate({ action: mention.saved ? "unsave" : "save", mention_ids: [mention.id] })}>
                           <Bookmark className="h-4 w-4 mr-2" />
-                          {mention.saved ? "Unsave" : "Save"}
+                          {mention.saved
+                            ? t("mentions.actions.unsave")
+                            : t("mentions.actions.save")}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => bulkAction.mutate({ action: "mark_visited", mention_ids: [mention.id] })}>
                           <Eye className="h-4 w-4 mr-2" />
-                          Mark as read
+                          {t("mentions.actions.markAsRead", {
+                            defaultValue: "Mark as read",
+                          })}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -276,29 +305,34 @@ export function MentionsTable({ projectId }: MentionsTableProps) {
       <div className="flex items-center justify-between p-4 border-t border-border/50">
         <div className="flex items-center gap-4">
           <p className="text-sm text-muted-foreground">
-            Showing <span className="font-medium">{Math.min((currentPage - 1) * perPage + 1, totalItems)}-{Math.min(currentPage * perPage, totalItems)}</span> of <span className="font-medium">{totalItems}</span> mentions
+            {t("mentions.table.showing", {
+              from: Math.min((currentPage - 1) * perPage + 1, totalItems),
+              to: Math.min(currentPage * perPage, totalItems),
+              total: totalItems,
+              defaultValue: "Showing {{from}}-{{to}} of {{total}} mentions",
+            })}
           </p>
           <Select value={String(perPage)} onValueChange={(v) => { setPerPage(Number(v)); setCurrentPage(1); }}>
             <SelectTrigger className="w-[100px] h-8">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="10">10 / page</SelectItem>
-              <SelectItem value="25">25 / page</SelectItem>
-              <SelectItem value="50">50 / page</SelectItem>
-              <SelectItem value="100">100 / page</SelectItem>
+              <SelectItem value="10">{t("mentions.table.perPage", { count: 10, defaultValue: "{{count}} / page" })}</SelectItem>
+              <SelectItem value="25">{t("mentions.table.perPage", { count: 25, defaultValue: "{{count}} / page" })}</SelectItem>
+              <SelectItem value="50">{t("mentions.table.perPage", { count: 50, defaultValue: "{{count}} / page" })}</SelectItem>
+              <SelectItem value="100">{t("mentions.table.perPage", { count: 100, defaultValue: "{{count}} / page" })}</SelectItem>
             </SelectContent>
           </Select>
         </div>
         <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             disabled={currentPage === 1}
             onClick={() => setCurrentPage(p => p - 1)}
           >
             <ChevronLeft className="h-4 w-4 mr-1" />
-            Previous
+            {t("common.previous", { defaultValue: "Previous" })}
           </Button>
           
           <div className="flex items-center gap-1">
@@ -328,13 +362,13 @@ export function MentionsTable({ projectId }: MentionsTableProps) {
             })}
           </div>
           
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
             disabled={currentPage === totalPages || totalPages === 0}
             onClick={() => setCurrentPage(p => p + 1)}
           >
-            Next
+            {t("common.next", { defaultValue: "Next" })}
             <ChevronRight className="h-4 w-4 ml-1" />
           </Button>
         </div>

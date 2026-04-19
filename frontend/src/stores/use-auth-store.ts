@@ -37,7 +37,22 @@ export const useAuthStore = create<AuthState>()(
       
       logout: () => {
         set({ user: null, isAuthenticated: false });
-        // Clear tokens handled separately in auth service
+        // Tokens are cleared by `authApi.logout` separately. Below we wipe
+        // every other piece of session-bound data so a re-login starts
+        // fresh and a stale "current project" / sidebar state from a
+        // previous user can't leak through. We deliberately leave
+        // `i18nextLng` and `senti-theme` alone — those are user UI prefs.
+        if (typeof window !== "undefined") {
+          try {
+            const PURGE_KEYS = [
+              "senti-project", // zustand persist for current project
+              "senti-sidebar", // zustand persist for sidebar collapse
+            ];
+            PURGE_KEYS.forEach((k) => window.localStorage.removeItem(k));
+          } catch {
+            // ignore — quota / private mode
+          }
+        }
       },
       
       hasRole: (role) => {

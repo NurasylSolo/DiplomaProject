@@ -224,6 +224,7 @@
     "bulkActions": "Bulk Actions",
     "recentMentions": "Recent Mentions",
     "last7days": "Last 7 days",
+    "resultsCount": "{{count}} results",
     "filters": {
       "title": "Filters",
       "dateRange": "Date Range",
@@ -241,9 +242,41 @@
       "min": "Min",
       "max": "Max",
       "searchByAuthor": "Search by author...",
-      "noSavedFilters": "No saved filters yet"
+      "noSavedFilters": "No saved filters yet",
+      "selectRange": "Select range",
+      "selectDateRange": "Select date range",
+      "allInDatabase": "All mentions in database",
+      "presets": {
+        "all": "All time",
+        "today": "Today",
+        "yesterday": "Yesterday",
+        "7days": "Last 7 days",
+        "30days": "Last 30 days",
+        "90days": "Last 90 days",
+        "custom": "Custom range"
+      },
+      "sourceTypes": {
+        "facebook": "Facebook",
+        "twitter": "X (Twitter)",
+        "tiktok": "TikTok",
+        "youtube": "YouTube",
+        "instagram": "Instagram",
+        "linkedin": "LinkedIn",
+        "telegram": "Telegram",
+        "news": "News",
+        "blogs": "Blogs",
+        "podcasts": "Podcasts",
+        "videos": "Videos",
+        "websites": "Websites",
+        "other": "Other"
+      }
     },
     "sentiment": {
+      "positive": "Positive",
+      "neutral": "Neutral",
+      "negative": "Negative"
+    },
+    "sentiments": {
       "positive": "Positive",
       "neutral": "Neutral",
       "negative": "Negative"
@@ -256,7 +289,13 @@
       "location": "Location",
       "actions": "Actions",
       "influence": "influence",
-      "noMentionsFound": "No mentions found matching your filters."
+      "noMentionsFound": "No mentions found matching your filters.",
+      "noMentionsFoundShort": "No mentions found",
+      "tryAdjustingFilters": "Try adjusting your filter criteria",
+      "loading": "Loading mentions...",
+      "loadError": "Failed to load mentions. Please try again.",
+      "showing": "Showing {{from}}-{{to}} of {{total}} mentions",
+      "perPage": "{{count}} / page"
     },
     "actions": {
       "goToSource": "Go to source",
@@ -266,7 +305,8 @@
       "save": "Save",
       "unsave": "Unsave",
       "muteSource": "Mute source",
-      "delete": "Delete"
+      "delete": "Delete",
+      "markAsRead": "Mark as read"
     },
     "charts": {
       "mentionsOverTime": "Mentions Over Time",
@@ -783,8 +823,8 @@
     }
   },
   "influencers": {
-    "title": "Influencers",
-    "subtitle": "Track and analyze key influencers",
+    "title": "Top Voices",
+    "subtitle": "Sources and authors driving the conversation about your brand",
     "table": {
       "influencer": "Influencer",
       "platform": "Platform",
@@ -792,6 +832,61 @@
       "mentions": "Mentions",
       "reach": "Reach",
       "sentiment": "Sentiment"
+    }
+  },
+  "influencersPage": {
+    "actions": {
+      "refresh": "Refresh",
+      "exportCsv": "Export CSV",
+      "viewDetails": "View details",
+      "openSite": "Open site"
+    },
+    "stats": {
+      "total": "Voices",
+      "totalReach": "Total reach",
+      "totalMentions": "Total mentions",
+      "topPlatform": "Top platform",
+      "avgScore": "Avg. score"
+    },
+    "charts": {
+      "topInfluencers": "Top voices by mentions",
+      "byPlatform": "By platform"
+    },
+    "filters": {
+      "searchPlaceholder": "Search by name or domain…",
+      "platform": "Platform",
+      "allPlatforms": "All platforms"
+    },
+    "table": {
+      "influencer": "Voice",
+      "platform": "Type",
+      "mentions": "Mentions",
+      "reach": "Reach",
+      "shareOfVoice": "Share of Voice",
+      "score": "Score",
+      "lastSeen": "Last seen"
+    },
+    "metrics": {
+      "mentions": "Mentions",
+      "reach": "Reach",
+      "shareOfVoice": "Share of Voice",
+      "score": "Influence score"
+    },
+    "detail": {
+      "sentimentDistribution": "Sentiment distribution",
+      "recentPosts": "Recent mentions",
+      "noMentions": "No mentions from this source yet"
+    },
+    "empty": {
+      "message": "No voices to show. Once mentions are collected they'll appear here."
+    },
+    "pagination": {
+      "showing": "Showing {{from}}–{{to}} of {{total}}"
+    },
+    "toasts": {
+      "exported": "Influencers exported to CSV",
+      "noDataExport": "No data to export",
+      "refreshed": "Refreshed"
     }
   },
   "reports": {
@@ -820,6 +915,220 @@
       "generate": "Generate Infographic"
     }
   },
+  "reportsPage": {
+    "pdf": {
+      "title": "PDF Report",
+      "subtitle": "Generate a multi-section PDF with charts and tables",
+      "sectionsTitle": "Report sections",
+      "actions": {
+        "generate": "Generate & Download",
+        "generating": "Generating…"
+      },
+      "options": {
+        "title": "Additional options",
+        "language": "Report language",
+        "description": "Description",
+        "descriptionPlaceholder": "Add a custom description for this report…",
+        "accentColor": "Accent color"
+      },
+      "preview": {
+        "title": "Live preview",
+        "heading": "Media Monitoring Report",
+        "loadingProject": "Loading project…",
+        "mentions": "Mentions",
+        "reach": "Reach",
+        "topSources": "Top sources",
+        "included": "Included sections"
+      },
+      "sections": {
+        "summary": "Summary of Mentions",
+        "socialReach": "Sentiment / Social Reach",
+        "volumeChart": "Volume Chart",
+        "topSources": "Top Sources",
+        "topProfiles": "Top Voices",
+        "topics": "Top Topics",
+        "keywords": "Trending Keywords",
+        "recentMentions": "Recent Mentions",
+        "popularMentions": "Popular Mentions",
+        "context": "Discussion Context",
+        "numericSummary": "Numeric Summary",
+        "activeProfiles": "Active Profiles",
+        "geo": "Geographic Distribution",
+        "emotions": "Emotion Analysis",
+        "hotHours": "Hot Hours",
+        "languages": "Languages"
+      },
+      "toasts": {
+        "success": "PDF report downloaded",
+        "error": "Failed to generate PDF report"
+      }
+    },
+    "excel": {
+      "title": "Excel Export",
+      "subtitle": "Export data into a multi-sheet workbook",
+      "exportType": "Export type",
+      "includeSheets": "Include sheets",
+      "actions": {
+        "export": "Export to Excel",
+        "exporting": "Exporting…"
+      },
+      "types": {
+        "current": {
+          "title": "Current filters",
+          "description": "Export data matching your current filter settings"
+        },
+        "full": {
+          "title": "Full dataset",
+          "description": "Export all mentions without any filters"
+        },
+        "summary": {
+          "title": "Summarised report",
+          "description": "Export aggregated statistics and summaries"
+        }
+      },
+      "sheets": {
+        "mentions": "Mentions",
+        "sources": "Sources",
+        "sentiment": "Sentiment Analysis",
+        "influencers": "Influencers",
+        "trends": "Topics / Trends",
+        "dailyStats": "Daily Statistics",
+        "geo": "Geographic Distribution",
+        "emotions": "Emotion Analysis",
+        "hotHours": "Hot Hours",
+        "languages": "Languages"
+      },
+      "toasts": {
+        "success": "Excel report downloaded",
+        "error": "Failed to export Excel report"
+      }
+    },
+    "email": {
+      "title": "Email Reports",
+      "subtitle": "Send a PDF report on demand to a list of recipients",
+      "actions": {
+        "createSchedule": "Create schedule"
+      },
+      "stats": {
+        "scheduled": "Scheduled reports",
+        "active": "Active",
+        "recipients": "Recipients"
+      },
+      "list": {
+        "title": "Scheduled reports",
+        "loading": "Loading schedules…",
+        "empty": "No scheduled reports yet. Click 'Create schedule' to set one up."
+      },
+      "row": {
+        "active": "Active",
+        "paused": "Paused",
+        "sendTime": "Send time",
+        "timezone": "Timezone",
+        "recipients": "recipients",
+        "lastSent": "Last sent",
+        "sendNow": "Send now",
+        "delete": "Delete"
+      },
+      "dialog": {
+        "title": "Create scheduled report",
+        "recipients": "Recipients",
+        "add": "Add",
+        "frequency": "Frequency",
+        "sendTime": "Send time",
+        "contents": "Report contents",
+        "language": "Report language",
+        "create": "Create schedule",
+        "atLeastOneRecipient": "Add at least one recipient",
+        "invalidEmail": "Please enter a valid email address",
+        "duplicateEmail": "This email is already in the list",
+        "frequencies": {
+          "daily": "Daily",
+          "weekly": "Weekly",
+          "monthly": "Monthly",
+          "on_event": "On event"
+        },
+        "contentOptions": {
+          "summary": "Executive summary",
+          "mentions": "Recent mentions",
+          "sentiment": "Sentiment analysis",
+          "trends": "Trending topics",
+          "influencers": "Top voices"
+        }
+      },
+      "confirm": {
+        "delete": "Delete this scheduled report?"
+      },
+      "toasts": {
+        "created": "Schedule created",
+        "createFailed": "Failed to create schedule",
+        "updateFailed": "Failed to update schedule",
+        "deleted": "Schedule deleted",
+        "deleteFailed": "Failed to delete schedule",
+        "sent": "Report sent to {{count}} recipient(s)",
+        "sendFailed": "Failed to send report",
+        "smtpNotConfigured": "SMTP server not configured on the backend",
+        "noRecipients": "No valid recipients to send to"
+      }
+    },
+    "infographic": {
+      "title": "Infographic",
+      "subtitle": "A shareable visual snapshot of your media presence",
+      "actions": {
+        "regenerate": "Regenerate",
+        "share": "Share",
+        "exportPng": "Export PNG"
+      },
+      "kpi": {
+        "mentions": "Mentions",
+        "reach": "Reach",
+        "score": "Score",
+        "positive": "Positive"
+      },
+      "sentiment": {
+        "title": "Sentiment mix"
+      },
+      "topics": {
+        "title": "Top topics"
+      },
+      "influencers": {
+        "title": "Top voices"
+      },
+      "geo": {
+        "title": "Top countries"
+      },
+      "emotions": {
+        "title": "Emotion analysis"
+      },
+      "hotHours": {
+        "title": "Hot hours"
+      },
+      "languages": {
+        "title": "Languages"
+      },
+      "topSources": {
+        "title": "Top sources"
+      },
+      "footer": {
+        "generated": "Generated"
+      },
+      "empty": {
+        "topics": "No topics yet",
+        "influencers": "No top voices yet",
+        "sources": "No sources yet",
+        "emotions": "No emotion data yet",
+        "hotHours": "No peak yet",
+        "geo": "No geo data yet"
+      },
+      "toasts": {
+        "exported": "Infographic saved",
+        "exportFailed": "Failed to save infographic",
+        "shared": "Shared",
+        "linkCopied": "Link copied to clipboard",
+        "shareFailed": "Failed to share",
+        "refreshed": "Refreshed"
+      }
+    }
+  },
   "geo": {
     "title": "Geo Analysis",
     "subtitle": "Geographic distribution of your media mentions",
@@ -834,17 +1143,114 @@
       "sentiment": "Sentiment",
       "change": "Change"
     },
-    "loadingMap": "Loading map...",
-    "mapError": "Failed to load world map. Please try again later."
+    "loadingMap": "Loading world map...",
+    "mapError": "Failed to load world map. Please try again later.",
+    "mapUnavailable": "Map visualization unavailable",
+    "mapUnavailableHint": "View the countries table below for geographic data"
   },
   "influencerAnalysis": {
     "title": "Influencer Analysis",
-    "subtitle": "Deep dive into influencer performance"
+    "subtitle": "Deep dive into influencer performance",
+    "exportReport": "Export Report",
+    "ranking": "Influencer Ranking",
+    "stats": {
+      "totalInfluencers": "Total Influencers",
+      "avgInfluenceScore": "Avg. Influence Score",
+      "totalReach": "Total Reach",
+      "avgEngagement": "Avg. Engagement"
+    },
+    "tabs": {
+      "overview": "Overview",
+      "posts": "Sample Posts",
+      "trends": "Trends"
+    },
+    "metrics": {
+      "mentions": "Mentions",
+      "reach": "Reach",
+      "engagement": "Engagement",
+      "positive": "Positive"
+    },
+    "charts": {
+      "engagement": "Engagement",
+      "growth": "Growth"
+    },
+    "sentimentWhenMentioning": "Sentiment when mentioning brand",
+    "noSamplePosts": "No sample posts available",
+    "engagementTrend": "Engagement Trend",
+    "followerGrowth": "Follower Growth",
+    "thisMonth": "+{{value}}% this month",
+    "engagements": "engagements",
+    "followerGrowthComparison": "Follower Growth Comparison"
   },
   "hotHours": {
     "title": "Hot Hours",
     "subtitle": "Peak activity times for your brand",
     "heatmap": "Activity Heatmap"
+  },
+  "hotHoursPage": {
+    "title": "Hot Hours",
+    "subtitle": "When your brand gets talked about, by day-of-week and hour",
+    "actions": {
+      "refresh": "Refresh",
+      "exportCsv": "Export CSV"
+    },
+    "stats": {
+      "peak": "Peak hour",
+      "total": "Total mentions",
+      "activeDays": "Most active days",
+      "quietest": "Quietest hour"
+    },
+    "heatmap": {
+      "title": "Activity Heatmap",
+      "hint": "Click any cell to filter mentions for that day and hour. Peak: {{peak}} mentions across {{total}} total."
+    },
+    "legend": {
+      "more": "More",
+      "less": "Less"
+    },
+    "tooltip": {
+      "mentions": "Mentions",
+      "reach": "Reach",
+      "sentiment": "Sentiment"
+    },
+    "sidebar": {
+      "topHours": "Top hours",
+      "bestTimes": "Best times to post"
+    },
+    "bestTimes": {
+      "reasons": {
+        "positivePeak": "Highest mentions × positive sentiment — your audience is most receptive here.",
+        "highVolume": "High overall mention volume — large audience is online.",
+        "activeDiscussion": "Active discussion window — your brand is part of an ongoing conversation."
+      }
+    },
+    "days": {
+      "sun": "Sun",
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat"
+    },
+    "daysLong": {
+      "sun": "Sunday",
+      "mon": "Monday",
+      "tue": "Tuesday",
+      "wed": "Wednesday",
+      "thu": "Thursday",
+      "fri": "Friday",
+      "sat": "Saturday"
+    },
+    "empty": {
+      "noActivity": "No activity in the selected window.",
+      "noSuggestions": "Not enough data to suggest a window yet."
+    },
+    "toasts": {
+      "exported": "CSV exported",
+      "noDataExport": "No data to export",
+      "refreshed": "Refreshed"
+    }
   },
   "emotions": {
     "title": "Emotion Analysis",
@@ -856,6 +1262,49 @@
       "fear": "Fear",
       "surprise": "Surprise",
       "disgust": "Disgust"
+    }
+  },
+  "emotionsPage": {
+    "title": "Emotion Analysis",
+    "subtitle": "Emotions across {{count}} analyzed mentions",
+    "scoreLabel": "score",
+    "names": {
+      "joy": "Joy",
+      "trust": "Trust",
+      "fear": "Fear",
+      "surprise": "Surprise",
+      "sadness": "Sadness",
+      "disgust": "Disgust",
+      "anger": "Anger",
+      "anticipation": "Anticipation"
+    },
+    "actions": {
+      "refresh": "Refresh",
+      "backfill": "Re-analyze with AI",
+      "backfillHint": "Re-classify mentions whose emotions look empty",
+      "exportCsv": "Export CSV"
+    },
+    "charts": {
+      "distribution": "Emotion distribution",
+      "timeline": "Emotion timeline",
+      "breakdown": "Emotion breakdown"
+    },
+    "topMentions": {
+      "title": "Top mentions per emotion",
+      "focusedTitle": "Top mentions for {{emotion}}",
+      "empty": "No mentions yet"
+    },
+    "empty": {
+      "noData": "No emotion data available yet.",
+      "noTimeline": "No timeline data for this period.",
+      "hint": "Click 'Re-analyze with AI' to classify existing mentions, or wait for the next ingestion run."
+    },
+    "toasts": {
+      "refreshed": "Refreshed",
+      "exported": "CSV exported",
+      "noDataExport": "No data to export",
+      "backfillDone": "Re-classified {{processed}} of {{candidates}} mentions ({{updated}} now have emotions)",
+      "backfillFailed": "AI re-analysis failed"
     }
   },
   "settings": {
@@ -909,13 +1358,17 @@
     "title": "Profile",
     "subtitle": "Your account information and activity",
     "edit": "Edit Profile",
+    "editProfile": "Edit Profile",
     "settings": "Settings",
-    "joined": "Joined",
+    "joined": "Joined {{date}}",
     "bio": "Bio",
     "location": "Location",
     "website": "Website",
     "company": "Company",
     "role": "Role",
+    "recentActivity": "Recent Activity",
+    "recentActivityDescription": "Your latest actions and events",
+    "viewAll": "View All",
     "stats": {
       "projects": "Projects",
       "reportsGenerated": "Reports Generated",
@@ -924,17 +1377,35 @@
     },
     "activity": {
       "title": "Recent Activity",
-      "projectCreated": "Created new project",
-      "reportGenerated": "Generated PDF report",
-      "mentionsAnalyzed": "Analyzed mentions",
-      "alertTriggered": "Sentiment alert triggered",
-      "insightsGenerated": "AI Insights generated"
+      "projectCreated": {
+        "title": "Created new project",
+        "description": "Tech Brand Monitor"
+      },
+      "reportGenerated": {
+        "title": "Generated PDF report",
+        "description": "Weekly Summary Report"
+      },
+      "mentionsAnalyzed": {
+        "title": "Analyzed 1,234 mentions",
+        "description": "AI Insights generated"
+      },
+      "alertTriggered": {
+        "title": "Sentiment alert triggered",
+        "description": "Negative spike detected"
+      },
+      "time": {
+        "hoursAgo": "{{count}} hours ago",
+        "daysAgo": "{{count}} days ago"
+      }
     },
     "quickActions": {
       "title": "Quick Actions",
       "createProject": "Create Project",
       "generateReport": "Generate Report",
-      "viewInsights": "View Insights"
+      "viewInsights": "View Insights",
+      "dashboard": "Go to Dashboard",
+      "accountSettings": "Account Settings",
+      "activityLog": "Activity Log"
     }
   },
   "profileSettings": {
@@ -984,7 +1455,7 @@
     "title": "New Monitoring Project",
     "subtitle": "Enter a topic or brand. The system will collect and analyze mentions only for this topic.",
     "topicLabel": "Topic / Brand",
-    "topicPlaceholder": "For example: Kaspi Bank",
+    "topicPlaceholder": "For example: climate change",
     "descriptionLabel": "Description (optional)",
     "descriptionPlaceholder": "What to track: product, service, region, context...",
     "creating": "Creating project and starting analysis...",
@@ -1068,26 +1539,31 @@
     "deleteTopic": "Delete topic",
     "saving": "Saving...",
     "saveChanges": "Save changes",
+    "refreshNow": "Refresh mentions",
+    "refreshing": "Refreshing...",
     "confirmDelete": "Delete this topic/project? This action is irreversible and will remove mentions and analytics.",
     "toasts": {
       "updated": "Topic updated successfully",
-      "deleted": "Topic deleted"
+      "deleted": "Topic deleted",
+      "refetchTriggered": "Topic renamed — fetching fresh mentions in background",
+      "refreshStarted": "Refreshing mentions in background"
+    },
+    "errors": {
+      "nameRequired": "Project name cannot be empty"
     },
     "tabs": {
       "general": "General",
       "keywords": "Keywords",
       "sources": "Sources",
       "notifications": "Notifications",
-      "team": "Team"
+      "owner": "Owner"
     },
     "general": {
       "title": "Project Information",
       "description": "Basic information about your monitoring project",
       "projectName": "Project Name",
+      "nameRefetchHint": "Renaming the topic triggers a fresh news search after saving.",
       "descriptionLabel": "Description",
-      "projectLogo": "Project Logo",
-      "uploadLogo": "Upload a logo for your project",
-      "logoFormat": "PNG, JPG up to 2MB",
       "accentColor": "Accent Color"
     },
     "keywords": {
@@ -1096,11 +1572,17 @@
       "excludedTitle": "Excluded Keywords",
       "excludedDescription": "Mentions containing these keywords will be filtered out",
       "addKeyword": "Add keyword...",
-      "addExcludedKeyword": "Add excluded keyword..."
+      "addExcludedKeyword": "Add excluded keyword...",
+      "addAlias": "Add an alias (e.g. global warming)",
+      "aliasesTitle": "Aliases & alternative spellings",
+      "aliasesDescription": "Add other ways the topic is mentioned (transliterations, short forms, translations) to find more relevant articles.",
+      "noKeywords": "No keywords yet",
+      "noAliases": "No aliases yet",
+      "noExcluded": "No excluded keywords yet"
     },
     "sources": {
       "title": "Data Sources",
-      "description": "Configure which sources to monitor",
+      "description": "Choose which categories of sources should be monitored. Only enabled categories are crawled.",
       "newsSites": "News Sites",
       "newsSitesDesc": "Major news outlets and publications",
       "socialMedia": "Social Media",
@@ -1130,10 +1612,12 @@
       "medium": "Medium",
       "high": "High"
     },
-    "team": {
-      "title": "Team Members",
-      "description": "Manage who has access to this project",
-      "invite": "Invite Team Member"
+    "ownerCard": {
+      "title": "Project owner",
+      "description": "You are the sole owner of this project. Multi-user collaboration is coming soon.",
+      "ownerBadge": "Owner",
+      "unnamed": "Unnamed user",
+      "createdOn": "Project created on {{date}}"
     }
   },
   "accountSettingsPage": {

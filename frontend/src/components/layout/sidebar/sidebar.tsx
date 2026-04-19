@@ -1,4 +1,4 @@
-"use client";
+ц"use client";
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
@@ -117,10 +117,13 @@ interface SidebarNavItemProps {
 function SidebarNavItem({ item, pathname, isCollapsed }: SidebarNavItemProps) {
   const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
   const Icon = item.icon;
-  
+
   const content = (
     <Link
       href={item.href}
+      // Force prefetch even in dev — by default Next.js only prefetches in
+      // production builds, which makes local navigation feel sluggish.
+      prefetch={true}
       className={cn(
         "flex items-center gap-3 px-3 py-2.5 rounded-lg",
         "transition-all duration-200",

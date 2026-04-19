@@ -47,3 +47,4 @@ class ResendVerificationRequest(BaseModel):
 
 class GoogleLoginRequest(BaseModel):
     credential: str = Field(..., min_length=10)
+    remember_me: bool = True

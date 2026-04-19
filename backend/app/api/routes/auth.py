@@ -106,6 +106,7 @@ async def google_login(
         data.credential,
         user_agent=request.headers.get("user-agent"),
         ip_address=request.client.host if request.client else None,
+        remember_me=bool(data.remember_me),
     )
     return {
         "access_token": result["access_token"],

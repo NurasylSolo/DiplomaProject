@@ -1,11 +1,35 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { analyticsApi, insightsApi, influencersApi } from "@/lib/api/services";
-import type { DateRangeParams } from "@/lib/api/services/analytics";
+import type {
+  DateRangeParams,
+  HotHoursParams,
+} from "@/lib/api/services/analytics";
+import type { InfluencersListParams } from "@/lib/api/services/influencers";
 
+/**
+ * Default options for analytics queries.
+ *
+ * - `staleTime: 2 min` — analytics charts don't change every second; this
+ *   is the single biggest perf win because it stops every page navigation
+ *   from kicking off a full API refetch.
+ * - `refetchOnMount: false` — when the user comes back to a page within
+ *   the stale window we serve cached data instantly. Hitting the explicit
+ *   "Refresh" button still re-runs queries via `queryClient.invalidate*`.
+ * - `placeholderData: keepPreviousData` — when query keys change (e.g. the
+ *   user edits the date range) the previous chart stays visible while the
+ *   next one loads, which reads as "instant" to the user instead of a
+ *   flash of empty state.
+ */
 const FRESH = {
-  staleTime: 0,
-  refetchOnMount: "always" as const,
-  refetchOnWindowFocus: true,
+  staleTime: 2 * 60 * 1000,
+  refetchOnMount: false,
+  refetchOnWindowFocus: false,
+  placeholderData: keepPreviousData,
 } as const;
 
 export function useGeoData(projectId: string, params: DateRangeParams = {}) {
@@ -17,7 +41,10 @@ export function useGeoData(projectId: string, params: DateRangeParams = {}) {
   });
 }
 
-export function useHotHours(projectId: string, params: DateRangeParams = {}) {
+export function useHotHours(
+  projectId: string,
+  params: HotHoursParams = {}
+) {
   return useQuery({
     queryKey: ["analytics", "hot-hours", projectId, params],
     queryFn: () => analyticsApi.getHotHours(projectId, params),
@@ -26,14 +53,8 @@ export function useHotHours(projectId: string, params: DateRangeParams = {}) {
   });
 }
 
-export function useEmotions(projectId: string, params: DateRangeParams = {}) {
-  return useQuery({
-    queryKey: ["analytics", "emotions", projectId, params],
-    queryFn: () => analyticsApi.getEmotions(projectId, params),
-    enabled: !!projectId,
-    ...FRESH,
-  });
-}
+// useEmotions has moved to ./use-emotions (returns the rich aggregate
+// response with timeline + top-per-emotion). Import directly from there.
 
 export function useTopics(projectId: string, params: DateRangeParams = {}) {
   return useQuery({
@@ -147,11 +168,27 @@ export function useDismissInsight(projectId: string) {
   });
 }
 
-export function useInfluencers(projectId: string, params?: { sort_by?: string; sort_order?: string; platform?: string }) {
+export function useInfluencers(
+  projectId: string,
+  params: InfluencersListParams = {}
+) {
   return useQuery({
     queryKey: ["influencers", projectId, params],
     queryFn: () => influencersApi.list(projectId, params),
     enabled: !!projectId,
+    ...FRESH,
+  });
+}
+
+export function useInfluencerMentions(
+  projectId: string,
+  influencerId: string | null,
+  limit = 10
+) {
+  return useQuery({
+    queryKey: ["influencers", projectId, "mentions", influencerId, limit],
+    queryFn: () => influencersApi.mentions(projectId, influencerId as string, limit),
+    enabled: !!projectId && !!influencerId,
     ...FRESH,
   });
 }

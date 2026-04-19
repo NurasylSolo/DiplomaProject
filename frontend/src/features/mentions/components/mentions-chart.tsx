@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import ReactECharts from "echarts-for-react";
+import { SafeECharts as ReactECharts } from "@/components/ui/safe-echarts";
 import { useTheme } from "next-themes";
 import { useTimeSeries } from "@/hooks";
 import { useParams } from "next/navigation";

@@ -57,6 +57,19 @@ async def create_excel_report(
     }
 
 
+@router.get("/projects/{project_id}/reports/preview")
+async def get_report_preview(
+    project_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Lightweight summary used by the PDF / Email pages to render the
+    "this is what your report will contain" preview card without firing
+    five separate analytics queries from the frontend."""
+    await get_project(db, project_id, current_user.id)
+    return await report_service.get_report_preview(db, project_id)
+
+
 @router.get("/projects/{project_id}/reports/{report_id}/download")
 async def download_report(
     project_id: str,
