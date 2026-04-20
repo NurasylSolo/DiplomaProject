@@ -4,11 +4,11 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  AlertTriangle,
   ArrowLeft,
   Save,
   User,
   Lock,
-  Globe,
   Trash2,
   Eye,
   EyeOff,
@@ -19,6 +19,8 @@ import {
   Loader2,
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { formatDistanceToNow } from "date-fns";
+import { enUS, ru } from "date-fns/locale";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,9 +44,38 @@ import { cn } from "@/lib/utils";
 import { tokenManager, getErrorMessage } from "@/lib/api";
 import { authApi } from "@/lib/api/services";
 import { useLogout, useTranslation, useUser } from "@/hooks";
+import { AvatarUploader } from "@/features/profile";
+
+function pickInitials(name?: string, email?: string): string {
+  const base = (name || email || "?").trim();
+  return base
+    .split(/\s+/)
+    .map((s) => s[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+function dateFnsLocale(lang: string) {
+  if (lang.startsWith("ru")) return ru;
+  if (lang.startsWith("kz") || lang.startsWith("kk")) return ru;
+  return enUS;
+}
+
+function formatRelative(iso: string, lang: string): string {
+  if (!iso) return "";
+  try {
+    return formatDistanceToNow(new Date(iso), {
+      addSuffix: true,
+      locale: dateFnsLocale(lang),
+    });
+  } catch {
+    return iso;
+  }
+}
 
 export default function ProfileSettingsPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const router = useRouter();
   const languages = [
     { value: "en", label: t("languages.en") },
@@ -184,7 +215,7 @@ export default function ProfileSettingsPage() {
           <TabsTrigger value="profile" className="gap-2"><User className="h-4 w-4" />{t("accountSettingsPage.tabs.profile")}</TabsTrigger>
           <TabsTrigger value="security" className="gap-2"><Lock className="h-4 w-4" />{t("accountSettingsPage.tabs.security")}</TabsTrigger>
           <TabsTrigger value="sessions" className="gap-2"><Smartphone className="h-4 w-4" />{t("accountSettingsPage.tabs.sessions")}</TabsTrigger>
-          <TabsTrigger value="danger" className="gap-2"><Globe className="h-4 w-4" />{t("accountSettingsPage.tabs.danger")}</TabsTrigger>
+          <TabsTrigger value="danger" className="gap-2"><AlertTriangle className="h-4 w-4" />{t("accountSettingsPage.tabs.danger")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile">
@@ -193,7 +224,14 @@ export default function ProfileSettingsPage() {
               <CardTitle>{t("accountSettingsPage.profile.title")}</CardTitle>
               <CardDescription>{t("accountSettingsPage.profile.description")}</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
+              {/* Avatar uploader (shared with /profile) */}
+              <AvatarUploader
+                currentAvatar={apiUser?.avatar}
+                userInitials={pickInitials(apiUser?.name, apiUser?.email)}
+                size="md"
+              />
+              <div className="border-t border-border/50" />
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>{t("accountSettingsPage.profile.fullName")}</Label>
@@ -275,11 +313,36 @@ export default function ProfileSettingsPage() {
                   <p className="text-xs text-green-500 flex items-center gap-1"><Check className="h-3 w-3" />{t("accountSettingsPage.security.passwordsMatch")}</p>
                 )}
               </div>
+              {newPassword && newPassword.length < 8 && (
+                <p className="text-xs text-destructive flex items-center gap-1">
+                  <X className="h-3 w-3" />
+                  {t("accountSettingsPage.security.minLength", {
+                    defaultValue: "Password must be at least 8 characters",
+                  })}
+                </p>
+              )}
+              {newPassword && currentPassword && newPassword === currentPassword && (
+                <p className="text-xs text-destructive flex items-center gap-1">
+                  <X className="h-3 w-3" />
+                  {t("accountSettingsPage.security.sameAsCurrent", {
+                    defaultValue: "New password must differ from the current one",
+                  })}
+                </p>
+              )}
               <Button
                 onClick={() => changePasswordMutation.mutate()}
-                disabled={!currentPassword || !newPassword || newPassword !== confirmPassword || changePasswordMutation.isPending}
+                disabled={
+                  !currentPassword ||
+                  !newPassword ||
+                  newPassword.length < 8 ||
+                  newPassword === currentPassword ||
+                  newPassword !== confirmPassword ||
+                  changePasswordMutation.isPending
+                }
               >
-                {changePasswordMutation.isPending ? t("accountSettingsPage.actions.updating") : t("accountSettingsPage.actions.updatePassword")}
+                {changePasswordMutation.isPending
+                  ? t("accountSettingsPage.actions.updating")
+                  : t("accountSettingsPage.actions.updatePassword")}
               </Button>
             </CardContent>
           </Card>
@@ -293,24 +356,53 @@ export default function ProfileSettingsPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               {sessionsQuery.isLoading && <Loader2 className="h-5 w-5 animate-spin text-primary" />}
+              {(sessionsQuery.data || []).length === 0 && !sessionsQuery.isLoading && (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  {t("accountSettingsPage.sessions.empty", {
+                    defaultValue: "No active sessions",
+                  })}
+                </p>
+              )}
               {(sessionsQuery.data || []).map((session) => (
-                <div key={session.id} className="flex items-center justify-between p-4 rounded-lg bg-muted/30">
-                  <div className="flex items-center gap-4">
-                    <div className="p-2 rounded-lg bg-background">
+                <div
+                  key={session.id}
+                  className="flex items-center justify-between p-4 rounded-lg bg-muted/30 gap-3"
+                >
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div className="p-2 rounded-lg bg-background flex-shrink-0">
                       <Smartphone className="h-5 w-5 text-muted-foreground" />
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium">{session.device}</p>
-                        {session.current && <Badge variant="secondary" className="text-xs">{t("accountSettingsPage.sessions.current")}</Badge>}
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-medium truncate">{session.device}</p>
+                        {session.current && (
+                          <Badge variant="secondary" className="text-xs">
+                            {t("accountSettingsPage.sessions.current")}
+                          </Badge>
+                        )}
                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        {session.location} - {session.ip} - {new Date(session.last_active).toLocaleString()}
+                      <p className="text-sm text-muted-foreground truncate">
+                        {session.ip}
+                        {session.location && session.location !== "Unknown location"
+                          ? ` · ${session.location}`
+                          : ""}
+                        {session.last_active
+                          ? ` · ${formatRelative(session.last_active, i18n.language)}`
+                          : ""}
                       </p>
                     </div>
                   </div>
                   {!session.current && (
-                    <Button variant="ghost" size="sm" className="text-destructive" onClick={() => revokeSessionMutation.mutate(session.id)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive flex-shrink-0"
+                      onClick={() => revokeSessionMutation.mutate(session.id)}
+                      disabled={revokeSessionMutation.isPending}
+                      aria-label={t("accountSettingsPage.actions.signOutSession", {
+                        defaultValue: "Sign out this session",
+                      })}
+                    >
                       <LogOut className="h-4 w-4" />
                     </Button>
                   )}

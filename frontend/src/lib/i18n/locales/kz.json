@@ -1360,6 +1360,9 @@
     "edit": "Профильді өңдеу",
     "editProfile": "Профильді өңдеу",
     "settings": "Параметрлер",
+    "signOut": "Шығу",
+    "copyEmail": "Email көшіру",
+    "unverified": "Расталмаған",
     "joined": "{{date}} қосылды",
     "bio": "Био",
     "location": "Орналасқан жері",
@@ -1367,8 +1370,20 @@
     "company": "Компания",
     "role": "Рөл",
     "recentActivity": "Соңғы белсенділік",
-    "recentActivityDescription": "Сіздің соңғы әрекеттеріңіз бен оқиғаларыңыз",
+    "recentActivityDescription": "Соңғы жобалар, есептер және парсингтер",
     "viewAll": "Барлығын көрсету",
+    "avatar": {
+      "title": "Профиль суреті",
+      "subtitle": "PNG, JPEG немесе WebP. Максимум 5 МБ. Шаршы суреттер ыңғайлы.",
+      "upload": "Сурет жүктеу",
+      "change": "Суретті ауыстыру",
+      "remove": "Жою",
+      "uploading": "Жүктелуде…",
+      "sizeLimit": "Файл тым үлкен. Максимум 5 МБ.",
+      "typeError": "Қолдау көрсетілмейтін формат. PNG, JPEG немесе WebP пайдаланыңыз.",
+      "confirmTitle": "Аватарды жоясыз ба?",
+      "confirmBody": "Профиль әдеттегі инициалдарға қайтады."
+    },
     "stats": {
       "projects": "Жобалар",
       "reportsGenerated": "Жасалған есептер",
@@ -1377,25 +1392,13 @@
     },
     "activity": {
       "title": "Соңғы белсенділік",
-      "projectCreated": {
-        "title": "Жаңа жоба жасалды",
-        "description": "Tech Brand Monitor"
-      },
-      "reportGenerated": {
-        "title": "PDF есеп жасалды",
-        "description": "Апталық қорытынды есеп"
-      },
-      "mentionsAnalyzed": {
-        "title": "1 234 атау талданды",
-        "description": "AI инсайттар жасалды"
-      },
-      "alertTriggered": {
-        "title": "Тональдық ескертуі іске қосылды",
-        "description": "Теріс шарықтау анықталды"
-      },
-      "time": {
-        "hoursAgo": "{{count}} сағ бұрын",
-        "daysAgo": "{{count}} күн бұрын"
+      "empty": "Әзірге белсенділік жоқ",
+      "types": {
+        "projectCreated": "«{{name}}» жобасы жасалды",
+        "reportGenerated": "{{type}} есебі жасалды",
+        "mentionsAnalyzed": "{{count}} жаңа атау талданды",
+        "crawlRunning": "Атауларды іздеу жүруде",
+        "crawlFailed": "Атауларды іздеу сәтсіз аяқталды"
       }
     },
     "quickActions": {
@@ -1406,6 +1409,13 @@
       "dashboard": "Дашбордқа өту",
       "accountSettings": "Аккаунт параметрлері",
       "activityLog": "Белсенділік журналы"
+    },
+    "toasts": {
+      "avatarUpdated": "Аватар жаңартылды",
+      "avatarRemoved": "Аватар жойылды",
+      "avatarUploadFailed": "Аватарды жүктеу мүмкін болмады",
+      "emailCopied": "Email көшірілді",
+      "signOutSuccess": "Сіз аккаунттан шықтыңыз"
     }
   },
   "profileSettings": {
@@ -1462,11 +1472,26 @@
     "submit": "Жоба жасау және талдауды бастау",
     "progress": {
       "title": "Нақты уақытта өңдеу барысы",
+      "errorTitle": "Деректер жинау сәтсіз",
       "running": "Қосылған көздерден жаңалықтар жиналып, талдануда...",
       "completed": "Өңдеу аяқталды. Атаулар бетіне өту.",
-      "failed": "Өңдеу қатемен аяқталды. Жобаны ашуға болады.",
+      "failed": "Өңдеу қатемен аяқталды. Қайта іске қосуға немесе жобаны сондай-ақ ашуға болады.",
       "openProject": "Жоба атауларын ашу",
-      "sources": "Өңделген көздер: {{processed}} / {{total}}"
+      "openAnyway": "Жобаны сондай-ақ ашу",
+      "retry": "Қайта іске қосу",
+      "continueInBackground": "Фондық режимде жалғастыру",
+      "continueHint": "Деректер жинау фондық режимде жалғасады. Жаңа атаулар автоматты түрде пайда болады.",
+      "sources": "Өңделген көздер: {{processed}} / {{total}}",
+      "sourcesShort": "Көздер",
+      "itemsCollected": "Жиналған элементтер",
+      "itemsSaved": "Бірегей сақталды",
+      "itemsDeduplicated": "Қайталар сүзілді",
+      "stages": {
+        "discovering": "Сәйкес көздерді іздеу",
+        "crawling": "{{count}} көзді сканерлеу",
+        "analyzing": "Тональдық және эмоция талдауы",
+        "finalising": "Аяқтау"
+      }
     },
     "toasts": {
       "createdAndStarted": "Жоба жасалды. Тақырып талдауы фондық режимде басталды.",
@@ -1644,13 +1669,16 @@
       "newPassword": "Жаңа құпия сөз",
       "confirmPassword": "Жаңа құпия сөзді растау",
       "passwordsNotMatch": "Құпия сөздер сәйкес келмейді",
-      "passwordsMatch": "Құпия сөздер сәйкес келеді"
+      "passwordsMatch": "Құпия сөздер сәйкес келеді",
+      "minLength": "Құпия сөз кемінде 8 таңбадан тұруы керек",
+      "sameAsCurrent": "Жаңа құпия сөз ағымдағыдан өзгеше болуы керек"
     },
     "sessions": {
       "title": "Белсенді сессиялар",
       "description": "Сенбейтін құрылғылардағы сессияларды жабыңыз.",
       "current": "Ағымдағы",
-      "signOutOthers": "Қалған барлық сессиядан шығу"
+      "signOutOthers": "Қалған барлық сессиядан шығу",
+      "empty": "Белсенді сессиялар жоқ"
     },
     "danger": {
       "title": "Аккаунтты жою",
@@ -1666,7 +1694,8 @@
       "saving": "Сақталуда...",
       "updatePassword": "Құпия сөзді жаңарту",
       "updating": "Жаңартылуда...",
-      "signingOut": "Шығуда..."
+      "signingOut": "Шығуда...",
+      "signOutSession": "Бұл сессияны жабу"
     },
     "passwordStrength": {
       "weak": "Әлсіз",

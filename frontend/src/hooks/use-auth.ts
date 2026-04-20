@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import { authApi } from "@/lib/api/services";
 import { useAuthStore } from "@/stores";
 import { tokenManager } from "@/lib/api";
+import type { User } from "@/types";
 
 export function useUser() {
   const { setUser, setLoading } = useAuthStore();
@@ -74,6 +75,66 @@ export function useLogout() {
     },
     onError: () => {
       // no-op: local logout is already completed
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Profile dashboard hooks
+// ---------------------------------------------------------------------------
+
+/** Aggregated KPI counters for the profile page (cached 5 min).
+ *  We explicitly refetchOnMount so navigating back to /profile after creating
+ *  a new project surfaces the updated counts immediately, not in 5 min. */
+export function useUserStats() {
+  return useQuery({
+    queryKey: ["user", "stats"],
+    queryFn: () => authApi.getStats(),
+    enabled: tokenManager.isAuthenticated(),
+    refetchOnMount: "always",
+    refetchOnWindowFocus: false,
+    staleTime: 60 * 1000,
+  });
+}
+
+/** Recent activity feed (projects + reports + crawl jobs).
+ *  Refetches on mount + when window regains focus so newly finished
+ *  ingestion runs show up without a manual refresh. */
+export function useUserActivity(limit = 10) {
+  return useQuery({
+    queryKey: ["user", "activity", limit],
+    queryFn: () => authApi.getActivity(limit),
+    enabled: tokenManager.isAuthenticated(),
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    staleTime: 30 * 1000,
+  });
+}
+
+/** Upload a new avatar — invalidates user/stats so the new image surfaces
+ *  everywhere it's rendered (header, sidebar, profile, settings). */
+export function useUploadAvatar() {
+  const queryClient = useQueryClient();
+  const { setUser } = useAuthStore();
+
+  return useMutation({
+    mutationFn: (file: File) => authApi.uploadAvatar(file),
+    onSuccess: (user: User) => {
+      setUser(user);
+      queryClient.invalidateQueries({ queryKey: ["user"] });
+    },
+  });
+}
+
+export function useDeleteAvatar() {
+  const queryClient = useQueryClient();
+  const { setUser } = useAuthStore();
+
+  return useMutation({
+    mutationFn: () => authApi.deleteAvatar(),
+    onSuccess: (user: User) => {
+      setUser(user);
+      queryClient.invalidateQueries({ queryKey: ["user"] });
     },
   });
 }

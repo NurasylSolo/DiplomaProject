@@ -32,3 +32,4 @@ playwright
 prometheus-client
 sentry-sdk[fastapi]
 structlog
+Pillow>=10.0

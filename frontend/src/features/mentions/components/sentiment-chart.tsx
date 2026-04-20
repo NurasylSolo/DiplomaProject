@@ -20,10 +20,12 @@ export function SentimentChart() {
   const neutral = stats?.neutral_percentage ?? 0;
   const negative = stats?.negative_percentage ?? 0;
   
+  // Hex colours: zrender (ECharts renderer) does not understand `oklch(...)`
+  // and falls back to BLACK, which paints the whole donut as a black ring.
   const sentimentData = [
-    { name: "Positive", value: positive, color: "oklch(0.65 0.17 155)" },
-    { name: "Neutral", value: neutral, color: "oklch(0.55 0.02 260)" },
-    { name: "Negative", value: negative, color: "oklch(0.60 0.22 25)" },
+    { name: "Positive", value: positive, color: "#10b981" }, // emerald-500
+    { name: "Neutral", value: neutral, color: "#94a3b8" }, // slate-400
+    { name: "Negative", value: negative, color: "#ef4444" }, // red-500
   ];
   
   const option = useMemo(() => ({

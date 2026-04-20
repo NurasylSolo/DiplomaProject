@@ -2,22 +2,27 @@
  * Shared ECharts styling tokens so every chart in the app uses the same
  * colors, axis labels and tooltip background. Pass `isDark` once and get
  * back a partial that can be spread into ECharts options.
+ *
+ * IMPORTANT: only hex / rgb(a) colours are supported here. zrender
+ * (the renderer behind ECharts) does NOT understand `oklch(...)`; if it
+ * receives one it silently falls back to BLACK, which manifests as a
+ * solid dark blob covering area-fills, donut wedges, etc.
  */
 
 export const CHART_PALETTE = [
-  "oklch(0.70 0.15 195)", // primary cyan
-  "oklch(0.65 0.17 155)", // green
-  "oklch(0.75 0.14 75)", // gold
-  "oklch(0.60 0.22 25)", // red
-  "oklch(0.65 0.18 290)", // purple
-  "oklch(0.70 0.18 350)", // pink
-  "oklch(0.55 0.02 260)", // muted gray
+  "#22d3ee", // cyan-400 — primary cyan
+  "#10b981", // emerald-500 — green
+  "#f59e0b", // amber-500 — gold
+  "#ef4444", // red-500 — red
+  "#8b5cf6", // violet-500 — purple
+  "#ec4899", // pink-500 — pink
+  "#94a3b8", // slate-400 — muted gray
 ];
 
 export const SENTIMENT_COLORS = {
-  positive: "oklch(0.65 0.17 155)",
-  neutral: "oklch(0.55 0.02 260)",
-  negative: "oklch(0.60 0.22 25)",
+  positive: "#10b981", // emerald-500
+  neutral: "#94a3b8",  // slate-400
+  negative: "#ef4444", // red-500
 } as const;
 
 export function chartTooltip(isDark: boolean) {

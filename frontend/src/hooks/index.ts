@@ -1,7 +1,16 @@
 export { useMediaQuery, usePrefersReducedMotion } from "./use-media-query";
 export { useLocalStorage } from "./use-local-storage";
 export { useTranslation } from "./use-translation";
-export { useUser, useLogin, useRegister, useLogout } from "./use-auth";
+export {
+  useUser,
+  useLogin,
+  useRegister,
+  useLogout,
+  useUserStats,
+  useUserActivity,
+  useUploadAvatar,
+  useDeleteAvatar,
+} from "./use-auth";
 export {
   useProjects,
   useProject,

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, File, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.api.deps import get_current_user
@@ -14,6 +14,20 @@ from app.schemas.auth import MessageResponse
 from app.services import user_service
 
 router = APIRouter()
+
+
+def _user_to_response(user: User) -> UserResponse:
+    return UserResponse(
+        id=user.id,
+        email=user.email,
+        name=user.name,
+        avatar=user.avatar,
+        role=user.role,
+        locale=user.locale,
+        timezone=user.timezone,
+        created_at=user.created_at.isoformat() if user.created_at else "",
+        updated_at=user.updated_at.isoformat() if user.updated_at else "",
+    )
 
 
 @router.get("")
@@ -117,3 +131,48 @@ async def delete_account(
 ):
     await user_service.delete_account(db, current_user, data.password)
     return {"message": "Account deleted successfully"}
+
+
+# ---------------------------------------------------------------------------
+# Profile dashboard
+# ---------------------------------------------------------------------------
+@router.get("/stats")
+async def get_my_stats(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return await user_service.get_user_stats(db, current_user)
+
+
+@router.get("/activity")
+async def get_my_activity(
+    limit: int = 10,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return await user_service.get_user_activity(db, current_user, limit=limit)
+
+
+# ---------------------------------------------------------------------------
+# Avatar upload (multipart) + remove
+# ---------------------------------------------------------------------------
+@router.post("/avatar", response_model=UserResponse)
+async def upload_avatar(
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    raw = await file.read()
+    updated = await user_service.upload_avatar(
+        db, current_user, raw, file.content_type
+    )
+    return _user_to_response(updated)
+
+
+@router.delete("/avatar", response_model=UserResponse)
+async def delete_avatar(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    updated = await user_service.delete_avatar(db, current_user)
+    return _user_to_response(updated)

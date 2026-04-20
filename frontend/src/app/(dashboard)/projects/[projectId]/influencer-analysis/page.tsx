@@ -121,7 +121,7 @@ export default function InfluencerAnalysisPage({ params }: InfluencerAnalysisPag
       splitLine: { lineStyle: { color: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" } }
     },
     series: [
-      { name: t("influencerAnalysis.charts.engagement", { defaultValue: "Engagement" }), type: "line", smooth: true, data: [5.2, 6.8, 7.5, 8.5], areaStyle: { opacity: 0.3 }, itemStyle: { color: "oklch(0.70 0.15 195)" } }
+      { name: t("influencerAnalysis.charts.engagement", { defaultValue: "Engagement" }), type: "line", smooth: true, data: [5.2, 6.8, 7.5, 8.5], areaStyle: { opacity: 0.3 }, itemStyle: { color: "#22d3ee" } }
     ]
   };
   
@@ -144,7 +144,7 @@ export default function InfluencerAnalysisPage({ params }: InfluencerAnalysisPag
         type: "bar",
         data: influencerRanking.slice(0, 5).map(i => ({
           value: i.followerGrowth,
-          itemStyle: { color: i.followerGrowth >= 10 ? "oklch(0.65 0.17 155)" : "oklch(0.70 0.15 195)" }
+          itemStyle: { color: i.followerGrowth >= 10 ? "#10b981" : "#22d3ee" }
         }))
       }
     ]

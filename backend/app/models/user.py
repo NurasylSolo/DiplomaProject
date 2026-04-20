@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import String, DateTime, Boolean, func
+from sqlalchemy import Boolean, DateTime, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 
@@ -13,7 +13,9 @@ class User(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     # Empty string allowed for Google-only accounts (no local password).
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False, default="")
-    avatar: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # Stored either as a remote URL (Google OAuth) or as a base64 dataURL
+    # (in-house upload). TEXT to fit the latter, which is ~30-50 KB.
+    avatar: Mapped[str | None] = mapped_column(Text, nullable=True)
     role: Mapped[str] = mapped_column(String(20), nullable=False, default="analyst")
     locale: Mapped[str] = mapped_column(String(10), nullable=False, default="ru")
     timezone: Mapped[str] = mapped_column(String(50), nullable=False, default="Asia/Almaty")

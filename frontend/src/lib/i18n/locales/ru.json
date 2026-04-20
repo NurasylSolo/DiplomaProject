@@ -1360,6 +1360,9 @@
     "edit": "Редактировать профиль",
     "editProfile": "Редактировать профиль",
     "settings": "Настройки",
+    "signOut": "Выйти",
+    "copyEmail": "Скопировать email",
+    "unverified": "Не подтверждён",
     "joined": "Присоединился {{date}}",
     "bio": "О себе",
     "location": "Местоположение",
@@ -1367,8 +1370,20 @@
     "company": "Компания",
     "role": "Роль",
     "recentActivity": "Последняя активность",
-    "recentActivityDescription": "Ваши последние действия и события",
+    "recentActivityDescription": "Ваши последние проекты, отчёты и парсинги",
     "viewAll": "Показать всё",
+    "avatar": {
+      "title": "Фото профиля",
+      "subtitle": "PNG, JPEG или WebP. Максимум 5 МБ. Лучше квадратное.",
+      "upload": "Загрузить фото",
+      "change": "Сменить фото",
+      "remove": "Удалить",
+      "uploading": "Загрузка…",
+      "sizeLimit": "Файл слишком большой. Максимум 5 МБ.",
+      "typeError": "Неподдерживаемый формат. Используйте PNG, JPEG или WebP.",
+      "confirmTitle": "Удалить аватар?",
+      "confirmBody": "Профиль вернётся к стандартным инициалам."
+    },
     "stats": {
       "projects": "Проекты",
       "reportsGenerated": "Создано отчётов",
@@ -1377,25 +1392,13 @@
     },
     "activity": {
       "title": "Последняя активность",
-      "projectCreated": {
-        "title": "Создан новый проект",
-        "description": "Tech Brand Monitor"
-      },
-      "reportGenerated": {
-        "title": "Создан PDF-отчёт",
-        "description": "Еженедельный сводный отчёт"
-      },
-      "mentionsAnalyzed": {
-        "title": "Проанализировано 1 234 упоминания",
-        "description": "Сгенерированы AI инсайты"
-      },
-      "alertTriggered": {
-        "title": "Сработало оповещение тональности",
-        "description": "Обнаружен негативный всплеск"
-      },
-      "time": {
-        "hoursAgo": "{{count}} ч назад",
-        "daysAgo": "{{count}} дн назад"
+      "empty": "Пока нет активности",
+      "types": {
+        "projectCreated": "Создан проект «{{name}}»",
+        "reportGenerated": "Сгенерирован отчёт {{type}}",
+        "mentionsAnalyzed": "Проанализировано {{count}} новых упоминаний",
+        "crawlRunning": "Идёт поиск упоминаний",
+        "crawlFailed": "Поиск упоминаний завершился ошибкой"
       }
     },
     "quickActions": {
@@ -1406,6 +1409,13 @@
       "dashboard": "Перейти к дашборду",
       "accountSettings": "Настройки аккаунта",
       "activityLog": "Журнал активности"
+    },
+    "toasts": {
+      "avatarUpdated": "Аватар обновлён",
+      "avatarRemoved": "Аватар удалён",
+      "avatarUploadFailed": "Не удалось загрузить аватар",
+      "emailCopied": "Email скопирован",
+      "signOutSuccess": "Вы вышли из аккаунта"
     }
   },
   "profileSettings": {
@@ -1462,11 +1472,26 @@
     "submit": "Создать проект и начать анализ",
     "progress": {
       "title": "Обработка упоминаний в реальном времени",
+      "errorTitle": "Сбор данных не удался",
       "running": "Собираем и анализируем новости из подключенных источников...",
       "completed": "Обработка завершена. Переходим к упоминаниям.",
-      "failed": "Обработка завершилась ошибкой. Вы можете открыть проект.",
+      "failed": "Обработка завершилась ошибкой. Можно повторить или открыть проект как есть.",
       "openProject": "Открыть упоминания проекта",
-      "sources": "Обработано источников: {{processed}} / {{total}}"
+      "openAnyway": "Открыть проект как есть",
+      "retry": "Запустить заново",
+      "continueInBackground": "Продолжить в фоне",
+      "continueHint": "Сбор продолжится в фоне. Новые упоминания появятся автоматически.",
+      "sources": "Обработано источников: {{processed}} / {{total}}",
+      "sourcesShort": "Источники",
+      "itemsCollected": "Собрано элементов",
+      "itemsSaved": "Сохранено уникальных",
+      "itemsDeduplicated": "Удалено дубликатов",
+      "stages": {
+        "discovering": "Подбираем релевантные источники",
+        "crawling": "Обходим {{count}} источников",
+        "analyzing": "Анализ тональности и эмоций",
+        "finalising": "Завершение"
+      }
     },
     "toasts": {
       "createdAndStarted": "Проект создан. Анализ по теме запущен в фоне.",
@@ -1644,13 +1669,16 @@
       "newPassword": "Новый пароль",
       "confirmPassword": "Подтвердите новый пароль",
       "passwordsNotMatch": "Пароли не совпадают",
-      "passwordsMatch": "Пароли совпадают"
+      "passwordsMatch": "Пароли совпадают",
+      "minLength": "Пароль должен быть не короче 8 символов",
+      "sameAsCurrent": "Новый пароль должен отличаться от текущего"
     },
     "sessions": {
       "title": "Активные сессии",
       "description": "Завершайте устройства, которым не доверяете.",
       "current": "Текущая",
-      "signOutOthers": "Выйти из всех остальных сессий"
+      "signOutOthers": "Выйти из всех остальных сессий",
+      "empty": "Активных сессий нет"
     },
     "danger": {
       "title": "Удалить аккаунт",
@@ -1666,7 +1694,8 @@
       "saving": "Сохранение...",
       "updatePassword": "Обновить пароль",
       "updating": "Обновление...",
-      "signingOut": "Выход..."
+      "signingOut": "Выход...",
+      "signOutSession": "Завершить эту сессию"
     },
     "passwordStrength": {
       "weak": "Слабый",

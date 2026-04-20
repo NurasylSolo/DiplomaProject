@@ -60,7 +60,9 @@ export function buildInsightsTrendChart(
             y2: 1,
             colorStops: [
               { offset: 0, color: CHART_PALETTE[0] },
-              { offset: 1, color: "oklch(0.70 0.15 195 / 0.4)" },
+              // rgba so zrender renders the gradient stop instead of falling
+              // back to black on `oklch(...)`.
+              { offset: 1, color: "rgba(34, 211, 238, 0.40)" },
             ],
           },
           borderRadius: [4, 4, 0, 0],

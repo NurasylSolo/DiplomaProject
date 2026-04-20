@@ -67,11 +67,13 @@ export function MentionsChart() {
     legend: {
       show: false,
     },
+    // Generous top padding so the yAxis "Mentions" / "Reach" name labels
+    // are not clipped by the parent card's `overflow:hidden`.
     grid: {
-      left: "3%",
-      right: "4%",
-      bottom: "3%",
-      top: "8%",
+      left: 8,
+      right: 8,
+      bottom: 8,
+      top: 36,
       containLabel: true,
     },
     xAxis: {
@@ -97,6 +99,15 @@ export function MentionsChart() {
       {
         type: "value",
         name: "Mentions",
+        nameLocation: "end",
+        nameGap: 16,
+        nameTextStyle: {
+          color: isDark ? "#a3a3a3" : "#737373",
+          fontSize: 11,
+          fontWeight: 500,
+          padding: [0, 0, 4, 0],
+          align: "left",
+        },
         position: "left",
         axisLine: {
           show: false,
@@ -106,7 +117,7 @@ export function MentionsChart() {
         },
         splitLine: {
           lineStyle: {
-            color: isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.05)",
+            color: isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.05)",
           },
         },
         axisLabel: {
@@ -117,6 +128,15 @@ export function MentionsChart() {
       {
         type: "value",
         name: "Reach",
+        nameLocation: "end",
+        nameGap: 16,
+        nameTextStyle: {
+          color: isDark ? "#a3a3a3" : "#737373",
+          fontSize: 11,
+          fontWeight: 500,
+          padding: [0, 0, 4, 0],
+          align: "right",
+        },
         position: "right",
         axisLine: {
           show: false,
@@ -134,6 +154,9 @@ export function MentionsChart() {
         },
       },
     ],
+    // Colour palette is plain hex / rgba — zrender's renderer doesn't
+    // understand `oklch(...)` and falls back to BLACK for area fills,
+    // which used to cover the whole chart with a dark blob.
     series: [
       {
         name: "Mentions",
@@ -151,8 +174,8 @@ export function MentionsChart() {
             x2: 1,
             y2: 0,
             colorStops: [
-              { offset: 0, color: "oklch(0.70 0.15 195)" },
-              { offset: 1, color: "oklch(0.65 0.17 180)" },
+              { offset: 0, color: "#22d3ee" }, // cyan-400
+              { offset: 1, color: "#0d9488" }, // teal-600
             ],
           },
         },
@@ -164,8 +187,8 @@ export function MentionsChart() {
             x2: 0,
             y2: 1,
             colorStops: [
-              { offset: 0, color: "oklch(0.70 0.15 195 / 0.3)" },
-              { offset: 1, color: "oklch(0.70 0.15 195 / 0)" },
+              { offset: 0, color: "rgba(34, 211, 238, 0.30)" }, // cyan-400 / 30
+              { offset: 1, color: "rgba(34, 211, 238, 0)" },
             ],
           },
         },
@@ -179,7 +202,7 @@ export function MentionsChart() {
         data: data.map((d) => d.reach),
         lineStyle: {
           width: 2,
-          color: "oklch(0.75 0.14 75)",
+          color: "#f59e0b", // amber-500
         },
         areaStyle: {
           color: {
@@ -189,8 +212,8 @@ export function MentionsChart() {
             x2: 0,
             y2: 1,
             colorStops: [
-              { offset: 0, color: "oklch(0.75 0.14 75 / 0.2)" },
-              { offset: 1, color: "oklch(0.75 0.14 75 / 0)" },
+              { offset: 0, color: "rgba(245, 158, 11, 0.22)" }, // amber-500 / 22
+              { offset: 1, color: "rgba(245, 158, 11, 0)" },
             ],
           },
         },

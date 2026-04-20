@@ -87,8 +87,9 @@ export function buildSparkline(timeSeries: TimeSeriesData[] | undefined) {
         // num() guards against undefined / NaN — zrender's animation
         // interpolator crashes on either.
         data: series.map((p) => num(p.mentions)),
-        areaStyle: { color: "oklch(0.70 0.15 195 / 0.25)" },
-        lineStyle: { width: 2, color: "oklch(0.70 0.15 195)" },
+        // rgba / hex — zrender doesn't understand oklch and renders it BLACK.
+        areaStyle: { color: "rgba(34, 211, 238, 0.25)" },
+        lineStyle: { width: 2, color: "#22d3ee" },
       },
     ],
   };

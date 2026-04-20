@@ -37,6 +37,24 @@ interface ActiveSession {
   current: boolean;
 }
 
+export interface UserStats {
+  projects: number;
+  reports_generated: number;
+  mentions_analyzed: number;
+  insights_created: number;
+}
+
+export interface UserActivityItem {
+  id: string;
+  type: string;
+  title_key: string;
+  title_params?: Record<string, unknown>;
+  description: string;
+  icon_hint: "project" | "report" | "analyze" | "alert" | "running" | string;
+  timestamp: string;
+  link: string;
+}
+
 // These match REFRESH_TOKEN_EXPIRE_DAYS / REFRESH_TOKEN_SHORT_DAYS in backend/.env.
 // Used purely on the client to know when the locally stored refresh token is
 // definitively expired. Backend remains the source of truth on the actual TTL.
@@ -121,6 +139,33 @@ export const authApi = {
   async deleteAccount(password: string): Promise<void> {
     await apiClient.post("/user/delete-account", { password });
     tokenManager.clearTokens();
+  },
+
+  async getStats(): Promise<UserStats> {
+    const response = await apiClient.get<UserStats>("/user/stats");
+    return response.data;
+  },
+
+  async getActivity(limit = 10): Promise<UserActivityItem[]> {
+    const response = await apiClient.get<UserActivityItem[]>("/user/activity", {
+      params: { limit },
+    });
+    return response.data;
+  },
+
+  async uploadAvatar(file: File): Promise<User> {
+    const formData = new FormData();
+    formData.append("file", file);
+    // Don't set Content-Type explicitly — axios will derive
+    // `multipart/form-data; boundary=…` automatically. Setting it manually
+    // strips the boundary and FastAPI rejects the request with 422.
+    const response = await apiClient.post<User>("/user/avatar", formData);
+    return response.data;
+  },
+
+  async deleteAvatar(): Promise<User> {
+    const response = await apiClient.delete<User>("/user/avatar");
+    return response.data;
   },
 
   async verifyEmail(email: string, code: string): Promise<{ message: string; email_verified: boolean }> {

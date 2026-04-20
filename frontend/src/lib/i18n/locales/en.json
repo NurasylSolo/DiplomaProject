@@ -1360,6 +1360,9 @@
     "edit": "Edit Profile",
     "editProfile": "Edit Profile",
     "settings": "Settings",
+    "signOut": "Sign out",
+    "copyEmail": "Copy email",
+    "unverified": "Unverified",
     "joined": "Joined {{date}}",
     "bio": "Bio",
     "location": "Location",
@@ -1367,8 +1370,20 @@
     "company": "Company",
     "role": "Role",
     "recentActivity": "Recent Activity",
-    "recentActivityDescription": "Your latest actions and events",
+    "recentActivityDescription": "Your latest projects, reports and ingestion runs",
     "viewAll": "View All",
+    "avatar": {
+      "title": "Profile picture",
+      "subtitle": "PNG, JPEG or WebP. Max 5 MB. Square images work best.",
+      "upload": "Upload photo",
+      "change": "Change photo",
+      "remove": "Remove",
+      "uploading": "Uploading…",
+      "sizeLimit": "Image too large. Max 5 MB.",
+      "typeError": "Unsupported format. Use PNG, JPEG or WebP.",
+      "confirmTitle": "Remove avatar?",
+      "confirmBody": "Your profile will fall back to the default initials."
+    },
     "stats": {
       "projects": "Projects",
       "reportsGenerated": "Reports Generated",
@@ -1377,25 +1392,13 @@
     },
     "activity": {
       "title": "Recent Activity",
-      "projectCreated": {
-        "title": "Created new project",
-        "description": "Tech Brand Monitor"
-      },
-      "reportGenerated": {
-        "title": "Generated PDF report",
-        "description": "Weekly Summary Report"
-      },
-      "mentionsAnalyzed": {
-        "title": "Analyzed 1,234 mentions",
-        "description": "AI Insights generated"
-      },
-      "alertTriggered": {
-        "title": "Sentiment alert triggered",
-        "description": "Negative spike detected"
-      },
-      "time": {
-        "hoursAgo": "{{count}} hours ago",
-        "daysAgo": "{{count}} days ago"
+      "empty": "No recent activity yet",
+      "types": {
+        "projectCreated": "Created project \"{{name}}\"",
+        "reportGenerated": "Generated {{type}} report",
+        "mentionsAnalyzed": "Analyzed {{count}} new mentions",
+        "crawlRunning": "Mention search in progress",
+        "crawlFailed": "Mention search failed"
       }
     },
     "quickActions": {
@@ -1406,6 +1409,13 @@
       "dashboard": "Go to Dashboard",
       "accountSettings": "Account Settings",
       "activityLog": "Activity Log"
+    },
+    "toasts": {
+      "avatarUpdated": "Avatar updated",
+      "avatarRemoved": "Avatar removed",
+      "avatarUploadFailed": "Could not upload avatar",
+      "emailCopied": "Email copied",
+      "signOutSuccess": "Signed out"
     }
   },
   "profileSettings": {
@@ -1462,11 +1472,26 @@
     "submit": "Create project and start analysis",
     "progress": {
       "title": "Processing mentions in real time",
+      "errorTitle": "Ingestion failed",
       "running": "Collecting and analyzing news from connected sources...",
       "completed": "Processing completed. Redirecting to mentions.",
-      "failed": "Processing failed. You can still open the project.",
+      "failed": "Processing failed. You can retry or open the project anyway.",
       "openProject": "Open project mentions",
-      "sources": "Processed sources: {{processed}} / {{total}}"
+      "openAnyway": "Open project anyway",
+      "retry": "Retry ingestion",
+      "continueInBackground": "Continue in background",
+      "continueHint": "Ingestion will keep running in the background. New mentions will appear automatically.",
+      "sources": "Processed sources: {{processed}} / {{total}}",
+      "sourcesShort": "Sources",
+      "itemsCollected": "Items collected",
+      "itemsSaved": "Saved unique",
+      "itemsDeduplicated": "Duplicates filtered",
+      "stages": {
+        "discovering": "Discovering relevant sources",
+        "crawling": "Crawling {{count}} sources",
+        "analyzing": "Running sentiment + emotion analysis",
+        "finalising": "Finalising"
+      }
     },
     "toasts": {
       "createdAndStarted": "Project created. Topic analysis started in background.",
@@ -1644,13 +1669,16 @@
       "newPassword": "New Password",
       "confirmPassword": "Confirm New Password",
       "passwordsNotMatch": "Passwords do not match",
-      "passwordsMatch": "Passwords match"
+      "passwordsMatch": "Passwords match",
+      "minLength": "Password must be at least 8 characters",
+      "sameAsCurrent": "New password must differ from the current one"
     },
     "sessions": {
       "title": "Active Sessions",
       "description": "Revoke devices you do not trust.",
       "current": "Current",
-      "signOutOthers": "Sign out all other sessions"
+      "signOutOthers": "Sign out all other sessions",
+      "empty": "No active sessions"
     },
     "danger": {
       "title": "Delete Account",
@@ -1666,7 +1694,8 @@
       "saving": "Saving...",
       "updatePassword": "Update Password",
       "updating": "Updating...",
-      "signingOut": "Signing out..."
+      "signingOut": "Signing out...",
+      "signOutSession": "Sign out this session"
     },
     "passwordStrength": {
       "weak": "Weak",

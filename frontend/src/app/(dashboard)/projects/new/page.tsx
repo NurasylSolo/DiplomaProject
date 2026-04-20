@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -16,6 +16,8 @@ import {
   ArrowRight,
   CheckCircle2,
   XCircle,
+  RotateCw,
+  ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -32,7 +34,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useCreateProject, useTranslation } from "@/hooks";
+import {
+  useCreateProject,
+  useRefreshProject,
+  useTranslation,
+} from "@/hooks";
 import { getErrorMessage, tokenManager } from "@/lib/api";
 import { projectsApi, type IngestionJobStatus } from "@/lib/api/services/projects";
 
@@ -65,13 +71,28 @@ const LANGUAGES = [
   { code: "kk", label: "KZ" },
 ];
 
+// After this many milliseconds the optional "Continue in background" button
+// appears. The user can keep waiting (default behaviour) or skip into the
+// project early if ingestion is taking unusually long.
+const SHOW_SKIP_AFTER_MS = 180_000; // 3 minutes
+
+// Polling interval for /ingestion/jobs/{id}.
+const POLL_INTERVAL_MS = 5_000;
+
 export default function NewProjectPage() {
   const router = useRouter();
   const { t, changeLanguage, currentLanguage } = useTranslation();
   const createProjectMutation = useCreateProject();
+  const refreshMutation = useRefreshProject();
+
   const [tracking, setTracking] = useState<{ projectId: string; jobId: string } | null>(null);
   const [jobStatus, setJobStatus] = useState<IngestionJobStatus | null>(null);
   const [redirecting, setRedirecting] = useState(false);
+  // Optional escape hatch — user can keep waiting OR skip after 3 min.
+  const [showSkip, setShowSkip] = useState(false);
+  // Counts consecutive network failures so we can surface a soft warning
+  // without breaking the loop.
+  const [consecutiveErrors, setConsecutiveErrors] = useState(0);
 
   const features = [
     { icon: Search, label: t("newProjectPage.features.search", { defaultValue: "Search across 1000+ news sources" }) },
@@ -99,52 +120,70 @@ export default function NewProjectPage() {
     }
   }, [router]);
 
+  // Polling effect — runs while we have a tracked job. NO hard redirect:
+  // we wait for the backend to report `completed` or `failed`. If the user
+  // wants out earlier they click the optional "Continue in background"
+  // button that appears after SHOW_SKIP_AFTER_MS.
   useEffect(() => {
     if (!tracking) return;
+    setShowSkip(false);
+    setConsecutiveErrors(0);
+
     let cancelled = false;
     let stopped = false;
     let intervalId: number | null = null;
-    let hardRedirectTimeoutId: number | null = null;
+
+    const skipTimeoutId = window.setTimeout(() => {
+      if (!cancelled && !stopped) setShowSkip(true);
+    }, SHOW_SKIP_AFTER_MS);
 
     const poll = async () => {
       if (stopped) return;
       try {
-        const status = await projectsApi.getIngestionJob(tracking.projectId, tracking.jobId);
+        const status = await projectsApi.getIngestionJob(
+          tracking.projectId,
+          tracking.jobId
+        );
         if (cancelled) return;
         setJobStatus(status);
+        setConsecutiveErrors(0);
         if (status.status === "completed") {
           stopped = true;
           if (intervalId !== null) window.clearInterval(intervalId);
           toast.success(t("newProjectPage.toasts.processingCompleted"));
           setRedirecting(true);
-          setTimeout(() => {
+          // Tiny delay so the user sees the 100% bar + checkmark before
+          // the page navigates away.
+          window.setTimeout(() => {
             router.push(`/projects/${tracking.projectId}/mentions`);
-          }, 600);
+          }, 800);
         } else if (status.status === "failed") {
           stopped = true;
           if (intervalId !== null) window.clearInterval(intervalId);
+          // Keep the page on screen so the user can choose Retry or Open
+          // anyway. Toast is informational; full error is rendered in UI.
           toast.error(status.error || t("newProjectPage.toasts.processingFailed"));
-          setRedirecting(false);
         }
       } catch (error) {
         if (cancelled) return;
-        toast.error(getErrorMessage(error));
+        // Soft failure — keep polling. Backend may be slow restarting,
+        // network may flap. Surface a light warning every ~5 errors.
+        setConsecutiveErrors((n) => {
+          const next = n + 1;
+          if (next === 5) {
+            toast.error(getErrorMessage(error));
+          }
+          return next;
+        });
       }
     };
 
     poll();
-    intervalId = window.setInterval(poll, 5000);
-    hardRedirectTimeoutId = window.setTimeout(() => {
-      if (stopped || cancelled) return;
-      stopped = true;
-      if (intervalId !== null) window.clearInterval(intervalId);
-      toast.success(t("newProjectPage.toasts.createdAndStarted"));
-      router.push(`/projects/${tracking.projectId}/mentions`);
-    }, 45_000);
+    intervalId = window.setInterval(poll, POLL_INTERVAL_MS);
     return () => {
       cancelled = true;
       if (intervalId !== null) window.clearInterval(intervalId);
-      if (hardRedirectTimeoutId !== null) window.clearTimeout(hardRedirectTimeoutId);
+      window.clearTimeout(skipTimeoutId);
     };
   }, [tracking, router, t]);
 
@@ -183,10 +222,13 @@ export default function NewProjectPage() {
       },
       {
         onSuccess: async (project) => {
-          toast.success(t("newProjectPage.toasts.createdAndStarted"));
+          // No premature "createdAndStarted" toast — user waits on the
+          // progress screen and only sees "processingCompleted" at the end.
           if (project.ingestionJobId) {
             setTracking({ projectId: project.id, jobId: project.ingestionJobId });
           } else {
+            // Backend didn't enqueue a job (auto_start_ingestion=false?) —
+            // nothing to wait for, just open the project.
             router.push(`/projects/${project.id}/mentions`);
           }
         },
@@ -197,12 +239,64 @@ export default function NewProjectPage() {
     );
   };
 
+  // Manual escape hatch — user clicked "Continue in background"
+  // OR "Open project anyway" after a failure.
+  const handleOpenAnyway = () => {
+    if (!tracking) return;
+    router.push(`/projects/${tracking.projectId}/mentions`);
+  };
+
+  // Trigger a fresh ingestion run on the same project after a failure.
+  const handleRetry = () => {
+    if (!tracking) return;
+    refreshMutation.mutate(tracking.projectId, {
+      onSuccess: (data) => {
+        if (data.ingestionJobId) {
+          // Re-arm the polling effect with the new job id.
+          setJobStatus(null);
+          setTracking({ projectId: tracking.projectId, jobId: data.ingestionJobId });
+        }
+      },
+      onError: (error) => toast.error(getErrorMessage(error)),
+    });
+  };
+
   const isLoading = createProjectMutation.isPending || !!tracking;
   const progressValue = jobStatus?.progress_percent ?? 0;
   const processedSources = jobStatus?.processed_sources ?? 0;
   const totalSources = jobStatus?.total_sources ?? 0;
+  const itemsFetched = jobStatus?.items_fetched ?? 0;
+  const itemsSaved = jobStatus?.items_saved ?? 0;
+  const itemsDeduplicated = jobStatus?.items_deduplicated ?? 0;
   const isCompleted = jobStatus?.status === "completed";
   const isFailed = jobStatus?.status === "failed";
+  const isRetrying = refreshMutation.isPending;
+
+  // Stage label changes depending on progress percent so the user can
+  // see what's actually happening behind the scenes.
+  const stageLabel = useMemo(() => {
+    if (isCompleted) return t("newProjectPage.progress.completed");
+    if (isFailed) return t("newProjectPage.progress.failed");
+    if (progressValue < 15) {
+      return t("newProjectPage.progress.stages.discovering", {
+        defaultValue: "Discovering relevant sources",
+      });
+    }
+    if (progressValue < 60) {
+      return t("newProjectPage.progress.stages.crawling", {
+        defaultValue: "Crawling {{count}} sources",
+        count: totalSources || processedSources || 0,
+      });
+    }
+    if (progressValue < 90) {
+      return t("newProjectPage.progress.stages.analyzing", {
+        defaultValue: "Running sentiment + emotion analysis",
+      });
+    }
+    return t("newProjectPage.progress.stages.finalising", {
+      defaultValue: "Finalising",
+    });
+  }, [isCompleted, isFailed, progressValue, totalSources, processedSources, t]);
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
@@ -304,7 +398,13 @@ export default function NewProjectPage() {
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="mb-6 rounded-xl border border-border/50 p-4 space-y-3 bg-muted/20"
+                    className={`mb-6 rounded-xl border p-5 space-y-4 ${
+                      isFailed
+                        ? "border-destructive/40 bg-destructive/5"
+                        : isCompleted
+                          ? "border-green-500/40 bg-green-500/5"
+                          : "border-border/50 bg-muted/20"
+                    }`}
                   >
                     <div className="flex items-center justify-between text-sm">
                       <span className="font-medium flex items-center gap-2">
@@ -315,33 +415,139 @@ export default function NewProjectPage() {
                         ) : (
                           <Loader2 className="h-4 w-4 animate-spin text-primary" />
                         )}
-                        {t("newProjectPage.progress.title")}
+                        {isFailed
+                          ? t("newProjectPage.progress.errorTitle", {
+                              defaultValue: "Ingestion failed",
+                            })
+                          : t("newProjectPage.progress.title")}
                       </span>
-                      <span className="tabular-nums text-muted-foreground">{progressValue}%</span>
+                      <span className="tabular-nums text-muted-foreground">
+                        {progressValue}%
+                      </span>
                     </div>
+
                     <Progress value={progressValue} />
-                    <p className="text-xs text-muted-foreground">
-                      {t("newProjectPage.progress.sources", {
-                        processed: processedSources,
-                        total: totalSources,
-                      })}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {isCompleted
-                        ? t("newProjectPage.progress.completed")
-                        : isFailed
-                          ? t("newProjectPage.progress.failed")
-                          : t("newProjectPage.progress.running")}
-                    </p>
-                    {(isCompleted || isFailed) && !redirecting && (
-                      <Button
-                        type="button"
-                        variant={isFailed ? "secondary" : "default"}
-                        onClick={() => router.push(`/projects/${tracking.projectId}/mentions`)}
-                        className="w-full"
-                      >
-                        {t("newProjectPage.progress.openProject")}
-                      </Button>
+
+                    {/* Stage label */}
+                    <p className="text-sm font-medium">{stageLabel}</p>
+
+                    {/* Detailed stats — only meaningful while running */}
+                    {!isFailed && (
+                      <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                        <div className="flex items-center justify-between gap-2">
+                          <span>
+                            {t("newProjectPage.progress.sourcesShort", {
+                              defaultValue: "Sources",
+                            })}
+                          </span>
+                          <span className="tabular-nums font-medium text-foreground">
+                            {processedSources} / {totalSources || "?"}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between gap-2">
+                          <span>
+                            {t("newProjectPage.progress.itemsCollected", {
+                              defaultValue: "Items collected",
+                            })}
+                          </span>
+                          <span className="tabular-nums font-medium text-foreground">
+                            {itemsFetched.toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between gap-2">
+                          <span>
+                            {t("newProjectPage.progress.itemsSaved", {
+                              defaultValue: "Saved unique",
+                            })}
+                          </span>
+                          <span className="tabular-nums font-medium text-foreground">
+                            {itemsSaved.toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between gap-2">
+                          <span>
+                            {t("newProjectPage.progress.itemsDeduplicated", {
+                              defaultValue: "Duplicates filtered",
+                            })}
+                          </span>
+                          <span className="tabular-nums font-medium text-foreground">
+                            {itemsDeduplicated.toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Failed: full error message */}
+                    {isFailed && jobStatus?.error && (
+                      <p className="text-xs text-destructive/90 break-words">
+                        {jobStatus.error}
+                      </p>
+                    )}
+
+                    {/* Action row */}
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      {isCompleted && !redirecting && (
+                        <Button
+                          type="button"
+                          onClick={handleOpenAnyway}
+                          className="flex-1"
+                        >
+                          {t("newProjectPage.progress.openProject")}
+                        </Button>
+                      )}
+
+                      {isFailed && (
+                        <>
+                          <Button
+                            type="button"
+                            onClick={handleRetry}
+                            disabled={isRetrying}
+                            className="flex-1"
+                          >
+                            <RotateCw
+                              className={`h-4 w-4 mr-2 ${isRetrying ? "animate-spin" : ""}`}
+                            />
+                            {t("newProjectPage.progress.retry", {
+                              defaultValue: "Retry ingestion",
+                            })}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={handleOpenAnyway}
+                            className="flex-1"
+                          >
+                            <ExternalLink className="h-4 w-4 mr-2" />
+                            {t("newProjectPage.progress.openAnyway", {
+                              defaultValue: "Open project anyway",
+                            })}
+                          </Button>
+                        </>
+                      )}
+
+                      {!isCompleted && !isFailed && showSkip && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleOpenAnyway}
+                          className="flex-1"
+                        >
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          {t("newProjectPage.progress.continueInBackground", {
+                            defaultValue: "Continue in background",
+                          })}
+                        </Button>
+                      )}
+                    </div>
+
+                    {!isCompleted && !isFailed && showSkip && (
+                      <p className="text-[11px] text-muted-foreground">
+                        {t("newProjectPage.progress.continueHint", {
+                          defaultValue:
+                            "Ingestion will keep running in the background. New mentions will appear automatically.",
+                        })}
+                      </p>
                     )}
                   </motion.div>
                 )}
