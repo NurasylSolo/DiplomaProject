@@ -1150,37 +1150,62 @@
   },
   "influencerAnalysis": {
     "title": "Influencer Analysis",
-    "subtitle": "Deep dive into influencer performance",
-    "exportReport": "Export Report",
-    "ranking": "Influencer Ranking",
-    "stats": {
-      "totalInfluencers": "Total Influencers",
-      "avgInfluenceScore": "Avg. Influence Score",
-      "totalReach": "Total Reach",
-      "avgEngagement": "Avg. Engagement"
+    "subtitle": "Deep dive into voices that mention your brand",
+    "ranking": "Top voices",
+    "openSite": "Open site",
+    "actions": {
+      "refresh": "Refresh",
+      "refreshing": "Refreshing…",
+      "exportCsv": "Export CSV"
+    },
+    "kpi": {
+      "totalVoices": "Total voices",
+      "avgScore": "Avg. influence score",
+      "totalReach": "Total reach",
+      "topPlatform": "Top platform"
     },
     "tabs": {
       "overview": "Overview",
-      "posts": "Sample Posts",
+      "recentMentions": "Recent mentions",
       "trends": "Trends"
     },
     "metrics": {
       "mentions": "Mentions",
       "reach": "Reach",
-      "engagement": "Engagement",
+      "shareOfVoice": "Share of voice",
+      "avgSentiment": "Avg. sentiment",
       "positive": "Positive"
     },
+    "trends": {
+      "followers": "Followers (proxy)",
+      "trustScore": "Trust score",
+      "avgEngagement": "Avg. engagement",
+      "lastSeen": "Last seen",
+      "language": "Language",
+      "country": "Country"
+    },
     "charts": {
-      "engagement": "Engagement",
-      "growth": "Growth"
+      "influenceScore": "Top influence score",
+      "platformDistribution": "Mentions by platform",
+      "sentimentMix": "Sentiment mix per voice"
+    },
+    "detail": {
+      "noSelection": "Select a voice from the ranking to see details",
+      "mentionsEmpty": "No recent mentions from this voice"
+    },
+    "empty": {
+      "title": "No voices in this project yet",
+      "body": "Run an ingestion to collect mentions — once any source publishes about your topic it will show up here as a voice.",
+      "ranking": "No voices yet",
+      "charts": "No data to compare yet"
     },
     "sentimentWhenMentioning": "Sentiment when mentioning brand",
-    "noSamplePosts": "No sample posts available",
-    "engagementTrend": "Engagement Trend",
-    "followerGrowth": "Follower Growth",
-    "thisMonth": "+{{value}}% this month",
-    "engagements": "engagements",
-    "followerGrowthComparison": "Follower Growth Comparison"
+    "toasts": {
+      "refreshed": "Refreshed",
+      "refreshFailed": "Failed to refresh",
+      "exported": "Influencers exported as CSV",
+      "noDataExport": "Nothing to export"
+    }
   },
   "hotHours": {
     "title": "Hot Hours",

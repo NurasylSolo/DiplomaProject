@@ -1150,37 +1150,62 @@
   },
   "influencerAnalysis": {
     "title": "Анализ инфлюенсеров",
-    "subtitle": "Глубокий анализ производительности инфлюенсеров",
-    "exportReport": "Экспорт отчёта",
-    "ranking": "Рейтинг инфлюенсеров",
-    "stats": {
-      "totalInfluencers": "Всего инфлюенсеров",
-      "avgInfluenceScore": "Средний индекс влияния",
+    "subtitle": "Глубокий разбор голосов, упоминающих ваш бренд",
+    "ranking": "Топ голосов",
+    "openSite": "Открыть сайт",
+    "actions": {
+      "refresh": "Обновить",
+      "refreshing": "Обновление…",
+      "exportCsv": "Экспорт CSV"
+    },
+    "kpi": {
+      "totalVoices": "Всего голосов",
+      "avgScore": "Средний индекс влияния",
       "totalReach": "Общий охват",
-      "avgEngagement": "Средняя вовлечённость"
+      "topPlatform": "Топ платформа"
     },
     "tabs": {
       "overview": "Обзор",
-      "posts": "Примеры постов",
+      "recentMentions": "Последние упоминания",
       "trends": "Тренды"
     },
     "metrics": {
       "mentions": "Упоминания",
       "reach": "Охват",
-      "engagement": "Вовлечённость",
+      "shareOfVoice": "Доля голоса",
+      "avgSentiment": "Средняя тональность",
       "positive": "Позитив"
     },
+    "trends": {
+      "followers": "Подписчики (прокси)",
+      "trustScore": "Trust score",
+      "avgEngagement": "Средняя вовлечённость",
+      "lastSeen": "Последняя активность",
+      "language": "Язык",
+      "country": "Страна"
+    },
     "charts": {
-      "engagement": "Вовлечённость",
-      "growth": "Рост"
+      "influenceScore": "Топ по индексу влияния",
+      "platformDistribution": "Упоминания по платформам",
+      "sentimentMix": "Тональность по голосам"
+    },
+    "detail": {
+      "noSelection": "Выберите голос из рейтинга, чтобы увидеть детали",
+      "mentionsEmpty": "Нет недавних упоминаний от этого голоса"
+    },
+    "empty": {
+      "title": "В этом проекте пока нет голосов",
+      "body": "Запустите сбор упоминаний — как только источник опубликует материал по вашей теме, он появится здесь.",
+      "ranking": "Голосов пока нет",
+      "charts": "Пока нечего сравнивать"
     },
     "sentimentWhenMentioning": "Тональность при упоминании бренда",
-    "noSamplePosts": "Примеры постов отсутствуют",
-    "engagementTrend": "Тренд вовлечённости",
-    "followerGrowth": "Рост подписчиков",
-    "thisMonth": "+{{value}}% за месяц",
-    "engagements": "взаимодействий",
-    "followerGrowthComparison": "Сравнение роста подписчиков"
+    "toasts": {
+      "refreshed": "Обновлено",
+      "refreshFailed": "Не удалось обновить",
+      "exported": "Инфлюенсеры выгружены в CSV",
+      "noDataExport": "Нечего выгружать"
+    }
   },
   "hotHours": {
     "title": "Горячие часы",

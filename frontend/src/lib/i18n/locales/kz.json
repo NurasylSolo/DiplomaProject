@@ -1150,37 +1150,62 @@
   },
   "influencerAnalysis": {
     "title": "Инфлюенсер талдауы",
-    "subtitle": "Инфлюенсерлердің өнімділігіне терең талдау",
-    "exportReport": "Есепті экспорттау",
-    "ranking": "Инфлюенсер рейтингі",
-    "stats": {
-      "totalInfluencers": "Барлық инфлюенсерлер",
-      "avgInfluenceScore": "Орташа ықпал индексі",
+    "subtitle": "Брендіңізді атайтын дауыстарды терең талдау",
+    "ranking": "Топ дауыстар",
+    "openSite": "Сайтты ашу",
+    "actions": {
+      "refresh": "Жаңарту",
+      "refreshing": "Жаңартылуда…",
+      "exportCsv": "CSV экспорт"
+    },
+    "kpi": {
+      "totalVoices": "Барлық дауыстар",
+      "avgScore": "Орташа ықпал индексі",
       "totalReach": "Жалпы қамту",
-      "avgEngagement": "Орташа белсенділік"
+      "topPlatform": "Топ платформа"
     },
     "tabs": {
       "overview": "Шолу",
-      "posts": "Жазба үлгілері",
+      "recentMentions": "Соңғы атаулар",
       "trends": "Трендтер"
     },
     "metrics": {
       "mentions": "Атаулар",
       "reach": "Қамту",
-      "engagement": "Белсенділік",
+      "shareOfVoice": "Дауыс үлесі",
+      "avgSentiment": "Орташа тональдық",
       "positive": "Оң"
     },
+    "trends": {
+      "followers": "Жазылушылар (прокси)",
+      "trustScore": "Trust score",
+      "avgEngagement": "Орташа белсенділік",
+      "lastSeen": "Соңғы белсенділік",
+      "language": "Тіл",
+      "country": "Ел"
+    },
     "charts": {
-      "engagement": "Белсенділік",
-      "growth": "Өсу"
+      "influenceScore": "Топ ықпал индексі бойынша",
+      "platformDistribution": "Платформалар бойынша атаулар",
+      "sentimentMix": "Дауыстардағы тональдық"
+    },
+    "detail": {
+      "noSelection": "Толық ақпаратты көру үшін рейтингтен дауысты таңдаңыз",
+      "mentionsEmpty": "Бұл дауыстан соңғы атаулар жоқ"
+    },
+    "empty": {
+      "title": "Бұл жобада әзірге дауыстар жоқ",
+      "body": "Атауларды жинауды іске қосыңыз — қандай да бір көз тақырыбыңыз туралы жазғаннан кейін бұл жерде дауыс ретінде көрінеді.",
+      "ranking": "Әзірге дауыстар жоқ",
+      "charts": "Әзірге салыстыруға деректер жоқ"
     },
     "sentimentWhenMentioning": "Брендті атаған кездегі тональдық",
-    "noSamplePosts": "Жазба үлгілері жоқ",
-    "engagementTrend": "Белсенділік үрдісі",
-    "followerGrowth": "Жазылушылар саны өсуі",
-    "thisMonth": "+{{value}}% осы айда",
-    "engagements": "өзара әрекет",
-    "followerGrowthComparison": "Жазылушылар өсуін салыстыру"
+    "toasts": {
+      "refreshed": "Жаңартылды",
+      "refreshFailed": "Жаңарту мүмкін болмады",
+      "exported": "Инфлюенсерлер CSV-ге экспортталды",
+      "noDataExport": "Экспорттайтын ештеңе жоқ"
+    }
   },
   "hotHours": {
     "title": "Ыстық сағаттар",
