@@ -204,7 +204,7 @@ async def backfill_project(
             skipped += 1
             continue
         try:
-            scores = nlp_service.score_emotions_gpt(text)
+            scores = await nlp_service.score_emotions_gpt(text)
         except Exception as exc:
             logger.warning("emotion backfill failed for %s: %s", mention.id, exc)
             scores = nlp_service.emotion_scores(text)

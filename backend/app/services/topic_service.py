@@ -311,19 +311,65 @@ def _topic_text_for_embedding(t: Topic) -> str:
     return " — ".join(p for p in parts if p)
 
 
+# Module-level cache: (topic_id, text_hash) -> embedding. Stops us from
+# calling OpenAI once per (mention, topic) pair during ingestion / bulk
+# reassign — the topic text is identical across all mentions of the same
+# project, so one embedding per topic is enough. ``text_hash`` invalidates
+# the entry as soon as the user renames the topic or edits its keywords.
+_TOPIC_EMB_CACHE: dict[tuple[str, int], list[float]] = {}
+
+
 async def _topic_embedding(t: Topic) -> list[float]:
-    return await embedding_service._embed_with_retry(_topic_text_for_embedding(t))
+    text = _topic_text_for_embedding(t)
+    key = (t.id, hash(text))
+    cached = _TOPIC_EMB_CACHE.get(key)
+    if cached is not None:
+        return cached
+    vec = await embedding_service._embed_with_retry(text)
+    _TOPIC_EMB_CACHE[key] = vec
+    return vec
+
+
+async def _load_topic_embeddings(topics: list[Topic]) -> list[tuple[Topic, list[float]]]:
+    """Resolve embeddings for many topics, using the per-topic cache so a
+    bulk reassign over thousands of mentions only triggers ~``len(topics)``
+    OpenAI calls in total.
+    """
+    out: list[tuple[Topic, list[float]]] = []
+    for t in topics:
+        try:
+            vec = await _topic_embedding(t)
+        except Exception as exc:
+            logger.warning("topic embedding failed for %s: %s", t.id, exc)
+            continue
+        if vec:
+            out.append((t, vec))
+    return out
 
 
 async def assign_to_best_topic(
-    db: AsyncSession, mention: Mention, *, min_similarity: float = 0.3
+    db: AsyncSession,
+    mention: Mention,
+    *,
+    min_similarity: float = 0.3,
+    topic_embeddings: list[tuple[Topic, list[float]]] | None = None,
 ) -> str | None:
     """Pick the topic with highest cosine similarity to this mention's
     embedding. Returns the topic id or None.
+
+    ``topic_embeddings`` lets the caller pre-compute embeddings once and
+    reuse them across many mentions (see :func:`reassign_all_mentions`).
+    When omitted, we fall back to the per-call cache in
+    :func:`_topic_embedding`.
     """
-    topics = await list_topics(db, mention.project_id)
-    if not topics:
+    if topic_embeddings is None:
+        topics = await list_topics(db, mention.project_id)
+        if not topics:
+            return None
+        topic_embeddings = await _load_topic_embeddings(topics)
+    if not topic_embeddings:
         return None
+    topics = [t for t, _ in topic_embeddings]
 
     # Use the existing mention embedding (was just created by ingestion).
     me = (
@@ -337,12 +383,12 @@ async def assign_to_best_topic(
         # Fall back to keyword scoring.
         return _assign_by_keywords(mention, topics)
 
+    me_list = list(me)
     best_id: str | None = None
     best_sim = -1.0
-    for t in topics:
+    for t, t_emb in topic_embeddings:
         try:
-            t_emb = await _topic_embedding(t)
-            sim = vector_service.cosine_similarity(list(me), t_emb)
+            sim = vector_service.cosine_similarity(me_list, t_emb)
         except Exception:
             sim = _keyword_score(mention, t)
         if sim > best_sim:
@@ -395,6 +441,12 @@ async def reassign_all_mentions(
     if total == 0:
         return {"total": 0, "reassigned": 0, "unmatched": 0}
 
+    # Embed every topic ONCE up-front. Without this we'd hit OpenAI
+    # `topics × mentions` times during a reassign — at ~10 topics and
+    # 5000 mentions that's 50k API calls.
+    topics = await list_topics(db, project_id)
+    topic_embeddings = await _load_topic_embeddings(topics) if topics else []
+
     reassigned = 0
     unmatched = 0
     offset = 0
@@ -410,7 +462,9 @@ async def reassign_all_mentions(
         ).scalars().all()
         for m in batch:
             try:
-                tid = await assign_to_best_topic(db, m)
+                tid = await assign_to_best_topic(
+                    db, m, topic_embeddings=topic_embeddings
+                )
             except Exception as exc:
                 logger.warning("reassign failed for %s: %s", m.id, exc)
                 tid = None
@@ -476,11 +530,14 @@ async def auto_discover_topics(
         lines.append(f"- {title} | {snippet}")
     payload = "\n".join(lines)
 
-    from openai import OpenAI
-    client = OpenAI(api_key=api_key)
+    # AsyncOpenAI + bounded retries/timeout so this endpoint never freezes
+    # the event loop (the sync ``OpenAI`` client used to block uvicorn for
+    # the duration of every backoff retry — typically 30s+ on a 429).
+    from openai import AsyncOpenAI
+    client = AsyncOpenAI(api_key=api_key, max_retries=1, timeout=20.0)
 
     try:
-        resp = client.chat.completions.create(
+        resp = await client.chat.completions.create(
             model=settings.OPENAI_CHAT_MODEL or "gpt-4o-mini",
             messages=[
                 {"role": "system", "content": _DISCOVER_SYSTEM_PROMPT},
@@ -593,11 +650,11 @@ async def summarize_topic(
         )
     payload = "\n".join(lines)
 
-    from openai import OpenAI
-    client = OpenAI(api_key=api_key)
+    from openai import AsyncOpenAI
+    client = AsyncOpenAI(api_key=api_key, max_retries=1, timeout=20.0)
 
     try:
-        resp = client.chat.completions.create(
+        resp = await client.chat.completions.create(
             model=settings.OPENAI_CHAT_MODEL or "gpt-4o-mini",
             messages=[
                 {"role": "system", "content": _SUMMARY_SYSTEM_PROMPT},

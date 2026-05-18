@@ -1,80 +1,107 @@
+"""Cross-process progress tracking for ingestion jobs.
+
+Why this is in the database and not in process memory:
+the kafka worker and the FastAPI backend run in different OS processes,
+so an in-memory ``dict`` on the worker side was invisible to the API
+that the frontend polls — the UI saw "0/?" for every job. Persisting
+the counters on the ``crawl_jobs`` row makes the progress visible to
+anyone with DB access (including a future second worker replica or an
+ops dashboard) and survives process restarts.
+
+Each function opens its OWN short-lived ``AsyncSessionLocal`` and
+commits immediately, so progress is observable in real time regardless
+of the long-running ingestion transaction the worker holds open. We
+intentionally swallow errors here — a failed progress update must
+never abort the ingestion that's actively making real progress.
+"""
 from __future__ import annotations
 
-from datetime import datetime, timezone, timedelta
-from threading import Lock
+import logging
+
+from sqlalchemy import update
+
+from app.database import AsyncSessionLocal
+from app.models.crawl_job import CrawlJob
+
+logger = logging.getLogger(__name__)
 
 
-_LOCK = Lock()
-_TTL = timedelta(hours=6)
-_PROGRESS: dict[str, dict] = {}
-
-
-def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
-
-
-def _cleanup() -> None:
-    now = _utcnow()
-    expired = [job_id for job_id, payload in _PROGRESS.items() if (now - payload["updated_at"]) > _TTL]
-    for job_id in expired:
-        _PROGRESS.pop(job_id, None)
-
-
-def start_job(job_id: str, total_sources: int) -> None:
-    with _LOCK:
-        _cleanup()
-        _PROGRESS[job_id] = {
-            "total_sources": max(0, int(total_sources)),
-            "processed_sources": 0,
-            "status": "running",
-            "error": None,
-            "updated_at": _utcnow(),
-        }
-
-
-def advance_job(job_id: str, delta: int = 1) -> None:
-    with _LOCK:
-        payload = _PROGRESS.get(job_id)
-        if not payload:
-            return
-        payload["processed_sources"] = max(0, int(payload["processed_sources"]) + int(delta))
-        payload["updated_at"] = _utcnow()
-
-
-def finish_job(job_id: str, *, failed: bool = False, error: str | None = None) -> None:
-    with _LOCK:
-        payload = _PROGRESS.get(job_id)
-        if not payload:
-            return
-        payload["status"] = "failed" if failed else "completed"
-        if failed:
-            payload["error"] = (error or "")[:2000] or None
-        else:
-            payload["processed_sources"] = max(
-                int(payload["processed_sources"]),
-                int(payload["total_sources"]),
+async def start_job(job_id: str, total_sources: int) -> None:
+    """Mark a job as in-progress with a known ``total_sources``."""
+    try:
+        async with AsyncSessionLocal() as db:
+            await db.execute(
+                update(CrawlJob)
+                .where(CrawlJob.id == job_id)
+                .values(
+                    total_sources=max(0, int(total_sources)),
+                    processed_sources=0,
+                )
             )
-            payload["error"] = None
-        payload["updated_at"] = _utcnow()
+            await db.commit()
+    except Exception as exc:
+        logger.warning("start_job(%s) failed: %s", job_id, exc)
 
 
-def get_job_progress(job_id: str) -> dict | None:
-    with _LOCK:
-        payload = _PROGRESS.get(job_id)
-        if not payload:
-            return None
-        total = int(payload["total_sources"])
-        processed = int(payload["processed_sources"])
-        if payload["status"] == "completed":
-            percent = 100
-        elif total <= 0:
-            percent = 0
-        else:
-            percent = max(0, min(99, int((processed / total) * 100)))
-        return {
-            "total_sources": total,
-            "processed_sources": processed,
-            "progress_percent": percent,
-            "status": payload["status"],
-            "error": payload.get("error"),
-        }
+async def advance_job(job_id: str, delta: int = 1) -> None:
+    """Bump ``processed_sources`` atomically. Uses a SQL expression so
+    concurrent updates from a future multi-worker setup can't race.
+    """
+    try:
+        async with AsyncSessionLocal() as db:
+            await db.execute(
+                update(CrawlJob)
+                .where(CrawlJob.id == job_id)
+                .values(processed_sources=CrawlJob.processed_sources + int(delta))
+            )
+            await db.commit()
+    except Exception as exc:
+        logger.warning("advance_job(%s) failed: %s", job_id, exc)
+
+
+async def finish_job(
+    job_id: str, *, failed: bool = False, error: str | None = None
+) -> None:
+    """Close out the progress counters. On success, set processed=total
+    so the percent computation hits 100. On failure, just record the
+    error — leave the partial progress counters as-is for diagnostics.
+    """
+    try:
+        async with AsyncSessionLocal() as db:
+            if failed:
+                await db.execute(
+                    update(CrawlJob)
+                    .where(CrawlJob.id == job_id)
+                    .values(error=(error or "")[:2000] or None)
+                )
+            else:
+                # Equalise processed_sources to total_sources via SQL so the
+                # update is one round-trip without needing to read first.
+                await db.execute(
+                    update(CrawlJob)
+                    .where(CrawlJob.id == job_id)
+                    .values(
+                        processed_sources=CrawlJob.total_sources,
+                        error=None,
+                    )
+                )
+            await db.commit()
+    except Exception as exc:
+        logger.warning("finish_job(%s) failed: %s", job_id, exc)
+
+
+def progress_percent(job: CrawlJob) -> int:
+    """Compute the percent label the frontend shows. Pure function on
+    a loaded ``CrawlJob`` — no DB access — so the API route can call it
+    on whatever row it already has.
+    """
+    status = job.status
+    total = int(job.total_sources or 0)
+    processed = int(job.processed_sources or 0)
+    if status == "completed":
+        return 100
+    if status == "failed":
+        return 0
+    if total <= 0:
+        return 0
+    return max(0, min(99, int((processed / total) * 100)))

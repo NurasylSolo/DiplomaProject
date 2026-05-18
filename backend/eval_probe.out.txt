@@ -1,0 +1,39 @@
+projects: 24
+mentions: 5625
+crawl_jobs: 822
+completed_jobs: 741
+raw_documents: 7312
+
+-- Top projects by mention count --
+    764  e789863a-f2f2-468a-9285-8d5b3d695807  'Adidas'
+    637  f538a818-a925-40a0-b42f-90e32d463fc6  'Ronaldo'
+    582  000e203e-2db6-45bf-b467-9ab5a92695dd  'Adidas'
+    415  35fb6510-8c87-437b-af23-9a9a86e08b60  'Nike'
+    410  99c12d77-58a8-4275-a669-747e2207b0ac  'Қазақстан'
+    371  8ccc43c4-5594-45ba-84a8-9458ec3a850d  'Астана'
+    309  744ab4f1-4380-4ae6-a39b-6704f1ab53bf  'Samsung Test'
+    300  5ff8f4c1-8bb1-4253-8455-a9241eeaee86  'Арман Царукян'
+    287  ba495c9a-1cb9-464f-91d1-466e6a041faf  'Puma'
+    240  bdab818e-2cd8-4a66-a5c8-311f4546c03f  'Tesla Test'
+
+-- Last 20 completed crawl_jobs --
+  5b093c63-bbf1-4d6c-86b6-c28f57c40e65  proj=99c12d77-58a8-4275-a669-747e2207b0ac  dur=3455.709649s  fetched=110 saved=11 dedup=90
+  c292d917-5cda-424c-b853-8ada29353cfa  proj=ed9e91e6-90d5-4135-8c5d-2b13c5cecbc7  dur=2983.637063s  fetched=64 saved=15 dedup=47
+  a45c0387-de17-49b3-97b9-ffdc61928df5  proj=5ff8f4c1-8bb1-4253-8455-a9241eeaee86  dur=2010.795981s  fetched=26 saved=5 dedup=14
+  a2b76d4c-4540-4064-a3e5-770968b07b3a  proj=2c20536d-a2ca-4928-85dd-e65f67f09654  dur=1778.719004s  fetched=9 saved=5 dedup=0
+  73ae4621-9c6e-414b-91de-9b2b8302cf84  proj=8ccc43c4-5594-45ba-84a8-9458ec3a850d  dur=1668.617383s  fetched=8 saved=1 dedup=0
+  1de920f5-35e7-40cf-9a07-33b6861e930a  proj=25359f40-3e15-4dbf-8f05-fc7550d0d675  dur=1766.781769s  fetched=9 saved=5 dedup=2
+  b7a4d8dc-fb43-4114-9bc6-763e4b94b758  proj=960c88fe-6fcf-491c-9948-405d309a6d2f  dur=1784.220651s  fetched=10 saved=10 dedup=0
+  4c879455-edb4-4059-81f7-2ce0ebf910f0  proj=dcde79d4-215c-4a66-878c-0f8d2c610a30  dur=1780.842145s  fetched=44 saved=5 dedup=30
+  0e55d40a-a85a-45c2-9a73-2b94b42414a3  proj=0bb10d8f-6264-474c-b0d3-a0ac3f9fb4c3  dur=1727.502284s  fetched=8 saved=5 dedup=1
+  12509455-abfb-4646-93d6-3e600dcf6895  proj=9977dd70-b0b6-443b-9f6d-e4f4f82ccf3a  dur=710.014227s  fetched=2 saved=0 dedup=1
+  12ab2783-c16a-450b-9264-d17c611f9fbb  proj=06beb203-96ae-4d67-9d4d-c446d403143b  dur=713.180675s  fetched=10 saved=0 dedup=10
+  b84cfa4f-8ba0-4d4d-8962-b297642d1213  proj=f14e1422-315e-4056-8ce0-77419dacde9b  dur=545.217346s  fetched=25 saved=0 dedup=21
+  d4ef2f4a-426b-4bed-90e8-db775d5117d2  proj=f14e1422-315e-4056-8ce0-77419dacde9b  dur=97.5125s  fetched=29 saved=16 dedup=7
+  ef6def5b-028c-4749-818a-457b0f67168f  proj=ba495c9a-1cb9-464f-91d1-466e6a041faf  dur=1631.469363s  fetched=287 saved=12 dedup=267
+  69b85b3e-2b38-4fb8-ab7f-de0299b0e305  proj=99c12d77-58a8-4275-a669-747e2207b0ac  dur=1404.68988s  fetched=219 saved=9 dedup=209
+  ab5cd3f2-3bc7-4219-801c-0475c9c986cc  proj=717a8289-be5c-4163-b7c4-4fa4429ad084  dur=1088.874529s  fetched=160 saved=2 dedup=158
+  824232a6-ef99-4dd0-ae3c-df03a6341bef  proj=5ff8f4c1-8bb1-4253-8455-a9241eeaee86  dur=1081.253898s  fetched=56 saved=6 dedup=40
+  b4fee4d9-a3d7-4130-b66c-e29d0d950d5c  proj=25359f40-3e15-4dbf-8f05-fc7550d0d675  dur=967.072467s  fetched=23 saved=13 dedup=9
+  84ba04f7-629f-4d3c-8292-216c80146cd9  proj=0bb10d8f-6264-474c-b0d3-a0ac3f9fb4c3  dur=949.840343s  fetched=23 saved=13 dedup=9
+  5cdd1be1-d6f5-45f2-acf9-ab3e7b493186  proj=ed9e91e6-90d5-4135-8c5d-2b13c5cecbc7  dur=835.392138s  fetched=61 saved=3 dedup=57

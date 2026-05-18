@@ -24,28 +24,9 @@ from app.tasks.dispatcher import (
 router = APIRouter()
 
 
-def _job_progress_percent(job) -> int:
-    tracked = job_progress_service.get_job_progress(job.id)
-    if tracked:
-        return int(tracked.get("progress_percent") or 0)
-    if job.status == "completed":
-        return 100
-    if job.status == "failed":
-        return 0
-    return 0
-
-
-def _job_source_progress(job) -> tuple[int, int]:
-    tracked = job_progress_service.get_job_progress(job.id)
-    if tracked:
-        return int(tracked.get("total_sources") or 0), int(tracked.get("processed_sources") or 0)
-    if job.status == "completed":
-        return 0, 0
-    return 0, 0
-
-
 def _job_to_dict(job) -> dict:
-    total_sources, processed_sources = _job_source_progress(job)
+    # Progress is persisted directly on the row by `job_progress_service`
+    # so we just read whatever the worker last committed — no IPC needed.
     return {
         "id": job.id,
         "project_id": job.project_id,
@@ -57,9 +38,9 @@ def _job_to_dict(job) -> dict:
         "items_fetched": job.items_fetched,
         "items_saved": job.items_saved,
         "items_deduplicated": job.items_deduplicated,
-        "total_sources": total_sources,
-        "processed_sources": processed_sources,
-        "progress_percent": _job_progress_percent(job),
+        "total_sources": int(job.total_sources or 0),
+        "processed_sources": int(job.processed_sources or 0),
+        "progress_percent": job_progress_service.progress_percent(job),
         "retry_count": job.retry_count,
         "max_retries": job.max_retries,
         "queue_latency_ms": job.queue_latency_ms,

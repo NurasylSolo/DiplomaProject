@@ -1,0 +1,403 @@
+
+[001] id=a30ff7f9-bb44-4235-8b9c-a0a99243e1d4  lang=ru  model=negative(-0.7)
+  TITLE: Уменьшение пенсии после перерасчета: кто может оказаться в зоне риска
+  SNIPPET: Не упустите шанс: когда сажать огурцы для щедрого урожая - подскажет яблоня Уменьшение пенсии после перерасчета: кто может оказаться в зоне риска Изменения в оплате газа: Нафтогаз предупреждает о новых реквизитах Новая обязанность для автовладельцев: украинцев предупредили об изменениях Удивительное
+
+[002] id=65b91bdf-c5f1-46a2-9ff7-97f5a47c63a4  lang=ru  model=neutral(0.0)
+  TITLE: Мбаппе может прекратить сотрудничество с Nike
+  SNIPPET: Сотрудничество нападающего "Реала" Килиана Мбаппе с Nike может завершиться уже этим летом.  Как сообщает издание Le Parisien, контракт игрока сборной Франции с американским брендом подходит к концу, и на данный момент стороны не близки к продлению соглашения.  Этой ситуацией пытаются воспользоваться
+
+[003] id=a759092d-57d5-4302-8f0a-c5dd5e68bd3b  lang=en  model=negative(-0.7)
+  TITLE: Ex-Adidas exec files lawsuit, claims gender discrimination and retaliation
+  SNIPPET: PORTLAND, Ore. (KOIN) - A former Adidas executive is suing the company, alleging gender discrimination and retaliation.  Lindsay Gregg, who was Adidas' head of women's basketball marketing, is seeking $850,000 in damages, according to a lawsuit filed Monday in Multnomah County, Oregon.  Gregg claime
+
+[004] id=5c997c63-c8a3-46a7-8e08-3be0bdbfa584  lang=en  model=positive(0.9)
+  TITLE: Candace Parker urges WNBA incoming rookies to invest early: "The name of the game is compounding"
+  SNIPPET: WNBA legend Candace Parker has expressed her support for the improved pay that incoming rookies will receive under the newly ratified collective bargaining agreement. She, however, urged them to be prudent in how they use the money they are about to receive, including the possibility of investing it
+
+[005] id=3e62e3bb-7af7-4ddf-abbf-9dd778325a5e  lang=ru  model=positive(0.8)
+  TITLE: Adidas показал 25 выездных комплектов формы для ЧМ-2026 - Антоха, вещай! - Блоги Sports.ru
+  SNIPPET: Смотрим на все по очереди и выбираем своего фаворита в комментариях (если долистаете).  Adidas в очередной раз подтвердил звание королей футбольной экипировки: во-первых, больше половины сборных, представленных (потенциально или фактически) на грядущем ЧМ будут играть в их экипировке, а во-вторых по
+
+[006] id=6f369a8f-9f42-4195-b5bf-83974c75dd07  lang=ru  model=positive(0.8)
+  TITLE: ОФИЦИАЛЬНО. УАФ представила выездную форму сборной Украины
+  SNIPPET: В пятницу, 20 марта, Украинская ассоциация футбола (УАФ) представила новую выездную форму национальной сборной Украины. Об этом сообщила пресс-служба организации:  "Новый дизайн апеллирует к преемственности украинской геральдики - от трезубца Владимира Великого к гербам Василия Кричевского, Николая 
+
+[007] id=bb2f79f3-c1c4-4cc8-bac4-5e1115be8a11  lang=en  model=positive(0.9)
+  TITLE: 9 best duffel bags worth traveling with on your next getaway
+  SNIPPET: A great duffel bag is like a loyal travel companion: always ready, endlessly useful, and surprisingly stylish if you choose right. Whether you're heading to the gym, escaping for a weekend, or navigating multiple layovers, the right duffel makes packing and schlepping dramatically less annoying.  Th
+
+[008] id=65d9dfb8-745a-429d-9f84-090abf1dff41  lang=ru  model=positive(0.6)
+  TITLE: Под крыло к Батьке - Белорусские власти ждут релокантов из России
+  SNIPPET: На рекордные 500% увеличилось в конце марта число интернет-запросов о правилах переезда в Белоруссию. И это, похоже, не просто досужий интерес - белорусские власти уже фиксируют рост спроса на недвижимость со стороны граждан РФ, потирая руки в ожидании российских денег.  "Релокация в Белоруссию", "К
+
+[009] id=2ed47537-211b-4071-b0ea-b37057af72ea  lang=en  model=positive(0.8)
+  TITLE: Manchester Marathon runner's incredible challenge after he's hit by devastating double tragedy
+  SNIPPET: The Manchester Marathon will be one of 26 marathons James will be taking on for The Christie charity
+
+[010] id=e6e2afb8-c7bf-411b-bf2f-7c53c9938f22  lang=en  model=positive(0.9)
+  TITLE: Ice Spice Net Worth 2026: How The Bronx Rap Star Built Her Fortune
+  SNIPPET: Ice Spice didn't just blow up - she turned that moment into serious money. The Bronx rapper, born as Isis Naija Gaston, has gone from releasing tracks on SoundCloud to becoming one of the fastest-rising artists in global hip-hop. And it began with a single viral moment that transformed everything.  
+
+[011] id=91d408ce-e656-452e-a660-10ae9a1bc803  lang=ru  model=positive(0.9)
+  TITLE: Спор высоких достижений // Как Луана Лопес Лара стала самой молодой self-made-миллиардершей
+  SNIPPET: В декабре 2025 года журнал Forbes сообщил, что 29-летняя Луана Лопес Лара стала самым молодым в мире self-made-миллиардером. 8 февраля 2026 года дневной объем торгов ее компании превысил $1 млрд. Луана Лопес Лара — соосновательница и операционный директор ком…
+
+[012] id=6c126260-3ca4-4247-8dc2-73c219656fb0  lang=en  model=positive(0.7)
+  TITLE: My Mom Walked 30 Miles in the Comfy, Cool-Girl Sneakers Amal Clooney, 48, and Jennifer Lawrence, 35, Wear
+  SNIPPET: An InStyle fashion editor's 60-year-old mom swears by the Adidas VL Court 3.0 Sneakers for long days on her feet. Shop the travel-perfect...
+
+[013] id=854c608d-87d3-485e-b5b1-4ddca092312f  lang=en  model=positive(0.8)
+  TITLE: adidas Terrex Shoe Deals: Up to 25% off + extra 25% off in app + free shipping
+  SNIPPET: Apply the promo code "EXCLUSIVE" in the adidas app only to save an extra 25% off around 20 Terrex styles with men's starting at $53 before the discount. We've pictured the adidas Men's Terrex Anylander Hiking Shoes for $53 ($22 off). This deal is for members,…
+
+[014] id=b830f43d-6c82-49e2-8137-1718ed74231d  lang=ru  model=negative(-0.8)
+  TITLE: Стармер обеспокоен концертами Канье Уэста, спонсоры уходят
+  SNIPPET: После выхода его двенадцатого студийного альбома "Bully" американский рэпер и магнит для скандалов Канье "Йе" Уэст был заявлен хедлайнером всех трёх вечеров фестиваля Wireless в лондонском Финсбери-парке этим летом.  Три июльских концерта описываются как трёхдневное путешествие по его "самым культов
+
+[015] id=0a298a2e-f120-4297-9d9a-a56d81641dff  lang=en  model=negative(-0.7)
+  TITLE: Inside Nike's China Problem: The Local View
+  SNIPPET: Hearts on Fire Fetes 'Dream' Collection Launch With Campaign, Just One Eye Event In L.A.  For Nike, the numbers out of China make one thing clear -- the athletic giant still has a lot of ground to recover in its second-largest market that accounts for around 15 percent of global revenue.  In the lat
+
+[016] id=519a8617-e49f-49a4-9143-9322646a9123  lang=en  model=positive(0.7)
+  TITLE: These podiatrist-approved shoe picks go the distance — save up to 73% on Hoka, Skechers, Adidas and more
+  SNIPPET: Right now, we're all heading outside or going on vacation. That means it's time to grab some new kicks. Even if you've got a pair you love,...
+
+[017] id=f51f8ac8-0d9b-41d8-8709-5b9b5c6a4703  lang=ru  model=neutral(0.0)
+  TITLE: Новые условия получения субсидий: украинцам необходимо подать заявление
+  SNIPPET: Новые условия получения субсидий: украинцам необходимо подать заявление Вкусное решение для остатков: как сделать нежные домашние оладьи - оригинальный рецепт Не упустите шанс: когда сажать огурцы для щедрого урожая - подскажет яблоня Уменьшение пенсии после перерасчета: кто может оказаться в зоне р
+
+[018] id=010af569-2ec0-4d91-bf57-af7f9f549fb3  lang=en  model=positive(0.9)
+  TITLE: The best things to do over marathon weekend
+  SNIPPET: ⛽ A free tank of gas was not on our April bingo card. But Jeffrey Glassman Injury Lawyers is covering $7,777 at the pump at John's Gas in Dorchester today at 8 a.m. Drive! Don't walk!  🥳 And happy birthday to B-Side Member Amundam Mancho! We'd gas you up ... but it seems like Jeffrey Glassman's got 
+
+[019] id=b147cc18-c299-49c1-8b8e-be7895297a6f  lang=ru  model=positive(0.7)
+  TITLE: Adidas станет партнером Red Bull
+  SNIPPET: Adidas постепенно осваивает Формулу-1. В прошлом году немецкая компания стала партнером Mercedes, в этом начала сотрудничать с Audi.
+
+[020] id=cdf8425e-a79b-4309-a380-4810fb2f38e4  lang=de  model=neutral(0.0)
+  TITLE: Власти пресекли продажи на Wildberries контрафактной продукции Adidas, Nike и Dr. Martens
+  SNIPPET: Роспотребнадзор выявил производство контрафактной обуви в Дагестане под брендами Adidas, Dr. Martens, Nike и Asics. Предприниматель реализовывал свою продукцию через Wildberries.
+
+[021] id=72546ade-c322-4af9-b12c-55a9454eb130  lang=ru  model=neutral(0.0)
+  TITLE: Где в России купить оригинальные кроссовки Nike и Adidas
+  SNIPPET: Где в России купить оригинальные кроссовки Nike и Adidas · Подделки чаще всего завозятся из Китая и других государств · Маркетплейсы не так...
+
+[022] id=9dfd98a7-36ab-422c-aaa8-9429ee603478  lang=ru  model=positive(0.8)
+  TITLE: Кроссовки снова в моде  --  и теперь они вытесняют балетки
+  SNIPPET: Кроссовки вновь врываются в моду и отвоевывают место в топе трендов.  За последние годы в моде, кажется, только и говорили о том, что кроссовки остались в прошлом. Трендами сезона провозглашали мюли на каблуке, лоферы и, конечно, вездесущие балетки. Но теперь самая удобная обувь в мире готова снова 
+
+[023] id=936e4ac9-db8d-4902-8e32-b9bd28871535  lang=ru  model=positive(0.35)
+  TITLE: Цены на яйца после Пасхи снизились: сколько стоит десяток и где можно купить дешевле
+  SNIPPET: Ожидается новое подорожание продуктов: эксперт озвучил прогнозы Магнитные бури в воскресенье, 19 апреля: стоит ли ожидать ухудшения самочувствия? Цены на яйца после Пасхи снизились: сколько стоит десяток и где можно купить дешевле Перезагрузка смартфонов и iPhone: как часто это нужно делать Изменени
+
+[024] id=e9c27a55-ca21-49b1-aa73-04ce528e41b9  lang=ru  model=neutral(0.0)
+  TITLE: Шахматы, биотехнологии и резинки для волос: во что инвестирует Эрлинг Холанд
+  SNIPPET: Шахматы, биотехнологии и резинки для волос: во что инвестирует Эрлинг Холанд Общая стоимость недвижимости форварда "Манчестер Сити" оценивается более чем в $15 млн  В 2026 г. нападающий "Манчестер Сити" Эрлинг Холанд переживает самый скромный отрезок за время выступлений в Англии: всего пять голов в
+
+[025] id=a91d012d-a0db-43c5-9f9f-9d6c73f296ee  lang=en  model=positive(0.7)
+  TITLE: Base Marketing Lead Sarah Wolf Leaves Coinbase to Head Startup Marketing at Anthropic
+  SNIPPET: Sarah Wolf leaves Coinbase after nearly five years to head startup marketing at Anthropic, shifting from Base Layer 2 builder to Claude's AI.  Sarah Wolf, the marketing lead behind Coinbase's Base Layer 2 network, is departing after nearly five years at the exchange to head startup marketing at AI l
+
+[026] id=52edf1f2-03f2-46ed-82e7-b3d16fdca4f9  lang=ru  model=negative(-0.8)
+  TITLE: Полиция ищет пропавшую школьницу Софию
+  SNIPPET: Сотрудники Южного участка Рижского регионального управления Государственной полиции разыскивают пропавшую без вести Софию Сару Кундецку 2009 года рождения, сообщили порталу в полиции.  16 марта этого года около 15:00 девочка вышла из учебного заведения в Марупском крае, и до настоящего момента ее ме
+
+[027] id=190c6eaa-9049-4ac7-b045-6d6145c72133  lang=en  model=negative(-0.8)
+  TITLE: Nike's China stumble exposes execution gaps
+  SNIPPET: Nike's troubles in China are being laid bare as operational missteps collide with fierce domestic competition and a cooling consumer, revealing execution flaws at the US sportswear giant beyond just a backlash against foreign brands.  Greater China accounts for around 15% of Nike's global revenue an
+
+[028] id=6e6c2b1e-1ee3-467e-a6e4-cacaee9e4649  lang=en  model=positive(0.8)
+  TITLE: These Adidas are made from recycled ocean plastic, and they're the most comfortable running sneakers I've tried
+  SNIPPET: Made out of recycled ocean plastic, the Adidas Ultra Boost X Parley are good for the earth and good for making personal records on the track.
+
+[029] id=9a65b461-2867-42f0-bc8c-e8e72dbfad90  lang=ru  model=neutral(0.0)
+  TITLE: Ушедший из России спортивный бренд решил зарегистрировать товарный знак
+  SNIPPET: Немецкая компания Puma, специализирующаяся на выпуске спортивной обуви, одежды, инвентаря и парфюмерии, подала заявку на регистрацию в России товарного знака с фирменной полоской для обуви. Об этом сообщает ТАСС
+
+[030] id=20add650-9771-4268-b533-09f8d1e44470  lang=en  model=neutral(0.0)
+  TITLE: adidas Men's / Women's Clot Stan Smith by Edison Chen Leather Shoes for $56 + free shipping
+  SNIPPET: Use promo code "MARCH" for this price on this adidas x Edison Chen shoe collab for a $104 savings. adiClub members get free shipping (it's free to join). Deal ends March 30th. Buy Now at adidas
+
+[031] id=180d61fc-2813-4488-85a0-eeacfbe26b81  lang=en  model=positive(0.9)
+  TITLE: Nike And Jordan Brand Just Opened Their New Store In SoHo
+  SNIPPET: Nike and Jordan Brand are officially back in SoHo. The new Nike SoHo store opened at 611 Broadway in New York City on April 16th, 2026. The crowds showed up immediately and resellers were also already lining up outside.  The original Nike SoHo store at 529 Broadway closed on January 10th, 2026, afte
+
+[032] id=13aa4878-d700-4a9b-8dab-da6833713285  lang=en  model=positive(0.8)
+  TITLE: Overview of Segmentation, Market Dynamics, and Competitive Landscape in the Fitness Tracker Market
+  SNIPPET: The fitness tracker market is set for significant expansion over the coming years, driven by technological advancements and growing consumer interest in health and wellness. As wearable technology becomes more sophisticated and integrated with AI, this sector is poised to experience remarkable growt
+
+[033] id=bcf299f2-8909-4ce0-9f13-2e4a078bbcb1  lang=en  model=positive(0.7)
+  TITLE: Over Half (51%) of Consumers Want Promotions That Go Beyond a Basic Discount
+  SNIPPET: But nearly one in three UK consumers cannot recall a single memorable brand promotion - signalling an urgent need for creativity beyond price cuts.
+
+[034] id=39997b4d-1049-423d-b8de-7a9ca4af6f2e  lang=en  model=positive(0.8)
+  TITLE: 8 Chic Sandals And Sneakers From Amazon’s Big Spring Sale To Wear All Summer
+  SNIPPET: As much as I am a boots girl, the renaissance of spring always gets me so excited to slip on some sandals. In fact, I’ve spent way more time than I'd like to admit plotting my footwear plan for a beach trip I have planned this summer. And with Amazon’s Big Sp…
+
+[035] id=dfc1d4f6-a1e2-4b8d-be23-6c7ced6ea4ee  lang=ru  model=neutral(0.0)
+  TITLE: Когда стресс влияет на кожу: болезни, которые он провоцирует, и способы контроля
+  SNIPPET: Когда стресс влияет на кожу: болезни, которые он провоцирует, и способы контроля От шефа до экспериментатора: как ваш знак зодиака влияет на кулинарные навыки Магнитная буря ожидается в пятницу, 17 апреля: прогноз и рекомендации В Украине больше не принимают эти гривны: как обменять старые купюры бе
+
+[036] id=128ffc39-0fee-4fd1-91f2-3749d6ba2ab6  lang=ru  model=positive(0.8)
+  TITLE: Adidas x Vhils x SL Benfica представляют специальный выпуск футболки, посвящённый уличному футболу и стрит-арту
+  SNIPPET: Новости creation : Sport Lisboa e Benfica объявил о своей новой коллаборации с Adidas, стартовавшей 21 февраля под креативным руководством...
+
+[037] id=e5878c48-557b-45f2-a3f4-a3ec00a9ef4a  lang=ru  model=neutral(0.0)
+  TITLE: Сколько на самом деле "живут" консервы: что скрывает срок годности
+  SNIPPET: Сколько на самом деле "живут" консервы: что скрывает срок годности Очистите организм от токсинов: 10 продуктов для улучшения работы печени Не забудьте об этом 17 апреля: великий церковный праздник требует особого шага -- иначе упустите возможность для очищения Как вырастить крупную и ароматную клубн
+
+[038] id=7edfbebc-d416-4146-bd1e-b3996415586a  lang=ru  model=neutral(0.0)
+  TITLE: В субботу волонтеры и полиция будут искать пропавшую Софию - приглашается каждый
+  SNIPPET: В субботу, 21 марта, волонтеры совместно с Государственной полицией и организацией bezvests.lv будут искать пропавшую Софию Сару Кундецку, говорится в сообщении, опубликованном в группе района Биерини в сети Facebook.  Девочка 2009 года рождения 16 марта этого года около 15:00 вышла из учебного заве
+
+[039] id=00aeb515-15ec-400f-9e9f-ea9bd63b0b94  lang=en  model=positive(0.8)
+  TITLE: Amazon Big Spring Sale: Best under-$50 deals our editors could find
+  SNIPPET: BestReviews is reader-supported and may earn an affiliate commission. Details.  Stock up during the Big Spring Sale  It was a bit of a rough winter for most of us, and spring is finally here. Besides spring flowers and warmer weather, there's another reason to look forward to the days ahead -- Amazo
+
+[040] id=4787d549-a47c-4bfe-9d22-3c5c411defff  lang=ru  model=positive(0.8)
+  TITLE: Ротенберг о коллаборации с Putin Team: "Из России сбежали Nike, Adidas, Under Armour, это хорошая новость для нас. Весь мир знает, что такое "Красная машина", спросите у любого канадца, американца"
+  SNIPPET: Роман Ротенберг рассказал о планах по развитию бренда одежды.  Первый вице-президент Федерации хоккея России Роман Ротенберг рассказал о планах по развитию модного бренда.  На шестой Московской неделе моды состоялся показ, ставший анонсом коллаборации хоккейного бренда "Красная машина" и Putin Team 
+
+[041] id=3402a8d5-85d0-4b37-a8a5-0c1b6d033fdb  lang=en  model=positive(0.8)
+  TITLE: adidas Men's GS II SPZL Shoes for $46 + free shipping
+  SNIPPET: Apply promo code "MARCH" to get a massive savings of $84 altogether, on a pair we don't often see discounted much. Plus, adiClub members get free shipping on all orders (it's free to join). Buy Now at adidas
+
+[042] id=7718c20f-04c0-4c6c-ac7c-efbd32daadc8  lang=en  model=neutral(0.0)
+  TITLE: Nike and Adidas Will Battle It Out With Dueling Flagships at Bustling SoHo Intersection
+  SNIPPET: The Swoosh's new home is located directly across the street from Adidas’ massive SoHo flagship on the corner of Broadway and W. Houston Street.
+
+[043] id=15a8cda7-2197-42b2-9a76-2f79ebb523e7  lang=en  model=positive(0.7)
+  TITLE: adidas MLS 25 Club Ball for $8 + free shipping
+  SNIPPET: Get the best price we've seen on the adidas MLS 25 Club Ball at eBay's adidas outlet. It's also a low today by $7. Buy Now at eBay
+
+[044] id=ae952878-0e33-47d5-a979-55f9c56ba0f1  lang=ru  model=positive(0.8)
+  TITLE: Марафон в Сеуле: плоская трасса, кроссовки в стартовом пакете, чокопай на пунктах питания - Все про бег - Блоги Sports.ru
+  SNIPPET: В середине марта в Южной Корее прошел Сеульский марафон - забег, проводящийся с 1931 года, один из старейших в Азии - наравне с японскими экиденами. Марафонская дистанция здесь появилась в 1964-м.  Забег, ставший фундаментом Сеульского международного марафона, основал коллектив корейской газеты Dong
+
+[045] id=8d235d70-03c6-4476-9249-45d5a887d342  lang=ru  model=neutral(0.0)
+  TITLE: Анимешники, лежебоки, националисты: какие молодежные движения живут в китайском интернете
+  SNIPPET: В 2026 году мы все очарованы Китаем: как открытыми для россиян границами, так и Великим Китайским файрволом. Но даже в закрытом интернете живут и расцветают как и свои субкультуры, так и оппозиционные молодежные движения. Рассказываем о некоторых из них.В чем особенность китайского интернета и где ж
+
+[046] id=ed4f5178-57ac-4314-8d00-805343c6287f  lang=et  model=positive(0.7)
+  TITLE: Adidas может стать крупным спонсором Red Bull Racing
+  SNIPPET: Многие годы компания Puma была партнёром и поставщиком команд Формулы 1, но в последнее время их конкуренты из Adidas расширяют свои сферы влияния.
+
+[047] id=73e1adff-f543-4c8f-bfab-5c48f947d555  lang=en  model=positive(0.8)
+  TITLE: Skechers £19 off trainers dubbed 'most comfortable shoes ever' are like 'walking on air'
+  SNIPPET: MandM shoppers are loving a pair of Skechers trainers that's ideal for walking or working all day without discomfort. And not only does it have rave reviews, it's also just been discounted. The Womens Summits Itz Bazik Trainers are now £29.99, down from £48.99 - saving you a big £19. The slip-on mod
+
+[048] id=fad4cda1-bd49-4d43-9992-ed72adb2eff8  lang=ru  model=positive(0.8)
+  TITLE: Рэпер Pharaoh - фанат футбола: топит за "Атлетико", в треках - отсылки на Зидана и "Палермо" - Made in MediaFootball - Блоги Sports.ru
+  SNIPPET: Смолов называл его "Месси из рэпа".  Еще один внезапный фанат футбола - Pharaoh. Популярный рэпер занимался в академии "Динамо" и в 15 лет работал арбитром, а сейчас - дружит со Смоловым и Кержаковым и делает забавные отсылки на футбол в треках.  С 6 до 13 лет Глеб Голубин (настоящее имя) занимался 
+
+[049] id=6445f22c-60d3-429d-b04a-c7f6e20877e8  lang=en  model=negative(-0.7)
+  TITLE: Ex-Adidas exec files lawsuit, claims gender discrimination and retaliation
+  SNIPPET: PORTLAND, Ore. (KOIN) - A former Adidas executive is suing the company, alleging gender discrimination and retaliation.  Lindsay Gregg, who was Adidas' head of women's basketball marketing, is seeking $850,000 in damages, according to a lawsuit filed Monday in Multnomah County, Oregon.  Gregg claime
+
+[050] id=ac33ffc2-aa60-4184-a519-2a78feb166bb  lang=et  model=neutral(0.0)
+  TITLE: Louis Vuitton выпустил сумку в форме садовой лейки за 4800 долларов
+  SNIPPET: Подобные экспериментальные дизайны давно стали частью стиля Louis Vuitton, который регулярно выпускает нестандартные модели и делает ставку на вирусный эффект и внимание публики.
+
+[051] id=0ed4d5f0-5b1a-448f-85bc-5f11cc6b3c6a  lang=en  model=positive(0.8)
+  TITLE: Brawl Stars April 2026 Brawl Talk: Three New Brawlers, Adidas Collab, Game Modes, Bling Rework, Skins, Buffies, and more - GamingonPhone
+  SNIPPET: Brawl Stars April 2026 Brawl Talk: Three New Brawlers, Adidas Collab, Game Modes, Bling Rework, Skins, Buffies, and more GamingonPhone Brawl Talk to announce three new brawlers, fresh Brawl Pass seasons, and more esports.gg
+
+[052] id=58520006-5573-4302-b62b-03972d7d1164  lang=ru  model=positive(0.35)
+  TITLE: В сто раз вкуснее и натуральнее магазинной: готовим сгущенку за 15 минут
+  SNIPPET: Увеличьте урожай яблок: посадите эти восемь растений рядом с яблоней В сто раз вкуснее и натуральнее магазинной: готовим сгущенку за 15 минут Урожай кабачков под угрозой: какие растения могут его уничтожить Перерасчет выплат для работающих пенсионеров: новые зарплаты не всегда учитываются Ожидается 
+
+[053] id=68ab5b15-e254-404c-bea6-ac207c6b32f1  lang=en  model=negative(-0.7)
+  TITLE: Clash of Colors? How USA-Belgium Jersey Combo Caused an Eyesore For Players
+  SNIPPET: Did a clash of jersey colors really contribute to the USA's struggles in the loss to Belgium?
+
+[054] id=eb41407b-0976-4cbe-b9d8-3afcd36983e5  lang=ru  model=neutral(0.0)
+  TITLE: Lamoda прокомментировала аннуляцию сертификатов на ввоз товаров Adidas
+  SNIPPET: Lamoda прокомментировала аннуляцию сертификатов на ввоз товаров Adidas. МОСКВА, 13 февраля. /ТАСС/. Аннуляция сертификатов Lamoda на ввоз...
+
+[055] id=4106e350-d7a5-4ed4-a11f-9a8f5e4a78e4  lang=en  model=neutral(0.0)
+  TITLE: Generation adidas Cup Day 3: Philadelphia & New England U16s top LIGA MX foes
+  SNIPPET: The final day of the weekend also marked the conclusion of group action at the 2026 Generation adidas Cup.
+
+[056] id=bd899c39-7e61-44d9-aa99-375b2395b195  lang=en  model=neutral(0.0)
+  TITLE: Why the Dragons will overlook the most obvious replacement for Shane Flanagan
+  SNIPPET: Dean Young will need a significant change of heart from elements of the St George Illawarra board if he is any hope of being the next full-time coach of the Dragons - assuming Shane Flanagan can't produce a miracle and hang on to his job.  Young is an assistant coach at the Dragons, but is behind th
+
+[057] id=4550d926-018d-4b6f-806a-06c10d1543fe  lang=ru  model=positive(0.8)
+  TITLE: Названы модные мужские кроссовки в этом году
+  SNIPPET: От ультраспортивных вариантов, которые прописались в повседневном гардеробе, до городской базы.  Рынок разделился на два равнозначных лагеря.  Кроссовки стали индикатором осведомлённости в трендах, финансовой дисциплины (умение копить на качественную пару) и даже политических взглядов (экологичные м
+
+[058] id=4d1430ec-5add-4e50-8b05-4e55be4fef9f  lang=en  model=positive(0.8)
+  TITLE: I did a speedrun through Under Armour's innovation labs to learn how a marathon supershoe crosses the finish line
+  SNIPPET: Baltimore speaks before anyone at Under Armour gets to say a word.  Driving along the seams of the Baltimore Peninsula, the city does what it does so well, giving off stubborn grit and industrial sprawl. Pulling off I-95, freight trucks, not tour buses, share the road with me. Like much of the city,
+
+[059] id=99c6323f-1084-4bf8-8162-c816e86d1f7d  lang=en  model=positive(0.8)
+  TITLE: adidas' Chocolate-Coated Spezial Is Playing Samba Dress-Up
+  SNIPPET: The adidas Handball Spezial arrives in a rich brown leather colorway with white Three Stripes and gold foil detailing.
+
+[060] id=d586e42e-57c6-4f22-8d1c-b3a4af5974d7  lang=en  model=positive(0.7)
+  TITLE: One of Pharrell Williams’ Very First Sneakers From the 2000s Is Making a Comeback
+  SNIPPET: Pharrell's Ice Cream x Reebok Board Flip is coming back with the first wide release of the chunky skate shoe since its original run in 2005. Find out how to buy the sneaker here.
+
+[061] id=caff2c98-ceb0-4cfa-96ef-5d1f99ccb05b  lang=en  model=neutral(0.0)
+  TITLE: NKE Stock at $46 - Fallen Giant or the Contrarian Opportunity of 2026?
+  SNIPPET: Tim Cook, the CEO of Apple and a board member of Nike, paid slightly more than $42 for Nike shares on April 10. Elliott Hill, the CEO of Nike, followed suit three days later. One million dollars. same range of prices. The same battered stock is close to a twelve-year low. When two of the most closel
+
+[062] id=66b47622-f875-4896-869d-5f8721ba0c38  lang=en  model=positive(0.85)
+  TITLE: ‘Football is a priority’: How Adidas built its biggest and best NFL rookie class ever
+  SNIPPET: PORTLAND, Ore. — Inside a building on the campus of Adidas North America headquarters one afternoon in mid-March, an elevator door opened to the sight of a pink fluorescent glow behind an illuminated, eight-word sentence mounted on the wall. The sign, in all …
+
+[063] id=e833a6ab-5d27-454a-ba1f-5398730a7c97  lang=ru  model=neutral(0.0)
+  TITLE: Беженка о жизни в Италии  --  что удивило мать троих детей за границей
+  SNIPPET: Оксана Ващенко после начала полномасштабного вторжения живет и работает в Италии. Украинка завела свой блог в социальных сетях, где рассказывает об отношениях, адаптации и поиске новых возможностей.  Оксана признается, что приехала в Италию из Киева 6 марта 2022 года, -- сразу после начала большой в
+
+[064] id=a2c0944d-c89d-4590-984c-aff9efa5d689  lang=ru  model=negative(-0.7)
+  TITLE: Американские зумеры влюбились в Китай. Как лживый Голливуд проиграл борьбу за умы молодежи
+  SNIPPET: Если кратко, то Chinamaxxing -- это новое лицо китайской "мягкой силы". Термин образован от слов China (Китай) и суффикса "-maxxing", который в интернет-сленге означает стремление к максимальному улучшению какой-либо сферы жизни. Forbes и другие издания пишут, что ленты соцсетей американской молодеж
+
+[065] id=5c1a8052-2f19-4c51-9b8e-da1353ee71c6  lang=ru  model=neutral(0.0)
+  TITLE: Гонщиков «Формулы 1» сравнили с бродягами из-за новой формы от Adidas
+  SNIPPET: Новую коллаборацию Adidas Y-3 и команды «Формулы 1» Mercedes AMG Petronas высмеяли в соцсетях. Подробности о коллекции публикует портал Sneaker Freaker
+
+[066] id=6816c7f5-1996-46eb-aa6d-adc1d9801590  lang=ru  model=positive(0.8)
+  TITLE: Роман Ротенберг: "Коллекцию одежды Putin Team и "Красной машины" покажут на Московской неделе моды. Будем лучше Nike и Adidas - эти бренды ушли из России, слава богу"
+  SNIPPET: Роман Ротенберг: показ коллекции Putin Team состоится на Московской неделе моды.  Вице-президент Федерации хоккея России (ФХР) Роман Ротенберг рассказал о коллаборации брендов одежды Putin Team и "Красная машина".  - Будут ли еще какие-то новые проекты?  - Да, хорошие новости. Уже 19 марта на Москов
+
+[067] id=0cf7e499-23bf-4296-a84a-aec014540f87  lang=en  model=negative(-0.7)
+  TITLE: Ex-Adidas exec files lawsuit, claims gender discrimination and retaliation
+  SNIPPET: PORTLAND, Ore. (KOIN) - A former Adidas executive is suing the company, alleging gender discrimination and retaliation.  Lindsay Gregg, who was Adidas' head of women's basketball marketing, is seeking $850,000 in damages, according to a lawsuit filed Monday in Multnomah County, Oregon.  Gregg claime
+
+[068] id=abd46dc4-8631-4971-922d-b48b626839bd  lang=ru  model=neutral(0.0)
+  TITLE: Ротенберг о «Красной машине»: «В Таиланде планируется открытие школы. В России регионы просят помочь — мы занимаемся, но не можем охватить всех сразу»
+  SNIPPET: Вице-президент Федерации хоккея России (ФХР) Роман Ротенберг рассказал о развитии сети хоккейных школ под брендом «Красная машина».
+
+[069] id=e384bb85-54c6-4c8b-a345-b742368c16dd  lang=en  model=positive(0.8)
+  TITLE: Gout sets sights on Lyles race as sub-10 run eludes him
+  SNIPPET: Add Yahoo as a preferred source to see more of our stories on Google.  Gout Gout insists a sub-10 run will come soon as he sets his sights on racing against reigning Olympic 100m champion and US superstar Noah Lyles.  Gout ran 10.21 (+0.3 m/s ) in the U20s final of the 100m at the Australian Athleti
+
+[070] id=71c54429-b25d-4951-8a55-8a502ef63403  lang=ru  model=neutral(0.0)
+  TITLE: В Украине больше не принимают эти гривны: как обменять старые купюры без потерь
+  SNIPPET: В Украине больше не принимают эти гривны: как обменять старые купюры без потерь Безопасно ли есть хлеб после истечения срока годности: что не говорят производители Простая привычка с заметным эффектом: ученые нашли способ защитить мозг от деменции Цены на лекарства в Украине: что ожидает пациентов? 
+
+[071] id=c98ed3a4-84da-4bca-99e6-83c38a0a877e  lang=en  model=positive(0.8)
+  TITLE: adidas Collaborations Archive Deals: Up to 45% off + extra 30% off + free shipping
+  SNIPPET: Promo code "MARCH" takes an extra 30% off most styles in this collection, in addition to base discounts of up to 45% off. Pictured is the addias Men's Equipment Predator Run Shoes for $67.20 after the coupon code (reduced from $160). adidas adiClub members ge…
+
+[072] id=d1c16e04-b05a-447f-8350-c7a7ac4e726d  lang=en  model=neutral(0.1)
+  TITLE: Adidas opens global media account for review
+  SNIPPET: "Adidas is reportedly reviewing its global media mandate, with multiple agency executives, cited in the report, confirming the development. The account is currently held by EssenceMediacom, part of WPP, which has managed the business since 2018. The agency inherited the mandate after the merger of M
+
+[073] id=792b75ec-bf21-4d1e-95dd-b52d4ac1bd7f  lang=ru  model=neutral(0.0)
+  TITLE: Подразделение Adidas в РФ заработало 2,2 млрд ₽ в 2025-м — но доход обеспечили не продажи, а проценты по вкладам
+  SNIPPET: Российская компания, управляющая брендом Adidas — ООО «Адидас» — впервые за три года вышла в плюс: в прошлом году заработала 2,2 млрд рублей, сообщает «Коммерсант». В 2024-м компания сообщала об убытке в 49,9 млн рублей. При этом компания не возобновляла продажи в России — вся прибыль получена от
+
+[074] id=ab694ab7-699b-4b21-a162-ce6b5f81240a  lang=ru  model=negative(-0.8)
+  TITLE: В Британии усиливается критика Канье Уэста, фестиваль за него
+  SNIPPET: Организатор фестиваля Wireless отстоял приглашение Канье Уэста хедлайнером, хотя спонсоры по примеру Pepsi и Diageo уходят; остаётся вопрос, пустят ли скандального рэпера в Великобританию.  Британский фестиваль Wireless оказался под сильнейшим давлением из-за приглашения Канье Ye Уэста, и волна возм
+
+[075] id=2554c268-5baf-4d7a-bdb8-8a231e43619b  lang=en  model=neutral(0.0)
+  TITLE: Ex-Adidas exec files lawsuit, claims gender discrimination and retaliation
+  SNIPPET: PORTLAND, Ore. (KOIN) - A former Adidas executive is suing the company, alleging gender discrimination and retaliation.  Lindsay Gregg, who was Adidas' head of women's basketball marketing, is seeking $850,000 in damages, according to a lawsuit filed Monday in Multnomah County, Oregon.  Gregg claime
+
+[076] id=cac76d80-c4da-40ed-95f1-792a72367002  lang=ru  model=positive(0.8)
+  TITLE: Adidas получил более 2 млрд рублей прибыли в России
+  SNIPPET: Российское юрлицо Adidas — ООО «Адидас» — по итогам 2025 года получило прибыль в размере 2,2 млрд руб. против убытка 49,9 млн руб. годом...
+
+[077] id=597c34aa-c595-4f58-946c-348b058bd2f7  lang=ru  model=neutral(0.0)
+  TITLE: Сборная Украины столкнулась с неудачей перед матчем со Швецией
+  SNIPPET: Изменения коснулись игровой формы  Накануне полуфинала плей-офф отборочного турнира ЧМ-2026 между Украиной и Швецией возникла неожиданная ситуация с выбором формы. Обе сборные планировали сыграть в синем комплекте, однако преимущество получили скандинавы.  Матч состоится в Валенсии, где номинальными
+
+[078] id=6c2e6ae2-4269-4f4b-93d2-b107f4e2f0f8  lang=ru  model=neutral(0.0)
+  TITLE: Прогноз магнитной бури на четверг, 16 апреля
+  SNIPPET: Пенсионный фонд Украины: изменения в среднем размере пенсий в 2026 году Прогноз магнитной бури на четверг, 16 апреля Приняты новые правила подтверждения стажа в Украине Пенсионерка, работающая на пенсии, обязана вернуть часть выплат - подробности дела Кроссовки Adidas: история, технологии Эффективны
+
+[079] id=51bb4af3-fa47-41e4-9898-d4820b45d473  lang=en  model=negative(-0.7)
+  TITLE: Nike Pulls Controversial Boston Marathon Ad Amid Inclusivity Debate - News Directory 3
+  SNIPPET: By Thursday morning, the ad had been taken down, leaving a visible gap in the multi-window display at the Nike store.  Nike removed a controversial advertisement from its Boston store after facing criticism for a slogan perceived as alienating walkers participating in the marathon.  The advertisemen
+
+[080] id=de15a731-3fde-4785-8918-8cdbaf6eedee  lang=en  model=positive(0.8)
+  TITLE: USD 383 approves 5-year athletics agreement with Adidas
+  SNIPPET: Manhattan High School athletes will receive a significant upgrade to their uniforms next year thanks to a five-year athletic apparel...
+
+[081] id=136cc50c-db77-433c-8505-1da53299a344  lang=ru  model=positive(0.8)
+  TITLE: Модные мужские кроссовки  --  2026: обзор тенденций, популярные модели, цены
+  SNIPPET: "Мужская мода 2026 года окончательно закрепила кроссовки в статусе главного обувного тренда. Сегодня они -- универсальный инструмент, позволяющий чувствовать себя уверенно в любом контексте: от университетской аудитории до свидания, от прогулки по городу до путешествия".  Рынок разделился на два рав
+
+[082] id=9745d953-456a-41fb-afcf-410d0170ee17  lang=en  model=positive(0.8)
+  TITLE: EuroLeague Final Four Athens Phase 4 ticket sales open Monday
+  SNIPPET: The fourth and final public ticket sales phase for the 2026 EuroLeague Final Four Athens, presented by Etihad  By Johnny Askounis/ info@eurohoops.net  Euroleague Basketball has officially confirmed that the fourth and final public phase of ticket sales for the 2026 EuroLeague Final Four Athens, pres
+
+[083] id=45d76263-4739-4cc2-b15d-2a66257e6688  lang=en  model=positive(0.7)
+  TITLE: adidas Men's Three-Stripes Tiro Cargo Pants for $18 + free shipping w/ $39
+  SNIPPET: Get these adidas cargo pants at an $11 low in Blue. You can also get it in Black for a few bucks more. Star Rewards members get free shipping with orders of $39 or more (it's free to join). Pickup is also available. Buy Now at Macy's
+
+[084] id=b41e0c2c-9ab4-446f-8f28-7ed6607e3e06  lang=ru  model=neutral(0.0)
+  TITLE: Ротенберг об одежде Putin Team и «Красной машины»: «В хоккее есть две ценные вещи — победа и командность. Эти ценности хотим доносить до людей не только через спорт, но и через
+  SNIPPET: Первый вице-президент Федерации хоккея России Роман Ротенберг высказался об анонсе коллекции «Красной Машины» и Putin Team Russia.
+
+[085] id=c20483bb-806f-448b-90b1-431d3a910455  lang=ru  model=neutral(0.0)
+  TITLE: Редкий выход: Милу Кунис запечатлели с дочерью на футбольном матче
+  SNIPPET: На выходных Кунис посетила вместе с 14-летней дочерью Уайатт, а также с мужем Эштоном Кутчером турнир Fanatics Flag Football Classic, проходившем на стадионе BMO Stadium 21 марта 2026 года в Лос-Анджелесе.  Мать и дочь засняли фотографы на трибунах. Мила была в белой топе и джинсовом комбинезоне, ее
+
+[086] id=b2a3fd26-4548-4b1b-a5ed-1ebe57ade30a  lang=en  model=positive(0.7)
+  TITLE: The sluggish start, the wave, and the win: Why Gout Gout started celebrating before the finish line
+  SNIPPET: This may not have been the day Gout Gout entered rarefied air, but he has declared breaking the 10-second barrier was a milestone he would soon achieve, as he revealed he would soon embark for the US for the chance to challenge American sprinter Noah Lyles.  Gout delivered a lavish wave to the Brisb
+
+[087] id=b6ec5dc4-9444-4318-a8dc-e9531f65a75b  lang=en  model=positive(0.8)
+  TITLE: Kohl's Spring Savings Event Men's Clearance: Up to 85% off + Extra 15% off + free shipping w/ $49
+  SNIPPET: Kohl's is offering discounts on thousands of men's items from brands including Nike, Levi's, adidas, and more. The pictured Tek Gear Men's Ultra Soft Open Hem Fleece Pants are priced from $15 after the coupon, which is $10 off. You'll get $10 in Kohl's Cash f…
+
+[088] id=e3a96f7f-bcb8-4aaa-9d3e-cea1979d92d8  lang=ru  model=positive(0.35)
+  TITLE: Увеличьте урожай яблок: посадите эти восемь растений рядом с яблоней
+  SNIPPET: Увеличьте урожай яблок: посадите эти восемь растений рядом с яблоней В сто раз вкуснее и натуральнее магазинной: готовим сгущенку за 15 минут Урожай кабачков под угрозой: какие растения могут его уничтожить Перерасчет выплат для работающих пенсионеров: новые зарплаты не всегда учитываются Ожидается 
+
+[089] id=31808950-a4b1-440c-b579-8c333198c14b  lang=en  model=positive(0.8)
+  TITLE: Bluefish Raises $43M to Help Brands Show Up in ChatGPT, Rufus, and Others
+  SNIPPET: Series B brings total funding to $68 million as brands rethink AI visibility.
+
+[090] id=b0b3e4f5-f45e-4824-8600-d51934177eb0  lang=en  model=neutral(0.0)
+  TITLE: Inside the Obsessive Race to Make a Four-Ounce Running Shoe
+  SNIPPET: When super shoes debuted a decade ago, their chunky soles and springy inside plates revolutionized the world of running. The ginormous, springy footwear helped athletes slash marathon times and spurred a wild arms race to make them even better.  The latest wrinkle in super shoes, however, is invisib
+
+[091] id=0e42272d-ec83-4083-b9a2-f73a321ba08e  lang=en  model=positive(0.7)
+  TITLE: European Stocks Close On Strong Note After Iran Opens Strait Of Hormuz For Commercial Traffic
+  SNIPPET: (RTTNews) - European stocks closed on a strong note on Friday, buoyed by news that Iran has declared the Strait of Hormuz completely open to commercial traffic on the heels of the 10-day ceasefire between Israel and Lebanon.  U.S. President Donald Trump said in a post on Truth Social that the Strait
+
+[092] id=eba72656-3287-483e-a428-c4d4c2d124c6  lang=en  model=positive(0.7)
+  TITLE: Wales Bonner’s Hand-Woven Sandal Is the Wildest adidas Yet
+  SNIPPET: You've seen adidas x Wales Bonner Sambas. But you've never seen a wild adidas x Wales Bonner Karintha sneaker-sandal handwoven in Brazil.
+
+[093] id=73a8baa7-4df6-4b76-8d1c-23afe062906c  lang=ru  model=neutral(0.0)
+  TITLE: Названы самые популярные у россиян кроссовки
+  SNIPPET: Аналитики сервиса доставки товаров из-за рубежа CDEK.Shopping назвали самые популярные у россиян кроссовки в 2026 году. Материал приводит "Газета.Ru".  Специалисты изучили заказы за первые месяцы текущего года и выяснили, что на вершине рейтинга вновь оказалась обувь американского бренда Nike. На вт
+
+[094] id=944bf0e0-2853-4c23-a234-c7b48ba63757  lang=en  model=positive(0.9)
+  TITLE: Best deals under $50 for Amazon's Big Spring Sale
+  SNIPPET: Amazon's Big Spring Sale is the time to shop for everything from beauty essentials and kitchen appliances to DIY tools and tech gadgets.  There are plenty of big-ticket items with nice discounts, but if you're looking for a handful of more affordable items, we've rounded up the best ones with discou
+
+[095] id=fa4c0223-6d0c-46d9-bd88-323bb1df3d5f  lang=en  model=positive(0.6)
+  TITLE: adidas (ETR:ADS) Trading Up 1.4% – Should You Buy?
+  SNIPPET: adidas AG (ETR:ADS – Get Free Report) shares were up 1.4% on Wednesday . The stock traded as high as €138.30 and last traded at €137.90. Approximately 637,277 shares traded hands during mid-day trading, The stock had previously closed at €136.00. adidas Price Performance The company has a current ra
+
+[096] id=3479e56c-919a-45ed-83e1-8870a4011507  lang=en  model=positive(0.8)
+  TITLE: Kentucky target Tyran Stokes wins MVP of Jordan Brand Classic
+  SNIPPET: As if he didn't need another reason to prove he is the best player in the 2026 recruiting class, Tyran Stokes absolutely dominated the Jordan Brand Classic game on Friday night. The Kentucky target scored 29 points, grabbed nine rebounds, dished out a game-high seven assists, and came away with anot
+
+[097] id=a44c9072-a054-499c-846a-7505d68f91bd  lang=en  model=negative(-0.7)
+  TITLE: Nike Removes 'Walkers Tolerated' Boston Marathon Ad After Criticism for Alienation
+  SNIPPET: Teyana Taylor in Calvin Klein, Naomi Watts in Taller Marmo and More Looks at the 2026 Tiffany Blue Book Gala  Nike loves to engage in ambush marketing, and for several years now it's plastered ads across the cities where World Marathon Majors are being held and sponsored by a competing brand. But in
+
+[098] id=abbf53d4-6ee0-40e0-b5e1-53ad22703d09  lang=ru  model=positive(0.8)
+  TITLE: Ямаль приехал в сборную в новом деркзом образе. Кроссовки из коллаборации с Янг Тагом - FC Barcelona - Блоги Sports.ru
+  SNIPPET: Ламин Ямаль приехал в расположение сборной Испании и снова оказался в центре внимания - на этот раз из за стиля.  Игрок "Барселоны" показал новые кроссовки SP5DER x Adidas F50 Formotion - яркое сочетание футбола и уличной моды. SP5DER - бренд рэпера Young Thug, известный смелым дизайном и влиянием х
+
+[099] id=8f55ccea-f953-4666-af62-57ccfb2ace01  lang=en  model=positive(0.7)
+  TITLE: adidas men Essentials Fleece Hoodie (Grey: 2XL) $15 + Free Shipping
+  SNIPPET: adidas via eBay has adidas men Essentials Fleece Hoodie (Grey: 2XL) on sale for *$15*. Shipping is free.    https://www.ebay.com/itm/157836138190
+
+[100] id=ef14b29c-bed8-4a35-86e0-9a762746bdc9  lang=ru  model=positive(0.8)
+  TITLE: ФОТО. Ламин Ямаль поразил стильным образом в сборной Испании
+  SNIPPET: Вингер "Барселоны" Ламин Ямаль привлек внимание не только игрой, но и ярким образом по прибытии в лагерь сборной Испании.  18-летний талант представил бутсы SP5DER x Adidas F50 Formotion - сочетание стритвира и профессионального дизайна. Бренд SP5DER основан рэпером Young Thug и известен смелым стил
+
+
+Total rows: 100

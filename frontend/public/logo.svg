@@ -1,0 +1,24 @@
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="oklch(0.70 0.15 195)" />
+      <stop offset="50%" stop-color="oklch(0.65 0.17 180)" />
+      <stop offset="100%" stop-color="oklch(0.75 0.14 75)" />
+    </linearGradient>
+    <linearGradient id="pulseGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="oklch(0.70 0.15 195 / 0.3)" />
+      <stop offset="100%" stop-color="oklch(0.75 0.14 75 / 0.1)" />
+    </linearGradient>
+  </defs>
+
+  <circle cx="24" cy="24" r="22" fill="url(#pulseGradient)" />
+  <circle cx="24" cy="24" r="20" fill="url(#logoGradient)" />
+
+  <path d="M16 30C16 30 19 26 24 26C29 26 32 22 32 18"
+        stroke="white" stroke-width="3" stroke-linecap="round" fill="none" />
+  <path d="M16 18C16 18 19 22 24 22C29 22 32 26 32 30"
+        stroke="white" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.6" />
+
+  <circle cx="16" cy="18" r="2" fill="white" />
+  <circle cx="32" cy="30" r="2" fill="white" />
+</svg>

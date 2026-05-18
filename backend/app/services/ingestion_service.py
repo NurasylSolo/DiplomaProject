@@ -613,11 +613,16 @@ async def run_project_ingestion(
             + len(EVENT_REGISTRY_LANGUAGES)
             + len(WORLD_NEWS_VARIANTS)
         )
-        job_progress_service.start_job(job.id, total_sources=total_steps)
+        await job_progress_service.start_job(job.id, total_sources=total_steps)
 
         fetched_total = 0
         saved_total = 0
         dedup_total = 0
+
+        # Mentions saved in the current provider step that still need an
+        # embedding + topic assignment. Drained between providers so one
+        # OpenAI batch request covers the whole step.
+        pending_post: list[Mention] = []
 
         async def _safe_process(article: dict) -> tuple[bool, bool]:
             """Wrap _process_article so a single bad article never aborts the job.
@@ -627,7 +632,8 @@ async def run_project_ingestion(
             """
             try:
                 return await _process_article(
-                    db=db, project=project, article=article, search_terms=all_terms_lower
+                    db=db, project=project, article=article,
+                    search_terms=all_terms_lower, pending_post=pending_post,
                 )
             except Exception as exc:
                 logger.warning(
@@ -640,6 +646,25 @@ async def run_project_ingestion(
                     pass
                 return False, False
 
+        async def _flush_pending_post() -> None:
+            """Embed and topic-assign the mentions queued by the last
+            provider step. Best-effort: any failure is logged and ignored."""
+            if not pending_post:
+                return
+            from app.services import embedding_service, topic_service
+            try:
+                await embedding_service.embed_and_store_mentions_batch(db, pending_post)
+            except Exception as exc:
+                logger.warning("batched embedding flush failed: %s", exc)
+            for m in pending_post:
+                try:
+                    topic_id = await topic_service.assign_to_best_topic(db, m)
+                    if topic_id:
+                        m.topic_id = topic_id
+                except Exception as exc:
+                    logger.warning("topic auto-assignment failed for %s: %s", m.id, exc)
+            pending_post.clear()
+
         async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
             for lang in NEWS_API_LANGUAGES:
                 articles = await _fetch_newsapi(client, query=search_query, language=lang)
@@ -650,7 +675,8 @@ async def run_project_ingestion(
                         dedup_total += 1
                     if created:
                         saved_total += 1
-                job_progress_service.advance_job(job.id, delta=1)
+                await _flush_pending_post()
+                await job_progress_service.advance_job(job.id, delta=1)
                 await db.flush()
 
             for serp_lang in SERP_LANGUAGES:
@@ -662,7 +688,8 @@ async def run_project_ingestion(
                         dedup_total += 1
                     if created:
                         saved_total += 1
-                job_progress_service.advance_job(job.id, delta=1)
+                await _flush_pending_post()
+                await job_progress_service.advance_job(job.id, delta=1)
                 await db.flush()
 
             for nd_lang in NEWSDATA_LANGUAGES:
@@ -674,7 +701,8 @@ async def run_project_ingestion(
                         dedup_total += 1
                     if created:
                         saved_total += 1
-                job_progress_service.advance_job(job.id, delta=1)
+                await _flush_pending_post()
+                await job_progress_service.advance_job(job.id, delta=1)
                 await db.flush()
 
             for er_lang in EVENT_REGISTRY_LANGUAGES:
@@ -686,7 +714,8 @@ async def run_project_ingestion(
                         dedup_total += 1
                     if created:
                         saved_total += 1
-                job_progress_service.advance_job(job.id, delta=1)
+                await _flush_pending_post()
+                await job_progress_service.advance_job(job.id, delta=1)
                 await db.flush()
 
             for wn_variant in WORLD_NEWS_VARIANTS:
@@ -698,32 +727,53 @@ async def run_project_ingestion(
                         dedup_total += 1
                     if created:
                         saved_total += 1
-                job_progress_service.advance_job(job.id, delta=1)
+                await _flush_pending_post()
+                await job_progress_service.advance_job(job.id, delta=1)
                 await db.flush()
 
-        job.items_fetched = fetched_total
-        job.items_saved = saved_total
-        job.items_deduplicated = dedup_total
         await recompute_project_metrics(db=db, project_id=project_id)
 
+        # Commit outer transaction BEFORE the AI/insights step so the
+        # mentions are visible to readers (frontend, RAG retrieval) even
+        # if insight generation later fails or times out. Without this,
+        # everything would stay in an uncommitted transaction until the
+        # very end of _local_refresh, which delays visibility by minutes.
+        await db.commit()
+
         # Auto-generate AI insights from the freshly ingested data.
-        # This is best-effort: if it fails (no OpenAI key, GPT timeout, etc.)
-        # we just log a warning and finish the ingestion job successfully.
+        # Best-effort with a hard time cap inside the service itself.
         try:
             from app.services import insight_service  # local import to avoid cycles
             await insight_service.generate_insights_for_project(db, project_id)
+            await db.commit()
         except Exception as exc:
             logger.warning("Insight auto-generation skipped: %s", exc)
+            try:
+                await db.rollback()
+            except Exception:
+                pass
 
-        await _mark_job_completed(job)
-        job_progress_service.finish_job(job.id, failed=False)
-        await db.flush()
+        await _finalize_job(
+            job.id,
+            started_at=job.started_at,
+            failed=False,
+            items_fetched=fetched_total,
+            items_saved=saved_total,
+            items_deduplicated=dedup_total,
+        )
+        await job_progress_service.finish_job(job.id, failed=False)
         return job
     except Exception as exc:
-        job.error = str(exc)[:2000]
-        await _mark_job_failed(job)
-        job_progress_service.finish_job(job.id, failed=True, error=str(exc))
-        await db.flush()
+        await _finalize_job(
+            job.id,
+            started_at=getattr(job, "started_at", None),
+            failed=True,
+            items_fetched=fetched_total,
+            items_saved=saved_total,
+            items_deduplicated=dedup_total,
+            error=str(exc),
+        )
+        await job_progress_service.finish_job(job.id, failed=True, error=str(exc))
         raise
 
 
@@ -769,7 +819,7 @@ async def analyze_mention(
     # the rule-based scorer if OpenAI is unavailable, so we never block
     # a re-analyse on a flaky network.
     try:
-        mention.emotions = nlp_service.score_emotions_gpt(text)
+        mention.emotions = await nlp_service.score_emotions_gpt(text)
     except Exception as exc:
         logger.warning("emotion scoring failed for mention %s: %s", mention.id, exc)
         mention.emotions = nlp_service.emotion_scores(text)
@@ -841,6 +891,7 @@ async def _process_article(
     project: Project,
     article: dict,
     search_terms: list[str] | None = None,
+    pending_post: list[Mention] | None = None,
 ) -> tuple[bool, bool]:
     """Process a single article: dedup, NLP analysis, save as mention.
 
@@ -951,12 +1002,9 @@ async def _process_article(
 
     full_text = f"{title}\n{body}".strip()
     language = nlp_service.detect_language(full_text, fallback="en")
-    sentiment_label, sentiment_score = nlp_service.score_sentiment_gpt(full_text)
-    try:
-        emotions = nlp_service.score_emotions_gpt(full_text)
-    except Exception as exc:
-        logger.warning("emotion scoring failed during ingest: %s", exc)
-        emotions = nlp_service.emotion_scores(full_text)
+    sentiment_label, sentiment_score, emotions = (
+        await nlp_service.score_sentiment_and_emotions_gpt(full_text)
+    )
     entities = nlp_service.extract_entities(full_text)
 
     proj_settings = dict(project.settings or {})
@@ -1014,21 +1062,25 @@ async def _process_article(
     db.add(mention)
     await db.flush()  # need mention.id for embedding + topic assignment
 
-    # Best-effort: persist embedding + auto-assign best topic. Both are
-    # wrapped in try/except so a failure here never aborts ingestion.
-    try:
-        from app.services import embedding_service
-        await embedding_service.embed_and_store_mention(db, mention)
-    except Exception as exc:
-        logger.warning("embed_and_store_mention failed for %s: %s", mention.id, exc)
+    if pending_post is not None:
+        # Defer embedding + topic assignment to the batch flush — one OpenAI
+        # request will cover this whole chunk instead of one per article.
+        pending_post.append(mention)
+    else:
+        # Legacy per-article path (kept for callers that don't batch).
+        try:
+            from app.services import embedding_service
+            await embedding_service.embed_and_store_mention(db, mention)
+        except Exception as exc:
+            logger.warning("embed_and_store_mention failed for %s: %s", mention.id, exc)
 
-    try:
-        from app.services import topic_service
-        topic_id = await topic_service.assign_to_best_topic(db, mention)
-        if topic_id:
-            mention.topic_id = topic_id
-    except Exception as exc:
-        logger.warning("topic auto-assignment failed for %s: %s", mention.id, exc)
+        try:
+            from app.services import topic_service
+            topic_id = await topic_service.assign_to_best_topic(db, mention)
+            if topic_id:
+                mention.topic_id = topic_id
+        except Exception as exc:
+            logger.warning("topic auto-assignment failed for %s: %s", mention.id, exc)
 
     return False, True
 
@@ -1314,29 +1366,78 @@ def _guess_country(language: str) -> str:
 
 
 async def _mark_job_running(db: AsyncSession, crawl_job_id: str) -> CrawlJob:
+    """Mark the job ``running`` in a short-lived OWN session.
+
+    Critical for cross-process progress visibility: if we just did
+    ``job.status = "running"; await db.flush()`` inside the long-running
+    outer ingestion session, the row-lock on this ``crawl_jobs`` row
+    would be held for the duration of the entire ingestion (minutes).
+    Every other writer — frontend status reads, job_progress_service
+    UPDATEs, scheduler checks — would block until ingestion finishes.
+
+    By opening a separate ``AsyncSessionLocal`` and committing right
+    away, the lock is released immediately and the new status is visible
+    to other processes instantly. We then re-fetch the row in the OUTER
+    session so the caller can read its attributes (without mutating).
+    """
+    from app.database import AsyncSessionLocal as _Session
+    async with _Session() as own_db:
+        job = (
+            await own_db.execute(select(CrawlJob).where(CrawlJob.id == crawl_job_id))
+        ).scalar_one_or_none()
+        if not job:
+            raise ValueError(f"Crawl job not found: {crawl_job_id}")
+        job.status = "running"
+        job.started_at = _utcnow()
+        job.error = None
+        await own_db.commit()
+
     job = (
         await db.execute(select(CrawlJob).where(CrawlJob.id == crawl_job_id))
     ).scalar_one_or_none()
-    if not job:
-        raise ValueError(f"Crawl job not found: {crawl_job_id}")
-    job.status = "running"
-    job.started_at = _utcnow()
-    job.error = None
-    await db.flush()
     return job
 
 
-async def _mark_job_completed(job: CrawlJob) -> None:
-    now = _utcnow()
-    job.status = "completed"
-    job.finished_at = now
-    if job.started_at:
-        job.duration_ms = max(0, int((now - job.started_at).total_seconds() * 1000))
+async def _finalize_job(
+    job_id: str,
+    *,
+    started_at: datetime | None,
+    failed: bool,
+    items_fetched: int,
+    items_saved: int,
+    items_deduplicated: int,
+    error: str | None = None,
+) -> None:
+    """Persist final job counters + status in a SHORT short-lived session.
 
+    The outer ``run_project_ingestion`` transaction MUST NOT mutate or
+    flush the ``crawl_jobs`` row, otherwise it would hold a row-lock for
+    the entire ingestion (minutes) and this UPDATE — issued from a
+    different connection — would block until the outer txn commits.
 
-async def _mark_job_failed(job: CrawlJob) -> None:
+    By passing primitives instead of an ORM ``CrawlJob`` instance we
+    guarantee no SQLAlchemy identity-map collision with the outer
+    session and no stray ``UPDATE crawl_jobs`` from a future flush.
+    """
+    from sqlalchemy import update as _update
+    from app.database import AsyncSessionLocal as _Session
     now = _utcnow()
-    job.status = "failed"
-    job.finished_at = now
-    if job.started_at:
-        job.duration_ms = max(0, int((now - job.started_at).total_seconds() * 1000))
+    duration_ms = max(0, int((now - started_at).total_seconds() * 1000)) if started_at else 0
+    try:
+        async with _Session() as own_db:
+            await own_db.execute(
+                _update(CrawlJob)
+                .where(CrawlJob.id == job_id)
+                .values(
+                    status="failed" if failed else "completed",
+                    items_fetched=int(items_fetched or 0),
+                    items_saved=int(items_saved or 0),
+                    items_deduplicated=int(items_deduplicated or 0),
+                    finished_at=now,
+                    duration_ms=duration_ms,
+                    error=(error or "")[:2000] or None if failed else None,
+                )
+            )
+            await own_db.commit()
+    except Exception as exc:
+        logger.warning("finalize_job(%s) failed: %s", job_id, exc)

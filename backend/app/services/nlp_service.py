@@ -160,7 +160,7 @@ _SENTIMENT_PROMPT = (
 )
 
 
-def score_sentiment_gpt(text: str) -> tuple[str, float]:
+async def score_sentiment_gpt(text: str) -> tuple[str, float]:
     """GPT-based sentiment scoring with safe fallback to rule-based.
 
     Returns (label, score), where score is in [-1, 1]. If OPENAI_API_KEY is
@@ -175,15 +175,15 @@ def score_sentiment_gpt(text: str) -> tuple[str, float]:
         return score_sentiment(sample)
 
     try:
-        from openai import OpenAI
+        from openai import AsyncOpenAI
 
-        client = OpenAI(api_key=api_key)
+        client = AsyncOpenAI(api_key=api_key)
         # Sentiment scoring uses a cheap fast model regardless of the chat
         # model — quality of "positive/neutral/negative" doesn't justify gpt-4o
         # cost on every ingested article. Configurable via OPENAI_CHAT_MODEL
         # if the operator wants the same model everywhere.
         sentiment_model = settings.OPENAI_CHAT_MODEL or "gpt-4o-mini"
-        response = client.chat.completions.create(
+        response = await client.chat.completions.create(
             model=sentiment_model,
             messages=[
                 {"role": "system", "content": _SENTIMENT_PROMPT},
@@ -239,7 +239,81 @@ _EMOTIONS_PROMPT = (
 )
 
 
-def score_emotions_gpt(text: str) -> dict[str, float]:
+_SENTIMENT_AND_EMOTIONS_PROMPT = (
+    "You are a multilingual news analyst. For the given article (title + body) "
+    "produce BOTH overall sentiment AND Plutchik's 8 primary emotions in a "
+    "single response. Reply with STRICT JSON only, this exact schema and no "
+    "other text:\n"
+    '{"sentiment": {"label": "positive"|"neutral"|"negative", '
+    '"score": number_between_-1_and_1}, '
+    '"emotions": {"joy": 0.0, "trust": 0.0, "fear": 0.0, "surprise": 0.0, '
+    '"sadness": 0.0, "disgust": 0.0, "anger": 0.0, "anticipation": 0.0}}\n'
+    "Sentiment score is in [-1, 1] (negative..positive). Each emotion is in "
+    "[0, 1] (0 = absent, 1 = overwhelming); multiple may be high. Match the "
+    "article's language; schema keys stay in English."
+)
+
+
+async def score_sentiment_and_emotions_gpt(
+    text: str,
+) -> tuple[str, float, dict[str, float]]:
+    """Single GPT call that returns BOTH sentiment and emotions.
+
+    Halves the per-article OpenAI cost vs. calling ``score_sentiment_gpt`` and
+    ``score_emotions_gpt`` separately. Falls back to the rule-based scorers
+    for both fields if the API key is missing or the call fails.
+    """
+    sample = (text or "").strip()
+    if not sample:
+        return "neutral", 0.0, _empty_emotion_scores()
+
+    api_key = (settings.OPENAI_API_KEY or "").strip()
+    if not api_key:
+        label, score = score_sentiment(sample)
+        return label, score, emotion_scores(sample)
+
+    try:
+        from openai import AsyncOpenAI
+
+        client = AsyncOpenAI(api_key=api_key)
+        model = settings.OPENAI_CHAT_MODEL or "gpt-4o-mini"
+        response = await client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": _SENTIMENT_AND_EMOTIONS_PROMPT},
+                {"role": "user", "content": sample[:4000]},
+            ],
+            temperature=0.0,
+            max_tokens=200,
+            response_format={"type": "json_object"},
+        )
+        content = (response.choices[0].message.content or "").strip()
+        data = json.loads(content)
+
+        sent = data.get("sentiment") or {}
+        label = str(sent.get("label") or "neutral").strip().lower()
+        if label not in {"positive", "neutral", "negative"}:
+            label = "neutral"
+        try:
+            score = float(sent.get("score", 0.0))
+        except (TypeError, ValueError):
+            score = 0.0
+        score = max(-1.0, min(1.0, score))
+        if -0.1 <= score <= 0.1 and label != "neutral":
+            label = "neutral"
+
+        emotions = _normalise_emotion_dict(data.get("emotions"))
+        return label, round(score, 3), emotions
+    except Exception as exc:
+        logger.warning(
+            "GPT combined sentiment+emotions failed, falling back to rule-based: %s",
+            exc,
+        )
+        label, score = score_sentiment(sample)
+        return label, score, emotion_scores(sample)
+
+
+async def score_emotions_gpt(text: str) -> dict[str, float]:
     """GPT classification of all 8 Plutchik emotions for a single text.
 
     - Returns a stable 8-key dict of floats in ``[0, 1]``.
@@ -258,11 +332,11 @@ def score_emotions_gpt(text: str) -> dict[str, float]:
         return emotion_scores(sample)
 
     try:
-        from openai import OpenAI
+        from openai import AsyncOpenAI
 
-        client = OpenAI(api_key=api_key)
+        client = AsyncOpenAI(api_key=api_key)
         emo_model = settings.OPENAI_CHAT_MODEL or "gpt-4o-mini"
-        response = client.chat.completions.create(
+        response = await client.chat.completions.create(
             model=emo_model,
             messages=[
                 {"role": "system", "content": _EMOTIONS_PROMPT},

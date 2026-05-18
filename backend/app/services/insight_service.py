@@ -6,6 +6,7 @@ rule-based generation when OpenAI is not available.
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from typing import Any
@@ -21,6 +22,14 @@ from sqlalchemy import func
 
 
 logger = logging.getLogger(__name__)
+
+# Hard ceiling on how long the GPT call may block the ingestion pipeline.
+# When OpenAI is rate-limited / unreachable, its SDK retries with exponential
+# backoff and can stretch a single call to a minute or more. We don't want
+# that to delay the visible "completed" status of an ingestion job, so we
+# fail fast and let the caller fall back to deterministic rule-based
+# insights — they're already implemented and look identical from the UI.
+_INSIGHT_GPT_TIMEOUT_SECONDS = 25.0
 
 
 # ---------------------------------------------------------------------------
@@ -352,7 +361,19 @@ def _rule_based_insights(snapshot: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 async def _generate_with_gpt(snapshot: dict[str, Any]) -> list[dict[str, Any]] | None:
-    """Call GPT to generate insights. Returns None on any failure."""
+    """Call GPT to generate insights. Returns None on any failure.
+
+    Uses ``AsyncOpenAI`` so the call does NOT block the event loop —
+    previously this used the sync ``OpenAI`` client, which froze the
+    entire uvicorn/worker process during retries (a 429 burst could
+    pause ingestion for a minute or more). Now the call is awaited and
+    the outer ``asyncio.wait_for`` in :func:`generate_insights_for_project`
+    bounds the total time spent here.
+
+    We also explicitly cap ``max_retries=1`` and ``timeout=15`` on the
+    SDK so a transient quota error fails quickly rather than triggering
+    the default exponential-backoff loop.
+    """
     api_key = (settings.OPENAI_API_KEY or "").strip()
     if not api_key:
         return None
@@ -362,12 +383,12 @@ async def _generate_with_gpt(snapshot: dict[str, Any]) -> list[dict[str, Any]] |
     }
 
     try:
-        from openai import OpenAI
+        from openai import AsyncOpenAI
 
-        client = OpenAI(api_key=api_key)
+        client = AsyncOpenAI(api_key=api_key, max_retries=1, timeout=15.0)
         payload = json.dumps(snapshot, ensure_ascii=False, default=str)
         insight_model = settings.OPENAI_CHAT_MODEL or "gpt-4o-mini"
-        response = client.chat.completions.create(
+        response = await client.chat.completions.create(
             model=insight_model,
             messages=[
                 {"role": "system", "content": _GENERATION_SYSTEM_PROMPT},
@@ -426,7 +447,21 @@ async def generate_insights_for_project(
         )
         return [placeholder]
 
-    raw_insights = await _generate_with_gpt(snapshot)
+    # Hard time cap. If GPT (or the network, or asyncpg in _collect_…)
+    # takes longer than this, ingestion would visibly stall in "running"
+    # state. Falling back to rule-based insights keeps the UX snappy and
+    # the user still gets meaningful insights (sentiment trend, top
+    # source, anomaly spikes, etc.).
+    raw_insights: list[dict[str, Any]] | None = None
+    try:
+        raw_insights = await asyncio.wait_for(
+            _generate_with_gpt(snapshot), timeout=_INSIGHT_GPT_TIMEOUT_SECONDS
+        )
+    except asyncio.TimeoutError:
+        logger.warning(
+            "insight generation timed out after %.0fs — using rule-based fallback",
+            _INSIGHT_GPT_TIMEOUT_SECONDS,
+        )
     if not raw_insights:
         raw_insights = _rule_based_insights(snapshot)
 

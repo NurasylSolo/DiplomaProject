@@ -319,10 +319,25 @@ async def get_topics_data(
     date_from: str | None = None,
     date_to: str | None = None,
 ) -> list:
-    result = await db.execute(
-        select(Topic).where(Topic.project_id == project_id).order_by(Topic.created_at.desc())
-    )
-    topics = result.scalars().all()
+    """Return per-topic aggregates (mentions, reach, sentiment split, SoV)
+    for the project's topics over the optional date window.
+
+    Implementation: three queries total, regardless of how many topics
+    the project has —
+      1. list of Topic rows (for name / description / created_at metadata),
+      2. total mentions in the window (for share-of-voice denominator),
+      3. one ``GROUP BY topic_id`` over ``mentions`` with conditional
+         aggregates (``COUNT(*) FILTER (WHERE sentiment_label = ...)``).
+    Previously this was ``2 + 5N`` queries — at 50 topics that's 252
+    round-trips per Analysis page load.
+    """
+    topic_rows = (
+        await db.execute(
+            select(Topic)
+            .where(Topic.project_id == project_id)
+            .order_by(Topic.created_at.desc())
+        )
+    ).scalars().all()
 
     total_q = await db.execute(
         _date_window(
@@ -331,66 +346,55 @@ async def get_topics_data(
             date_to,
         )
     )
-    total_mentions = total_q.scalar() or 1
+    # Keep the previous semantics: when there are no mentions, divide by 1
+    # to avoid ZeroDivisionError in share-of-voice. The actual displayed
+    # SoV will still be 0% because every topic's mentions_count is also 0.
+    total_mentions = int(total_q.scalar() or 0) or 1
 
-    topics_data = []
-    for topic in topics:
-        count_q = await db.execute(
-            _date_window(
-                select(func.count(Mention.id)).where(Mention.topic_id == topic.id),
-                date_from,
-                date_to,
-            )
+    agg_q = (
+        select(
+            Mention.topic_id.label("topic_id"),
+            func.count(Mention.id).label("mentions_count"),
+            func.coalesce(func.sum(Mention.reach), 0).label("reach"),
+            func.count(Mention.id)
+                .filter(Mention.sentiment_label == "positive")
+                .label("positive"),
+            func.count(Mention.id)
+                .filter(Mention.sentiment_label == "neutral")
+                .label("neutral"),
+            func.count(Mention.id)
+                .filter(Mention.sentiment_label == "negative")
+                .label("negative"),
         )
-        mentions_count = count_q.scalar() or 0
+        .where(
+            Mention.project_id == project_id,
+            Mention.topic_id.is_not(None),
+        )
+        .group_by(Mention.topic_id)
+    )
+    agg_q = _date_window(agg_q, date_from, date_to)
+    agg_rows = (await db.execute(agg_q)).all()
 
-        reach_q = await db.execute(
-            _date_window(
-                select(func.coalesce(func.sum(Mention.reach), 0)).where(Mention.topic_id == topic.id),
-                date_from,
-                date_to,
-            )
-        )
-        reach = reach_q.scalar() or 0
-
-        # Sentiment distribution computed on-the-fly so date filter applies.
-        pos_q = await db.execute(
-            _date_window(
-                select(func.count(Mention.id)).where(
-                    Mention.topic_id == topic.id,
-                    Mention.sentiment_label == "positive",
-                ),
-                date_from,
-                date_to,
-            )
-        )
-        neu_q = await db.execute(
-            _date_window(
-                select(func.count(Mention.id)).where(
-                    Mention.topic_id == topic.id,
-                    Mention.sentiment_label == "neutral",
-                ),
-                date_from,
-                date_to,
-            )
-        )
-        neg_q = await db.execute(
-            _date_window(
-                select(func.count(Mention.id)).where(
-                    Mention.topic_id == topic.id,
-                    Mention.sentiment_label == "negative",
-                ),
-                date_from,
-                date_to,
-            )
-        )
-
-        sentiment_distribution = {
-            "positive": int(pos_q.scalar() or 0),
-            "neutral": int(neu_q.scalar() or 0),
-            "negative": int(neg_q.scalar() or 0),
+    # Map topic_id -> aggregates. Topics with no mentions in the window
+    # simply won't appear here and get zero-filled below.
+    agg_by_topic: dict[str, dict] = {
+        r.topic_id: {
+            "mentions_count": int(r.mentions_count or 0),
+            "reach": int(r.reach or 0),
+            "positive": int(r.positive or 0),
+            "neutral": int(r.neutral or 0),
+            "negative": int(r.negative or 0),
         }
+        for r in agg_rows
+    }
 
+    topics_data: list[dict] = []
+    for topic in topic_rows:
+        agg = agg_by_topic.get(
+            topic.id,
+            {"mentions_count": 0, "reach": 0, "positive": 0, "neutral": 0, "negative": 0},
+        )
+        mentions_count = agg["mentions_count"]
         topics_data.append({
             "id": topic.id,
             "project_id": topic.project_id,
@@ -398,9 +402,17 @@ async def get_topics_data(
             "description": topic.description,
             "parent_topic_id": topic.parent_topic_id,
             "mentions_count": mentions_count,
-            "reach": reach,
-            "share_of_voice": round((mentions_count / total_mentions) * 100, 1) if total_mentions else 0.0,
-            "sentiment_distribution": sentiment_distribution,
+            "reach": agg["reach"],
+            "share_of_voice": (
+                round((mentions_count / total_mentions) * 100, 1)
+                if total_mentions
+                else 0.0
+            ),
+            "sentiment_distribution": {
+                "positive": agg["positive"],
+                "neutral": agg["neutral"],
+                "negative": agg["negative"],
+            },
             "trend": [],
             "created_at": topic.created_at.isoformat() if topic.created_at else "",
         })

@@ -3,6 +3,7 @@ uvicorn[standard]
 sqlalchemy[asyncio]
 asyncpg
 alembic
+pgvector
 pydantic
 pydantic-settings
 python-jose[cryptography]
