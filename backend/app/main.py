@@ -18,6 +18,20 @@ from app.tasks.scheduler import build_scheduler
 async def lifespan(app: FastAPI):
     if settings.SENTRY_DSN:
         sentry_sdk.init(dsn=settings.SENTRY_DSN, traces_sample_rate=0.1)
+
+    # Close out ingestion jobs orphaned by a previous restart/crash so the
+    # frontend never spins forever on a job that no process is executing.
+    try:
+        from app.services import job_progress_service
+        reset_count = await job_progress_service.reset_stale_jobs()
+        if reset_count:
+            import logging
+            logging.getLogger("uvicorn.error").info(
+                "Reset %d orphaned ingestion job(s) on startup", reset_count
+            )
+    except Exception:
+        pass
+
     scheduler = None
     if settings.SCHEDULER_ENABLED:
         scheduler = build_scheduler()

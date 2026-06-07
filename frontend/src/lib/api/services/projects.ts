@@ -31,6 +31,7 @@ export interface IngestionJobStatus {
   items_fetched: number;
   items_saved: number;
   items_deduplicated: number;
+  current_stage?: string | null;
   error?: string | null;
 }
 

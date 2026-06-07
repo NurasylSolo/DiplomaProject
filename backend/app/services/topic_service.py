@@ -550,7 +550,17 @@ async def auto_discover_topics(
         content = (resp.choices[0].message.content or "").strip()
         parsed = json.loads(content)
     except Exception as exc:
+        # Unlike summarize_topic, we can't degrade auto-discovery to a
+        # rule-based path meaningfully — clustering 80 news articles into
+        # 5-10 named topics requires the LLM. Surface a user-friendly
+        # message instead of the raw 429.
         logger.warning("auto_discover_topics GPT failed: %s", exc)
+        if _is_quota_error(exc):
+            raise BadRequestError(
+                "AI topic discovery is unavailable: OpenAI quota exhausted. "
+                "Top up at platform.openai.com/account/billing, then retry. "
+                "You can still create topics manually from the Topics page."
+            )
         raise BadRequestError(f"AI topic discovery failed: {exc}")
 
     # Accept either {"topics": [...]} or a bare list under common keys.
@@ -622,14 +632,101 @@ _SUMMARY_SYSTEM_PROMPT = (
 )
 
 
+def _rule_based_topic_summary(topic: Topic, mentions: list[Mention]) -> dict:
+    """Deterministic fallback used when GPT is unavailable (quota / network).
+
+    Builds a markdown summary from the same data GPT would have seen:
+    sentiment split, top sources by mention count, top mentions by reach.
+    The 5 mentions with the highest reach are returned as citations so
+    the UI still has clickable evidence chips.
+    """
+    pos = sum(1 for m in mentions if m.sentiment_label == "positive")
+    neu = sum(1 for m in mentions if m.sentiment_label == "neutral")
+    neg = sum(1 for m in mentions if m.sentiment_label == "negative")
+    total = len(mentions)
+
+    # top sources by mention count for this topic slice.
+    # NOTE: we use the URL's domain instead of m.source.name to avoid a
+    # lazy-load on the source relation — get_topic_mentions doesn't
+    # joinedload it, and lazy load inside an async session raises
+    # ``MissingGreenlet``.
+    from urllib.parse import urlparse
+    src_counts: dict[str, int] = {}
+    for m in mentions:
+        try:
+            host = (urlparse(m.url or "").netloc or "unknown").lower()
+        except Exception:
+            host = "unknown"
+        if host.startswith("www."):
+            host = host[4:]
+        src_counts[host] = src_counts.get(host, 0) + 1
+    top_sources = sorted(src_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+
+    # top mentions by reach, used both for citations and the "notable" list
+    top_by_reach = sorted(mentions, key=lambda m: int(m.reach or 0), reverse=True)[:5]
+
+    def _pct(n: int) -> str:
+        return f"{round(n / total * 100, 1)}%" if total else "0%"
+
+    bullets: list[str] = []
+    bullets.append(
+        f"**Sentiment overview** — {pos} positive ({_pct(pos)}), "
+        f"{neu} neutral ({_pct(neu)}), {neg} negative ({_pct(neg)}) "
+        f"across {total} mentions."
+    )
+    if top_sources:
+        sources_str = ", ".join(f"{name} ({c})" for name, c in top_sources)
+        bullets.append(f"**Top sources** — {sources_str}.")
+    if top_by_reach:
+        # Each notable mention gets a [m:id] citation tag the frontend already
+        # knows how to render as a chip.
+        notable = "; ".join(
+            f"{(m.title or '(no title)')[:90]} [m:{m.id}]"
+            for m in top_by_reach[:3]
+        )
+        bullets.append(f"**Notable mentions** — {notable}.")
+    if neg > pos * 1.5 and total >= 5:
+        bullets.append(
+            "**Recommended action** — negative coverage is notably above "
+            "positive; review the top negative mentions and consider a response."
+        )
+    elif pos > neg * 2 and total >= 5:
+        bullets.append(
+            "**Recommended action** — coverage is mostly positive; consider "
+            "amplifying the top sources for further reach."
+        )
+
+    summary = "\n\n".join(f"- {b}" for b in bullets)
+    summary = (
+        "_AI summary unavailable (OpenAI quota / network). "
+        "Showing rule-based overview from your mentions._\n\n"
+        + summary
+    )
+    return {
+        "topic_id": topic.id,
+        "summary": summary,
+        "mention_ids": [m.id for m in top_by_reach],
+        "fallback": True,
+    }
+
+
+def _is_quota_error(exc: Exception) -> bool:
+    """Catch OpenAI 429 quota/rate without importing the SDK at module
+    load time (it's only imported lazily inside the GPT call)."""
+    s = str(exc).lower()
+    return (
+        "insufficient_quota" in s
+        or "rate limit" in s
+        or "ratelimit" in s
+        or "exceeded your current quota" in s
+        or "error code: 429" in s
+    )
+
+
 async def summarize_topic(
     db: AsyncSession, project_id: str, topic_id: str
 ) -> dict:
     topic = await get_topic(db, project_id, topic_id)
-    api_key = (settings.OPENAI_API_KEY or "").strip()
-    if not api_key:
-        raise BadRequestError("OPENAI_API_KEY is not configured")
-
     mentions = await get_topic_mentions(db, project_id, topic_id, limit=25)
     if not mentions:
         return {
@@ -640,6 +737,12 @@ async def summarize_topic(
             ),
             "mention_ids": [],
         }
+
+    api_key = (settings.OPENAI_API_KEY or "").strip()
+    if not api_key:
+        # No key configured at all — go straight to rule-based instead of
+        # blocking the user with an opaque 400.
+        return _rule_based_topic_summary(topic, mentions)
 
     lines = []
     for m in mentions:
@@ -672,8 +775,17 @@ async def summarize_topic(
         )
         content = (resp.choices[0].message.content or "").strip()
     except Exception as exc:
-        logger.warning("summarize_topic GPT failed: %s", exc)
-        raise BadRequestError(f"AI summary failed: {exc}")
+        # The hot one: OpenAI is unreachable / out of quota / timing out.
+        # Returning a 400 here hides the topic page entirely — the user
+        # can't even see who's writing about the topic. Fall back to a
+        # deterministic summary instead so the page stays useful.
+        logger.warning("summarize_topic GPT failed (%s), using rule-based fallback", exc)
+        result = _rule_based_topic_summary(topic, mentions)
+        if _is_quota_error(exc):
+            result["error_reason"] = "openai_quota_exhausted"
+        else:
+            result["error_reason"] = "openai_unavailable"
+        return result
 
     raw_cited = list(dict.fromkeys(re.findall(r"\[m:([a-zA-Z0-9-]{6,40})\]", content)))
     valid_ids = [m.id for m in mentions]

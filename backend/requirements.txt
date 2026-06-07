@@ -28,8 +28,6 @@ langdetect
 opensearch-py
 clickhouse-connect
 kafka-python
-scrapy
-playwright
 prometheus-client
 sentry-sdk[fastapi]
 structlog

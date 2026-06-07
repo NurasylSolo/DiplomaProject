@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import re
@@ -11,6 +12,22 @@ from langdetect import detect
 from app.config import settings
 
 logger = logging.getLogger(__name__)
+
+# Process-wide cap on concurrent OpenAI chat calls. Ingestion can run many
+# projects/steps at once (scheduler refreshes every project); without a GLOBAL
+# bound, hundreds of simultaneous gpt-4o requests saturate the OpenAI rate
+# limit and every call balloons from ~1s to 10-85s. This semaphore bounds the
+# total in-flight calls across ALL jobs in this process.
+_OPENAI_MAX_CONCURRENCY = 5
+_openai_semaphore: asyncio.Semaphore | None = None
+
+
+def _get_openai_semaphore() -> asyncio.Semaphore:
+    # Created lazily so it binds to the running event loop.
+    global _openai_semaphore
+    if _openai_semaphore is None:
+        _openai_semaphore = asyncio.Semaphore(_OPENAI_MAX_CONCURRENCY)
+    return _openai_semaphore
 
 
 POSITIVE_MARKERS = [
@@ -180,9 +197,8 @@ async def score_sentiment_gpt(text: str) -> tuple[str, float]:
         client = AsyncOpenAI(api_key=api_key)
         # Sentiment scoring uses a cheap fast model regardless of the chat
         # model — quality of "positive/neutral/negative" doesn't justify gpt-4o
-        # cost on every ingested article. Configurable via OPENAI_CHAT_MODEL
-        # if the operator wants the same model everywhere.
-        sentiment_model = settings.OPENAI_CHAT_MODEL or "gpt-4o-mini"
+        # cost on every ingested article.
+        sentiment_model = settings.OPENAI_SENTIMENT_MODEL or "gpt-4o-mini"
         response = await client.chat.completions.create(
             model=sentiment_model,
             messages=[
@@ -276,17 +292,22 @@ async def score_sentiment_and_emotions_gpt(
         from openai import AsyncOpenAI
 
         client = AsyncOpenAI(api_key=api_key)
-        model = settings.OPENAI_CHAT_MODEL or "gpt-4o-mini"
-        response = await client.chat.completions.create(
-            model=model,
-            messages=[
-                {"role": "system", "content": _SENTIMENT_AND_EMOTIONS_PROMPT},
-                {"role": "user", "content": sample[:4000]},
-            ],
-            temperature=0.0,
-            max_tokens=200,
-            response_format={"type": "json_object"},
-        )
+        # Use the lightweight sentiment model (gpt-4o-mini by default): this
+        # runs once PER ARTICLE, so the heavy chat model would make ingestion
+        # extremely slow and expensive.
+        model = settings.OPENAI_SENTIMENT_MODEL or "gpt-4o-mini"
+        async with _get_openai_semaphore():
+            response = await client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": _SENTIMENT_AND_EMOTIONS_PROMPT},
+                    {"role": "user", "content": sample[:4000]},
+                ],
+                temperature=0.0,
+                max_tokens=200,
+                response_format={"type": "json_object"},
+                timeout=30,
+            )
         content = (response.choices[0].message.content or "").strip()
         data = json.loads(content)
 
@@ -335,7 +356,7 @@ async def score_emotions_gpt(text: str) -> dict[str, float]:
         from openai import AsyncOpenAI
 
         client = AsyncOpenAI(api_key=api_key)
-        emo_model = settings.OPENAI_CHAT_MODEL or "gpt-4o-mini"
+        emo_model = settings.OPENAI_SENTIMENT_MODEL or "gpt-4o-mini"
         response = await client.chat.completions.create(
             model=emo_model,
             messages=[

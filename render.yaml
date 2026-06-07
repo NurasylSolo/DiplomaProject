@@ -1,0 +1,73 @@
+# ===========================================================================
+# Render Blueprint — backend API + managed PostgreSQL for Senti News.
+# Deploy: push this repo to GitHub, then on Render: New + -> Blueprint ->
+# pick this repo. Render reads this file and provisions both resources.
+# The Next.js FRONTEND is deployed separately on Vercel (see DEPLOY.md).
+# ===========================================================================
+
+databases:
+  - name: sentinews-db
+    databaseName: sentinews
+    plan: free            # 90-day free Postgres; upgrade to "basic" for prod
+    region: frankfurt     # closest Render region to Kazakhstan
+
+services:
+  - type: web
+    name: sentinews-api
+    runtime: docker
+    region: frankfurt
+    plan: starter         # always-on (needed: ingestion runs in background)
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      # Wired automatically from the database above (app normalises the scheme).
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sentinews-db
+          property: connectionString
+      # Auto-generated strong secret for JWT signing.
+      - key: SECRET_KEY
+        generateValue: true
+      # Allowed frontend origins (your Vercel custom domain).
+      - key: CORS_ORIGINS
+        value: https://sentinews.online,https://www.sentinews.online
+      - key: TASK_QUEUE_MODE
+        value: local
+      - key: SCHEDULER_ENABLED
+        value: "false"
+      - key: ENABLE_RAG_EMBEDDINGS
+        value: "true"
+      - key: OPENAI_CHAT_MODEL
+        value: gpt-4o
+      - key: OPENAI_SENTIMENT_MODEL
+        value: gpt-4o-mini
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_FROM_EMAIL
+        value: noreply@sentinews.online
+      # ---- Secrets: set these in the Render dashboard (sync:false hides them
+      #      from the repo). Render will prompt for each on first deploy. ----
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: NEWS_API_KEY
+        sync: false
+      - key: SERP_API_KEY
+        sync: false
+      - key: NEWSDATA_API_KEY
+        sync: false
+      - key: EVENT_REGISTRY_API_KEY
+        sync: false
+      - key: WORLD_NEWS_API_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false

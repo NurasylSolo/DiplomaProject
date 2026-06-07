@@ -1511,6 +1511,7 @@
       "itemsCollected": "Жиналған элементтер",
       "itemsSaved": "Бірегей сақталды",
       "itemsDeduplicated": "Қайталар сүзілді",
+      "scanning": "Сканерлеу: {{source}}",
       "stages": {
         "discovering": "Сәйкес көздерді іздеу",
         "crawling": "{{count}} көзді сканерлеу",

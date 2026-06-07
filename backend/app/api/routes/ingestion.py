@@ -41,6 +41,8 @@ def _job_to_dict(job) -> dict:
         "total_sources": int(job.total_sources or 0),
         "processed_sources": int(job.processed_sources or 0),
         "progress_percent": job_progress_service.progress_percent(job),
+        # Human-readable source currently being scanned (stored on worker_id).
+        "current_stage": job.worker_id if job.status == "running" else None,
         "retry_count": job.retry_count,
         "max_retries": job.max_retries,
         "queue_latency_ms": job.queue_latency_ms,

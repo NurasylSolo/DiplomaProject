@@ -18,12 +18,43 @@ from __future__ import annotations
 
 import logging
 
-from sqlalchemy import update
+from sqlalchemy import func, update
 
 from app.database import AsyncSessionLocal
 from app.models.crawl_job import CrawlJob
 
 logger = logging.getLogger(__name__)
+
+
+async def reset_stale_jobs() -> int:
+    """Close out jobs left in ``running``/``pending`` by a previous process.
+
+    Called once on backend startup. A freshly started process has no
+    ingestion actually in flight (local asyncio tasks die with their
+    process; a Kafka worker re-consumes from scratch), so any job still
+    marked running/pending is an orphan from a crash or restart. Marking
+    them ``failed`` stops the frontend from spinning forever on a job that
+    nothing is executing — the UI then offers Retry / Open anyway.
+
+    Returns the number of jobs reset. Best-effort: never raises.
+    """
+    try:
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(
+                update(CrawlJob)
+                .where(CrawlJob.status.in_(("running", "pending")))
+                .values(
+                    status="failed",
+                    error="Прервано: сервер был перезапущен. Запустите сбор заново.",
+                    finished_at=func.now(),
+                    worker_id=None,
+                )
+            )
+            await db.commit()
+            return int(result.rowcount or 0)
+    except Exception as exc:
+        logger.warning("reset_stale_jobs failed: %s", exc)
+        return 0
 
 
 async def start_job(job_id: str, total_sources: int) -> None:
@@ -59,6 +90,46 @@ async def advance_job(job_id: str, delta: int = 1) -> None:
         logger.warning("advance_job(%s) failed: %s", job_id, exc)
 
 
+async def update_progress(
+    job_id: str,
+    *,
+    processed: int | None = None,
+    fetched: int | None = None,
+    saved: int | None = None,
+    deduplicated: int | None = None,
+    stage: str | None = None,
+) -> None:
+    """Live progress update during a run.
+
+    Persists the running item counters and the human-readable current stage
+    (which source is being scanned right now) so the UI reflects real-time
+    activity instead of showing 0/0/0 until the very end. The current stage
+    is stored on the otherwise-unused ``worker_id`` column to avoid a schema
+    migration. Best-effort: never raises.
+    """
+    values: dict = {}
+    if processed is not None:
+        values["processed_sources"] = max(0, int(processed))
+    if fetched is not None:
+        values["items_fetched"] = max(0, int(fetched))
+    if saved is not None:
+        values["items_saved"] = max(0, int(saved))
+    if deduplicated is not None:
+        values["items_deduplicated"] = max(0, int(deduplicated))
+    if stage is not None:
+        values["worker_id"] = str(stage)[:100]
+    if not values:
+        return
+    try:
+        async with AsyncSessionLocal() as db:
+            await db.execute(
+                update(CrawlJob).where(CrawlJob.id == job_id).values(**values)
+            )
+            await db.commit()
+    except Exception as exc:
+        logger.warning("update_progress(%s) failed: %s", job_id, exc)
+
+
 async def finish_job(
     job_id: str, *, failed: bool = False, error: str | None = None
 ) -> None:
@@ -83,6 +154,7 @@ async def finish_job(
                     .values(
                         processed_sources=CrawlJob.total_sources,
                         error=None,
+                        worker_id=None,
                     )
                 )
             await db.commit()

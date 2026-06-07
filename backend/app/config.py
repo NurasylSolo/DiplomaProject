@@ -11,7 +11,11 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_SHORT_DAYS: int = 7
 
     OPENAI_API_KEY: str = ""
+    # Heavy model for insights / chat / topic reasoning.
     OPENAI_CHAT_MODEL: str = "gpt-4o"
+    # Lightweight model for the high-volume per-article work (sentiment +
+    # emotions), which runs once per ingested article. Keep this small/fast.
+    OPENAI_SENTIMENT_MODEL: str = "gpt-4o-mini"
 
     NEWS_API_KEY: str = ""
     NEWS_API_PAGE_SIZE: int = 100
@@ -68,7 +72,31 @@ class Settings(BaseSettings):
 
     @property
     def cors_origins_list(self) -> List[str]:
-        return [origin.strip() for origin in self.CORS_ORIGINS.split(",")]
+        return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
+
+    @property
+    def database_url_async(self) -> str:
+        """DATABASE_URL normalised to the asyncpg driver.
+
+        Managed hosts (Render, Railway, Heroku, Neon) hand out URLs starting
+        with ``postgres://`` or ``postgresql://``; SQLAlchemy's async engine
+        needs the explicit ``postgresql+asyncpg://`` scheme. Also strips a
+        ``sslmode`` query param that libpq understands but asyncpg does not.
+        """
+        url = (self.DATABASE_URL or "").strip()
+        for prefix in ("postgresql+asyncpg://",):
+            if url.startswith(prefix):
+                break
+        else:
+            if url.startswith("postgresql://"):
+                url = "postgresql+asyncpg://" + url[len("postgresql://"):]
+            elif url.startswith("postgres://"):
+                url = "postgresql+asyncpg://" + url[len("postgres://"):]
+        # asyncpg rejects libpq-style ?sslmode=...; drop it (SSL is negotiated
+        # automatically / configured via connect args when needed).
+        for junk in ("?sslmode=require", "&sslmode=require", "?sslmode=prefer", "&sslmode=prefer"):
+            url = url.replace(junk, "")
+        return url
 
     class Config:
         env_file = ".env"

@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Local config & secrets — set these as platform env vars, never bake them in
+.env
+.env.*
+!.env.example
+
+# Dev / debug artifacts
+debug-*.log
+*.log
+_*.py
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local tooling
+.git/
+.gitignore
+*.md
+eval_*.py
+scripts/__pycache__/

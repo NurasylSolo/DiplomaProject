@@ -26,6 +26,13 @@ logger = logging.getLogger(__name__)
 # constant so the SQL is easy to grep and swap if we ever move to L2 / IP.
 _COSINE_DIST_OP = "<=>"
 
+# Whether the embedding column is a real pgvector ``vector`` (enabling the
+# in-Postgres ``<=>`` similarity search). The live DB uses a plain
+# ``double precision[]`` array, so we keep this False and run cosine in Python.
+# Attempting the ``<=>`` query against an array column raises and — worse —
+# leaves the session in a failed-transaction state, so we must NOT try it.
+USES_PGVECTOR = False
+
 
 # ---------------------------------------------------------------------------
 # Low-level retry/timeout helper around the OpenAI embedding call.
@@ -233,18 +240,28 @@ async def search_similar(
     # once here so the SQL stays in distance space.
     max_distance = 1.0 - float(min_similarity) if min_similarity > 0.0 else None
 
-    try:
-        rows = await _search_similar_pgvector(
-            db, project_id, query_vec, top_k=top_k, max_distance=max_distance
-        )
-    except Exception as exc:
-        # pgvector not installed, column type mismatch, etc. — log once
-        # and fall through to the Python path so the feature still works
-        # in dev environments without the extension.
-        logger.warning(
-            "pgvector search failed (%s), falling back to in-memory cosine",
-            exc,
-        )
+    if USES_PGVECTOR:
+        try:
+            rows = await _search_similar_pgvector(
+                db, project_id, query_vec, top_k=top_k, max_distance=max_distance
+            )
+        except Exception as exc:
+            # pgvector not installed, column type mismatch, etc. — log once
+            # and fall through to the Python path. Roll back first: the failed
+            # query leaves the session in a failed-transaction state.
+            logger.warning(
+                "pgvector search failed (%s), falling back to in-memory cosine",
+                exc,
+            )
+            try:
+                await db.rollback()
+            except Exception:
+                pass
+            rows = await _search_similar_python(
+                db, project_id, query_vec, top_k=top_k, min_similarity=min_similarity
+            )
+    else:
+        # Array-backed column: cosine in Python (no in-DB ``<=>`` operator).
         rows = await _search_similar_python(
             db, project_id, query_vec, top_k=top_k, min_similarity=min_similarity
         )

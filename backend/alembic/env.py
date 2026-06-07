@@ -12,8 +12,15 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from app.config import settings
 from app.database import Base
 from app.models import *
+
+# Always run migrations against the SAME database the app uses. This reads
+# DATABASE_URL from the environment / .env (via app settings) and overrides
+# the placeholder in alembic.ini, so deploys point at the production DB.
+if settings.DATABASE_URL:
+    config.set_main_option("sqlalchemy.url", settings.database_url_async)
 
 target_metadata = Base.metadata
 

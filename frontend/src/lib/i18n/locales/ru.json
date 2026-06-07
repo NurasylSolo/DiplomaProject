@@ -1511,6 +1511,7 @@
       "itemsCollected": "Собрано элементов",
       "itemsSaved": "Сохранено уникальных",
       "itemsDeduplicated": "Удалено дубликатов",
+      "scanning": "Сканируем: {{source}}",
       "stages": {
         "discovering": "Подбираем релевантные источники",
         "crawling": "Обходим {{count}} источников",

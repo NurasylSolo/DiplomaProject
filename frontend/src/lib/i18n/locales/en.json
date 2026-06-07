@@ -1511,6 +1511,7 @@
       "itemsCollected": "Items collected",
       "itemsSaved": "Saved unique",
       "itemsDeduplicated": "Duplicates filtered",
+      "scanning": "Scanning: {{source}}",
       "stages": {
         "discovering": "Discovering relevant sources",
         "crawling": "Crawling {{count}} sources",

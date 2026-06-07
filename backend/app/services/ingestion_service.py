@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import logging
+import math
+import re
+import time
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlparse
 
@@ -20,20 +24,61 @@ from app.services import dedup_service, job_progress_service, nlp_service
 logger = logging.getLogger(__name__)
 
 NEWS_API_BASE = "https://newsapi.org/v2/everything"
-NEWS_API_LANGUAGES = ["en", "ru"]
 LOOKBACK_DAYS = 25
 
+# Cap how many articles a single provider step contributes. Keeps total GPT
+# work (and thus ingestion time) bounded and predictable for the demo: with
+# ~19 steps that's at most ~19 * MAX_ARTICLES_PER_SOURCE articles to analyse.
+# Sentiment runs on the cheap concurrent gpt-4o-mini, so a higher cap adds
+# little time but much better coverage for popular topics.
+MAX_ARTICLES_PER_SOURCE = 50
+
+# Hard wall-clock budget for a single provider step (fetch + processing).
+# If a source hangs (slow API, slow site crawl), we abandon that step instead
+# of letting the whole job stall on it.
+PER_SOURCE_TIME_BUDGET_SECONDS = 60
+
+# Hard ceiling for an entire ingestion job. Once exceeded, remaining steps are
+# skipped (progress still advances to 100%) so a project ALWAYS finishes and
+# shows whatever data it gathered — never an endless "loading" spinner.
+MAX_JOB_SECONDS = 300
+# NewsAPI /everything has no country filter, but supports domains=. The
+# global EN/RU queries plus a Kazakhstan-domains query maximise KZ coverage.
+NEWS_API_VARIANTS: list[dict[str, str]] = [
+    {"language": "en"},
+    {"language": "ru"},
+    {"domains": (
+        "tengrinews.kz,zakon.kz,nur.kz,inform.kz,kapital.kz,vlast.kz,"
+        "kursiv.kz,24.kz,kazinform.kz,forbes.kz,inbusiness.kz,liter.kz,time.kz"
+    )},
+]
+
 SERP_API_BASE = "https://serpapi.com/search.json"
+# Kazakhstan editions (ru/kk/en), mirroring the Google News RSS strategy.
+# gl=kz enforces the KZ Google edition; location refines regional filtering
+# (SerpAPI guidance: gl should be combined with location).
 SERP_LANGUAGES = [
-    {"hl": "en", "gl": "us"},
-    {"hl": "ru", "gl": "ru"},
+    {"hl": "ru", "gl": "kz", "location": "Kazakhstan"},
+    {"hl": "kk", "gl": "kz", "location": "Kazakhstan"},
+    {"hl": "en", "gl": "kz", "location": "Kazakhstan"},
 ]
 
 NEWSDATA_API_BASE = "https://newsdata.io/api/1/latest"
+# NOTE: NewsData.io does NOT support country=kz or language=kk (verified
+# against its supported lists), so it cannot be geo-targeted to Kazakhstan.
+# KZ coverage comes from Google News RSS, SerpAPI (gl=kz), EventRegistry
+# (KZ source location) and NewsAPI (KZ domains) instead. Leave as en/ru.
 NEWSDATA_LANGUAGES = ["en", "ru"]
 
 EVENT_REGISTRY_API_BASE = "https://eventregistry.org/api/v1/article/getArticles"
-EVENT_REGISTRY_LANGUAGES = ["eng", "rus"]
+# eng/rus globally, plus a variant restricted to Kazakhstan-based publishers
+# (kaz is not an allowed EventRegistry lang, but sourceLocationUri works for
+# any language).
+EVENT_REGISTRY_VARIANTS: list[dict[str, str]] = [
+    {"lang": "eng"},
+    {"lang": "rus"},
+    {"source_location": "http://en.wikipedia.org/wiki/Kazakhstan"},
+]
 
 WORLD_NEWS_API_BASE = "https://api.worldnewsapi.com/search-news"
 # Per-variant requests: world EN/RU/KZ + Kazakhstan-specific source country.
@@ -44,9 +89,104 @@ WORLD_NEWS_VARIANTS: list[dict[str, str]] = [
     {"source-country": "kz"},
 ]
 
+# GDELT DOC 2.0 — free, key-less global news index covering 100+ languages and
+# nearly every country, updated every 15 min. ONE broad query already returns
+# results across all languages/countries, so we issue a single request per job
+# (GDELT strictly rate-limits to ~1 request / 5 seconds).
+GDELT_DOC_BASE = "https://api.gdeltproject.org/api/v2/doc/doc"
+GDELT_MAX_RECORDS = 250
+GDELT_MIN_INTERVAL_SECONDS = 5.0
+
+# Google News RSS — free, no API key, no rate limit. Best coverage of
+# Kazakhstan media (Tengrinews, Zakon.kz, Qazinform, Nur.kz, Bes.media …)
+# which the paid free-tier APIs barely index. Kazakhstan-focused editions:
+GOOGLE_NEWS_BASE = "https://news.google.com/rss/search"
+GOOGLE_NEWS_VARIANTS: list[dict[str, str]] = [
+    {"hl": "ru", "gl": "KZ", "ceid": "KZ:ru"},
+    {"hl": "kk", "gl": "KZ", "ceid": "KZ:kk"},
+    {"hl": "en", "gl": "KZ", "ceid": "KZ:en"},
+]
+
+# Registry of known entities → official website crawl config. When a
+# project's topic/aliases match one of the trigger phrases, we additionally
+# crawl that entity's own site (sitemap-first, HTML fallback). Articles
+# from the official site are guaranteed relevant so they bypass the keyword
+# relevance filter.
+OFFICIAL_SITE_REGISTRY: list[dict] = [
+    {
+        # NOTE: the bare acronym "aitu" is intentionally NOT here — it
+        # collides with unrelated contexts (the Samoan word "aitu", other
+        # organisations) and pulled in off-topic results. We match only the
+        # full, unambiguous name in EN/RU/KZ.
+        "match": [
+            "astana it university",
+            "astana it univ",
+            "астана ит университет",
+            "astana it-университет",
+            "astana it университеті",
+        ],
+        "source_name": "Astana IT University",
+        "site_host": "astanait.edu.kz",
+        "listing_pages": [
+            "https://astanait.edu.kz/en",
+            "https://astanait.edu.kz/ru",
+            "https://astanait.edu.kz/kz",
+        ],
+        # AITU news are plain slugs like /en/<slug>; static pages share the
+        # same shape, so we blacklist the known non-news slugs instead of
+        # whitelisting paths.
+        "exclude_slugs": {
+            "", "about-us", "about-uni", "about-aitu", "bachelor", "master",
+            "phd", "college", "contacts", "vacancies", "early-admission",
+            "licenses-accreditations", "rector-blog", "alumni-association",
+            "university-structure", "aitu-ecosystem-and-infrastructure",
+            "inc-academ-mobility", "outg-academ-mobility",
+        },
+        # External media coverage ("Media About Us") whose URL mentions the
+        # entity is pulled in too — that's real third-party news about AITU.
+        # Keep these specific (not bare "aitu") to avoid false positives like
+        # yuujiso.github.io/aitumap.
+        "media_keywords": [
+            "astana-it-university", "astana_it_university", "astana-it-univ",
+        ],
+        "country": "KZ",
+        # Per-article reach for the university's OWN site. A niche .edu site
+        # gets far less traffic than national news portals (Tengrinews /
+        # Kazinform sit around ~800-1000 reach/article), so keep this clearly
+        # lower and realistic rather than the old inflated 50000.
+        "reach": 350,
+    },
+]
+OFFICIAL_SITE_MAX_ARTICLES = 20
+
 
 def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def _friendly_stage(label: str) -> str:
+    """Map an internal step label to a human-readable source name shown in
+    the ingestion progress UI ("which source are we scanning now")."""
+    low = (label or "").lower()
+    if low.startswith("newsapi"):
+        return "NewsAPI"
+    if low.startswith("serpapi"):
+        return "Google (SerpAPI)"
+    if low.startswith("newsdata"):
+        return "NewsData.io"
+    if low.startswith("eventregistry"):
+        return "Event Registry"
+    if low.startswith("worldnews"):
+        return "World News API"
+    if low.startswith("gnews"):
+        return "Google News"
+    if low.startswith("gdelt"):
+        return "GDELT (global)"
+    if low.startswith("official"):
+        return "Official website"
+    return label or "source"
+
+
 
 
 # ---------------------------------------------------------------------------
@@ -166,10 +306,11 @@ async def get_ingestion_health(db: AsyncSession, project_id: str | None = None) 
 async def _fetch_newsapi(
     client: httpx.AsyncClient,
     query: str,
-    language: str,
+    language: str | None = None,
     page: int = 1,
     page_size: int | None = None,
     from_date: str | None = None,
+    domains: str | None = None,
 ) -> list[dict]:
     api_key = settings.NEWS_API_KEY
     if not api_key:
@@ -182,18 +323,24 @@ async def _fetch_newsapi(
 
     params = {
         "q": query,
-        "language": language,
         "from": from_date,
         "sortBy": "publishedAt",
         "pageSize": min(effective_page_size, 100),
         "page": page,
         "apiKey": api_key,
     }
+    # Either filter by language (global) or by KZ domains (no language so all
+    # languages from those outlets are returned).
+    if domains:
+        params["domains"] = domains
+    elif language:
+        params["language"] = language
 
+    label = domains or language or "all"
     try:
         resp = await client.get(NEWS_API_BASE, params=params)
         if resp.status_code != 200:
-            logger.error("NewsAPI %s responded %d: %s", language, resp.status_code, resp.text[:500])
+            logger.error("NewsAPI %s responded %d: %s", label, resp.status_code, resp.text[:500])
             return []
         data = resp.json()
         if data.get("status") != "ok":
@@ -213,14 +360,15 @@ async def _fetch_serpapi(
     client: httpx.AsyncClient,
     query: str,
     hl: str = "en",
-    gl: str = "us",
+    gl: str = "kz",
+    location: str | None = None,
 ) -> list[dict]:
     api_key = settings.SERP_API_KEY
     if not api_key:
         logger.warning("SERP_API_KEY is not set – skipping SerpAPI fetch")
         return []
 
-    params = {
+    params: dict[str, str | int] = {
         "engine": "google",
         "q": query,
         "tbm": "nws",
@@ -229,6 +377,10 @@ async def _fetch_serpapi(
         "num": 100,
         "api_key": api_key,
     }
+    # Only send location when present; an invalid location string would make
+    # SerpAPI reject the request, while gl=kz alone still biases to KZ.
+    if location:
+        params["location"] = location
 
     try:
         resp = await client.get(SERP_API_BASE, params=params, timeout=30)
@@ -261,6 +413,453 @@ async def _fetch_serpapi(
     except Exception as exc:
         logger.error("SerpAPI request failed: %s", exc)
         return []
+
+
+# ---------------------------------------------------------------------------
+# Google News RSS fetcher (free, no API key, best Kazakhstan coverage)
+# ---------------------------------------------------------------------------
+
+def _strip_html(text: str) -> str:
+    """Strip HTML tags from a snippet. Google News puts <a href>… markup in
+    the RSS <description>; we only want the plain text."""
+    if not text:
+        return ""
+    try:
+        from bs4 import BeautifulSoup
+
+        return BeautifulSoup(text, "html.parser").get_text(" ", strip=True)
+    except Exception:
+        # Defensive fallback — naive tag removal.
+        import re
+
+        return re.sub(r"<[^>]+>", " ", text).strip()
+
+
+def _split_gnews_title(raw_title: str) -> tuple[str, str]:
+    """Google News appends the publisher to the title as ``Headline - Source``.
+    Return ``(headline, source_name)`` splitting on the last ` - `.
+    """
+    title = (raw_title or "").strip()
+    if " - " in title:
+        head, _, tail = title.rpartition(" - ")
+        # Only treat the tail as a source if it's reasonably short (a name,
+        # not part of the headline).
+        if head and tail and len(tail) <= 60:
+            return head.strip(), tail.strip()
+    return title, ""
+
+
+async def _fetch_google_news_rss(
+    client: httpx.AsyncClient,
+    query: str,
+    hl: str = "ru",
+    gl: str = "KZ",
+    ceid: str = "KZ:ru",
+) -> list[dict]:
+    """Fetch articles from Google News RSS for a given edition.
+
+    Free, key-less and unlimited. Google News aggregates Kazakhstan media
+    that the paid free-tier APIs miss. Returns the same article dict shape
+    as the other fetchers so ``_process_article`` works unchanged.
+    """
+    if not query.strip():
+        return []
+
+    params = {"q": query, "hl": hl, "gl": gl, "ceid": ceid}
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+            "(KHTML, like Gecko) Chrome/120.0 Safari/537.36"
+        )
+    }
+
+    try:
+        # follow_redirects is required: Google News answers the first request
+        # with a 302 to a geo/consent-resolved RSS URL.
+        resp = await client.get(
+            GOOGLE_NEWS_BASE,
+            params=params,
+            headers=headers,
+            timeout=30,
+            follow_redirects=True,
+        )
+        if resp.status_code != 200:
+            logger.error(
+                "Google News %s responded %d: %s",
+                ceid, resp.status_code, resp.text[:300],
+            )
+            return []
+
+        import feedparser
+
+        feed = feedparser.parse(resp.content)
+        articles: list[dict] = []
+        for entry in feed.entries:
+            link = str(getattr(entry, "link", "") or "").strip()
+            if not link:
+                continue
+            headline, title_source = _split_gnews_title(
+                str(getattr(entry, "title", "") or "")
+            )
+            if not headline:
+                continue
+
+            # Real publisher name: prefer the <source> tag, fall back to the
+            # name parsed off the title suffix.
+            source_name = ""
+            src = getattr(entry, "source", None)
+            if src is not None:
+                source_name = str(getattr(src, "title", "") or "").strip()
+            if not source_name:
+                source_name = title_source
+
+            summary = _strip_html(str(getattr(entry, "summary", "") or ""))
+            published = str(
+                getattr(entry, "published", "")
+                or getattr(entry, "updated", "")
+                or ""
+            ).strip()
+
+            articles.append({
+                "url": link,
+                "title": headline,
+                "description": summary,
+                "content": summary,
+                "author": "",
+                "urlToImage": "",
+                "publishedAt": published,
+                "source": {"name": source_name},
+                # Kazakhstan-focused edition → attribute geo to KZ so the
+                # geo analytics reflect local coverage.
+                "_country": "KZ",
+            })
+
+        logger.info("Google News %s fetched %d articles", ceid, len(articles))
+        return articles
+    except Exception as exc:
+        logger.error("Google News request failed (%s): %s", ceid, exc)
+        return []
+
+
+# ---------------------------------------------------------------------------
+# GDELT DOC 2.0 fetcher (free, key-less, global news in 100+ languages)
+# ---------------------------------------------------------------------------
+
+# Process-wide spacing so we respect GDELT's ~1 request / 5 s limit even when
+# two jobs run concurrently.
+_gdelt_lock: asyncio.Lock | None = None
+_gdelt_next_allowed = 0.0
+
+
+def _get_gdelt_lock() -> asyncio.Lock:
+    global _gdelt_lock
+    if _gdelt_lock is None:
+        _gdelt_lock = asyncio.Lock()
+    return _gdelt_lock
+
+
+def _build_gdelt_query(topic: str, aliases: list[str]) -> str:
+    """GDELT query: quoted phrases joined by OR inside parentheses."""
+    terms = _normalize_terms([topic] + (aliases or []))[:8]
+    if not terms:
+        return ""
+    parts = [f'"{t}"' if " " in t else t for t in terms]
+    return "(" + " OR ".join(parts) + ")"
+
+
+async def _fetch_gdelt(client: httpx.AsyncClient, query: str) -> list[dict]:
+    """Fetch global news articles from the GDELT DOC 2.0 API.
+
+    Returns the standard article dict shape. GDELT only provides title +
+    metadata (no body), so sentiment is computed from the headline — same as
+    the Google News RSS source. Free and key-less; we self-throttle to respect
+    GDELT's rate limit and treat 429 as "no results this run".
+    """
+    if not query.strip():
+        return []
+
+    params = {
+        "query": query,
+        "mode": "artlist",
+        "format": "json",
+        "maxrecords": GDELT_MAX_RECORDS,
+        "sort": "datedesc",
+        "timespan": f"{max(1, LOOKBACK_DAYS)}d",
+    }
+    headers = {"User-Agent": _BROWSER_UA}
+
+    try:
+        # Self-throttle process-wide to stay under ~1 req / 5 s.
+        async with _get_gdelt_lock():
+            global _gdelt_next_allowed
+            wait = _gdelt_next_allowed - time.monotonic()
+            if wait > 0:
+                await asyncio.sleep(min(wait, GDELT_MIN_INTERVAL_SECONDS))
+            resp = await client.get(
+                GDELT_DOC_BASE, params=params, headers=headers,
+                timeout=30, follow_redirects=True,
+            )
+            _gdelt_next_allowed = time.monotonic() + GDELT_MIN_INTERVAL_SECONDS
+
+        if resp.status_code != 200:
+            logger.warning("GDELT responded %d: %s", resp.status_code, resp.text[:160])
+            return []
+        try:
+            data = resp.json()
+        except Exception:
+            logger.warning("GDELT returned non-JSON (likely throttled)")
+            return []
+
+        articles: list[dict] = []
+        for item in data.get("articles") or []:
+            url = str(item.get("url") or "").strip()
+            title = str(item.get("title") or "").strip()
+            if not url or not title:
+                continue
+            domain = str(item.get("domain") or "").strip()
+            seen = str(item.get("seendate") or "").strip()
+            published = seen
+            try:
+                # GDELT format: 20260607T030000Z -> ISO 8601.
+                dt = datetime.strptime(seen, "%Y%m%dT%H%M%SZ").replace(tzinfo=timezone.utc)
+                published = dt.isoformat()
+            except Exception:
+                published = _utcnow().isoformat()
+            country_code = nlp_service.normalize_country(item.get("sourcecountry") or "")
+            if country_code == "XX":
+                country_code = ""
+            articles.append({
+                "url": url,
+                "title": title,
+                "description": title,
+                "content": title,
+                "author": "",
+                "urlToImage": str(item.get("socialimage") or "").strip(),
+                "publishedAt": published,
+                "source": {"name": domain or "GDELT"},
+                "_country": country_code,
+            })
+        logger.info("GDELT fetched %d articles", len(articles))
+        return articles
+    except Exception as exc:
+        logger.warning("GDELT request failed: %s", exc)
+        return []
+
+
+# ---------------------------------------------------------------------------
+# Official site crawler (entity's own website, e.g. astanait.edu.kz)
+# ---------------------------------------------------------------------------
+
+_BROWSER_UA = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/120.0 Safari/537.36"
+)
+
+
+def _match_official_site(topic: str, aliases: list[str]) -> dict | None:
+    """Return the registry entry whose trigger phrases match the project's
+    topic or aliases, else None."""
+    haystack = [(topic or "").strip().lower()]
+    haystack += [(a or "").strip().lower() for a in (aliases or [])]
+    haystack = [h for h in haystack if h]
+    for entry in OFFICIAL_SITE_REGISTRY:
+        for phrase in entry["match"]:
+            p = phrase.lower()
+            for h in haystack:
+                # Exact or containment either direction so "AITU" matches
+                # "aitu" and "astana it university" matches the topic.
+                if p == h or p in h or h in p:
+                    return entry
+    return None
+
+
+def _accept_official_url(url: str, entry: dict) -> bool:
+    """Decide if a discovered URL is an article worth fetching.
+
+    Two cases:
+      1. Internal page on the entity's host: a ``/<lang>/<slug>`` path whose
+         slug is NOT in the static-page blacklist (about-us, bachelor, …).
+      2. External media coverage: a third-party URL that mentions the entity
+         (e.g. finratings.kz/...astana-it-university..., kazpravda.kz/...).
+    Binary files are always rejected.
+    """
+    from urllib.parse import urlparse
+
+    low = url.lower()
+    if low.endswith(
+        (".pdf", ".doc", ".docx", ".xls", ".xlsx", ".jpg", ".jpeg",
+         ".png", ".gif", ".zip", ".rar")
+    ):
+        return False
+
+    site_host = (entry.get("site_host") or "").lower()
+    host = urlparse(url).netloc.lower().removeprefix("www.")
+    path = urlparse(url).path.strip("/")
+
+    if site_host and host == site_host:
+        # Internal: expect <lang>/<slug>. Reject language roots and static
+        # pages, and require a real slug segment.
+        parts = [p for p in path.split("/") if p]
+        if len(parts) < 2:
+            return False
+        lang = parts[0].lower()
+        if lang not in {"en", "ru", "kz", "kk"}:
+            return False
+        slug = parts[1].lower().strip()
+        exclude = entry.get("exclude_slugs") or set()
+        if slug in exclude or len(slug) < 4:
+            return False
+        return True
+
+    # External media coverage about the entity.
+    keywords = entry.get("media_keywords") or []
+    if keywords and any(kw in low for kw in keywords):
+        return True
+    return False
+
+
+def _extract_title(soup) -> str:
+    """Best-effort article title from <h1>, og:title, or <title>."""
+    h1 = soup.find("h1")
+    if h1:
+        txt = h1.get_text(" ", strip=True)
+        if txt and len(txt) >= 5:
+            return txt[:500]
+    og = soup.find("meta", attrs={"property": "og:title"})
+    if og and og.get("content"):
+        return str(og["content"]).strip()[:500]
+    if soup.title and soup.title.string:
+        return str(soup.title.string).strip()[:500]
+    return ""
+
+
+def _extract_published(soup) -> str:
+    """Best-effort publication date string for _parse_date."""
+    # <meta property="article:published_time"> / og:published_time
+    for attr in ("article:published_time", "og:published_time"):
+        m = soup.find("meta", attrs={"property": attr})
+        if m and m.get("content"):
+            return str(m["content"]).strip()
+    # <time datetime="...">
+    t = soup.find("time")
+    if t:
+        if t.get("datetime"):
+            return str(t["datetime"]).strip()
+        txt = t.get_text(" ", strip=True)
+        if txt:
+            return txt
+    return ""
+
+
+async def _fetch_official_site(
+    client: httpx.AsyncClient,
+    entry: dict,
+) -> list[dict]:
+    """Crawl an entity's official website for news articles.
+
+    Strategy: crawl the listing pages (/en, /ru, /kz), collect both internal
+    news slugs and external "Media About Us" links that mention the entity,
+    then fetch each detail page and parse it into the standard article dict.
+    Marked ``_is_official=True`` so it bypasses the keyword relevance filter
+    (content is guaranteed about the entity).
+    """
+    from bs4 import BeautifulSoup
+    from urllib.parse import urljoin
+
+    from app.services.extractors import extract_article_text
+
+    headers = {"User-Agent": _BROWSER_UA}
+    article_urls: list[str] = []
+    seen: set[str] = set()
+    # url -> publication date string parsed from the listing card (the detail
+    # pages expose no machine-readable date, but each listing card shows one
+    # like "June 4, 2026").
+    date_map: dict[str, str] = {}
+    _date_re = re.compile(
+        r"(January|February|March|April|May|June|July|August|September|"
+        r"October|November|December)\s+\d{1,2},?\s*\d{4}"
+    )
+
+    for page in entry.get("listing_pages") or []:
+        try:
+            resp = await client.get(
+                page, headers=headers, timeout=12, follow_redirects=True
+            )
+            if resp.status_code != 200:
+                continue
+            soup = BeautifulSoup(resp.text, "html.parser")
+            for a in soup.find_all("a", href=True):
+                href = (a.get("href") or "").strip()
+                if not href or href.startswith(("mailto:", "tel:", "#", "javascript:")):
+                    continue
+                u = urljoin(page, href).split("#")[0].rstrip("/")
+                if u and u not in seen and _accept_official_url(u, entry):
+                    seen.add(u)
+                    article_urls.append(u)
+                    # The real publication date lives in the card, inside the
+                    # <a>: a small pill <span>…June 4, 2026</span> before <h3>.
+                    m = _date_re.search(a.get_text(" ", strip=True))
+                    if m:
+                        date_map[u] = m.group(0)
+        except Exception as exc:
+            logger.warning("Official listing fetch failed (%s): %s", page, exc)
+
+    article_urls = article_urls[:OFFICIAL_SITE_MAX_ARTICLES]
+    if not article_urls:
+        logger.info("Official site %s: no article URLs discovered", entry.get("source_name"))
+        return []
+
+    # ── 3) Fetch each detail page → article dict
+    articles: list[dict] = []
+    for url in article_urls:
+        try:
+            resp = await client.get(
+                url, headers=headers, timeout=12, follow_redirects=True
+            )
+            if resp.status_code != 200:
+                continue
+            html = resp.text
+            soup = BeautifulSoup(html, "html.parser")
+            title = _extract_title(soup)
+            body = extract_article_text(html)
+            # Skip thin pages (nav stubs, JS-only shells) — need real content.
+            if len(body) < 150:
+                continue
+            # Many SPA pages share one generic <title>; derive a real headline
+            # from the slug / first sentence of the body in that case.
+            generic = (entry.get("source_name") or "").strip().lower()
+            if not title or title.strip().lower() == generic:
+                first = body.split(". ")[0].split("\n")[0].strip()
+                if 8 <= len(first) <= 160:
+                    title = first
+                else:
+                    slug = url.rstrip("/").rsplit("/", 1)[-1].replace("-", " ").replace("_", " ")
+                    title = slug.title()[:160] or generic.title()
+            # Prefer the date parsed from the listing card; fall back to any
+            # date in the detail page, then to now().
+            published = date_map.get(url) or _extract_published(soup)
+            articles.append({
+                "url": url,
+                "title": title or (body[:120] if body else ""),
+                "description": body[:1000],
+                "content": body,
+                "author": "",
+                "urlToImage": "",
+                "publishedAt": published or _utcnow().isoformat(),
+                "source": {"name": entry["source_name"]},
+                "_country": entry.get("country", "KZ"),
+                "_reach": entry.get("reach", 0),
+                "_is_official": True,
+            })
+        except Exception as exc:
+            logger.warning("Official article fetch failed (%s): %s", url[:100], exc)
+            continue
+
+    logger.info(
+        "Official site %s fetched %d articles",
+        entry.get("source_name"), len(articles),
+    )
+    return articles
 
 
 # ---------------------------------------------------------------------------
@@ -349,8 +948,9 @@ _ER_COUNTRY_LABEL_MAP: dict[str, str] = {
 async def _fetch_event_registry(
     client: httpx.AsyncClient,
     query: str,
-    language: str = "eng",
+    language: str | None = "eng",
     count: int = 100,
+    source_location_uri: str | None = None,
 ) -> list[dict]:
     """Fetch articles from Event Registry / NewsAPI.ai.
 
@@ -366,7 +966,6 @@ async def _fetch_event_registry(
     payload = {
         "action": "getArticles",
         "keyword": query,
-        "lang": language,
         "articlesPage": 1,
         "articlesCount": min(count, 100),
         "articlesSortBy": "date",
@@ -377,13 +976,20 @@ async def _fetch_event_registry(
         "apiKey": api_key,
         "articleBodyLen": -1,
     }
+    if language:
+        payload["lang"] = language
+    # Restrict to publishers located in a given country/city (e.g. Kazakhstan)
+    # regardless of language.
+    if source_location_uri:
+        payload["sourceLocationUri"] = source_location_uri
 
+    label = source_location_uri or language or "all"
     try:
         resp = await client.post(EVENT_REGISTRY_API_BASE, json=payload, timeout=60)
         if resp.status_code != 200:
             logger.error(
                 "EventRegistry %s responded %d: %s",
-                language, resp.status_code, resp.text[:500],
+                label, resp.status_code, resp.text[:500],
             )
             return []
         data = resp.json()
@@ -597,6 +1203,37 @@ async def run_project_ingestion(
         else:
             aliases_list = [str(a) for a in aliases_raw]
         aliases_list = [a for a in aliases_list if a and a.strip().lower() != topic_query.strip().lower()]
+
+        # Known-entity official website (e.g. astanait.edu.kz) — crawled in
+        # addition to the API providers when the topic matches the registry.
+        official_entry = _match_official_site(topic_query, aliases_list)
+
+        # For a recognised entity, automatically broaden the search with its
+        # known aliases (RU/KZ names, acronyms like "AITU"). This dramatically
+        # increases coverage from the external news APIs: most local coverage
+        # of e.g. Astana IT University is in Russian/Kazakh or uses "AITU",
+        # which a single English phrase would never match.
+        if official_entry:
+            for alias in official_entry.get("match", []):
+                a = (alias or "").strip()
+                if a and a.lower() != topic_query.strip().lower() \
+                        and a.lower() not in {x.lower() for x in aliases_list}:
+                    aliases_list.append(a)
+
+        # Drop generic single-word fragments of the main topic (e.g. for
+        # "Astana IT University" the UI auto-creates keywords "Astana" and
+        # "University"). On their own these match unrelated articles ("Air
+        # Astana", "University of Arizona"), so they must NOT be standalone
+        # relevance/search terms. Multi-word aliases and distinct acronyms
+        # (e.g. "AITU") are kept.
+        _main_tokens = {tok for tok in re.split(r"\W+", topic_query.lower()) if tok}
+
+        def _is_topic_fragment(term: str) -> bool:
+            toks = [t for t in re.split(r"\W+", term.lower()) if t]
+            return len(toks) == 1 and toks[0] in _main_tokens
+
+        aliases_list = [a for a in aliases_list if not _is_topic_fragment(a)]
+
         # Search query that asks each provider for either the main topic
         # or any of the aliases. Falls back to plain topic when no aliases.
         search_query = _build_or_query(topic_query, aliases_list) or topic_query
@@ -606,25 +1243,35 @@ async def run_project_ingestion(
             project_id, search_query, len(aliases_list),
         )
 
+        gdelt_query = _build_gdelt_query(topic_query, aliases_list)
+
         total_steps = (
-            len(NEWS_API_LANGUAGES)
+            len(NEWS_API_VARIANTS)
             + len(SERP_LANGUAGES)
             + len(NEWSDATA_LANGUAGES)
-            + len(EVENT_REGISTRY_LANGUAGES)
+            + len(EVENT_REGISTRY_VARIANTS)
             + len(WORLD_NEWS_VARIANTS)
+            + len(GOOGLE_NEWS_VARIANTS)
+            + (1 if gdelt_query else 0)
+            + (1 if official_entry else 0)
         )
         await job_progress_service.start_job(job.id, total_sources=total_steps)
 
         fetched_total = 0
         saved_total = 0
         dedup_total = 0
+        _job_start = time.monotonic()
+        _step_no = 0  # completed provider steps so far (drives live progress)
 
         # Mentions saved in the current provider step that still need an
         # embedding + topic assignment. Drained between providers so one
         # OpenAI batch request covers the whole step.
         pending_post: list[Mention] = []
 
-        async def _safe_process(article: dict) -> tuple[bool, bool]:
+        async def _safe_process(
+            article: dict,
+            precomputed_nlp: tuple[str, float, dict] | None = None,
+        ) -> tuple[bool, bool]:
             """Wrap _process_article so a single bad article never aborts the job.
 
             Catches transient DB / NLP / network errors and rolls back the
@@ -634,6 +1281,7 @@ async def run_project_ingestion(
                 return await _process_article(
                     db=db, project=project, article=article,
                     search_terms=all_terms_lower, pending_post=pending_post,
+                    precomputed_nlp=precomputed_nlp,
                 )
             except Exception as exc:
                 logger.warning(
@@ -646,90 +1294,244 @@ async def run_project_ingestion(
                     pass
                 return False, False
 
+        async def _precompute_nlp(articles: list[dict]) -> dict[int, tuple]:
+            """Run the per-article sentiment+emotions GPT calls CONCURRENTLY
+            (bounded), with no DB access, so they don't serialize the whole
+            ingestion step. Returns {index: (label, score, emotions)}."""
+            sem = asyncio.Semaphore(8)
+            results: dict[int, tuple] = {}
+
+            async def _one(idx: int, article: dict) -> None:
+                title = str(article.get("title") or "").strip()
+                description = str(article.get("description") or "").strip()
+                content = str(article.get("content") or "").strip()
+                body = content or description
+                full_text = f"{title}\n{body}".strip()
+                if not full_text:
+                    return
+                async with sem:
+                    try:
+                        results[idx] = await nlp_service.score_sentiment_and_emotions_gpt(full_text)
+                    except Exception:
+                        pass
+
+            if articles:
+                await asyncio.gather(*[_one(i, a) for i, a in enumerate(articles)])
+            return results
+
+        async def _process_batch(articles: list[dict], label: str = "") -> None:
+            """Process one provider step: concurrent NLP pre-pass, then the
+            sequential DB writes (single shared session). Advancing the job
+            counter is handled by ``_run_step`` so it happens exactly once per
+            step even on timeout/error."""
+            nonlocal fetched_total, dedup_total, saved_total
+            # Cap how many articles a single source can contribute so one
+            # high-volume provider can't make the job take minutes.
+            if len(articles) > MAX_ARTICLES_PER_SOURCE:
+                articles = articles[:MAX_ARTICLES_PER_SOURCE]
+            fetched_total += len(articles)
+            nlp_results = await _precompute_nlp(articles)
+            for idx, article in enumerate(articles):
+                is_dup, created = await _safe_process(article, nlp_results.get(idx))
+                if is_dup:
+                    dedup_total += 1
+                if created:
+                    saved_total += 1
+            # Persist this step's mentions immediately so (a) they're visible
+            # in the UI as each source completes and (b) the best-effort
+            # enrichment below can NEVER roll them back.
+            try:
+                await db.commit()
+            except Exception as exc:
+                logger.warning("step commit failed (%s): %s", label, exc)
+                try:
+                    await db.rollback()
+                except Exception:
+                    pass
+                pending_post.clear()
+                return
+            await _flush_pending_post()
+
+        async def _publish_live_progress() -> None:
+            """Persist the running counters + step so the UI shows growing
+            numbers in real time (not 0/0/0 until the end)."""
+            try:
+                await db.commit()
+            except Exception:
+                try:
+                    await db.rollback()
+                except Exception:
+                    pass
+            await job_progress_service.update_progress(
+                job.id,
+                processed=_step_no,
+                fetched=fetched_total,
+                saved=saved_total,
+                deduplicated=dedup_total,
+            )
+
+        async def _run_step(label: str, fetch_awaitable) -> None:
+            """Run ONE provider step (fetch + process) with a hard wall-clock
+            budget. Guarantees the step can never hang the job: on timeout or
+            error we roll back the session and still advance progress. Also
+            honours the overall job deadline so the whole run is bounded.
+
+            Publishes the current source name BEFORE the (possibly slow) fetch
+            and the live counters AFTER, so the UI always reflects real-time
+            activity.
+            """
+            nonlocal _step_no
+            # Tell the UI which source we're scanning right now.
+            await job_progress_service.update_progress(job.id, stage=_friendly_stage(label))
+
+            if (time.monotonic() - _job_start) > MAX_JOB_SECONDS:
+                logger.warning("Job budget exceeded — skipping step %s", label)
+                try:
+                    fetch_awaitable.close()  # avoid "coroutine never awaited"
+                except Exception:
+                    pass
+            else:
+                try:
+                    articles = await asyncio.wait_for(
+                        fetch_awaitable, timeout=PER_SOURCE_TIME_BUDGET_SECONDS
+                    )
+                    await asyncio.wait_for(
+                        _process_batch(articles, label=label),
+                        timeout=PER_SOURCE_TIME_BUDGET_SECONDS,
+                    )
+                except asyncio.TimeoutError:
+                    logger.warning("Step %s exceeded %ss budget — skipping",
+                                   label, PER_SOURCE_TIME_BUDGET_SECONDS)
+                    try:
+                        await db.rollback()
+                    except Exception:
+                        pass
+                except Exception as exc:
+                    logger.warning("Step %s failed: %s — skipping", label, exc)
+                    try:
+                        await db.rollback()
+                    except Exception:
+                        pass
+
+            _step_no += 1
+            await _publish_live_progress()
+
         async def _flush_pending_post() -> None:
-            """Embed and topic-assign the mentions queued by the last
-            provider step. Best-effort: any failure is logged and ignored."""
+            """Best-effort enrichment (embeddings + topic assignment) for the
+            mentions saved in the last step.
+
+            Runs in its OWN throwaway DB session so that a failure here (e.g.
+            a pgvector/driver error) can never corrupt the main ingestion
+            session or stall the job. The mentions themselves are already
+            committed by ``_process_batch`` before this runs.
+            """
             if not pending_post:
                 return
-            from app.services import embedding_service, topic_service
-            try:
-                await embedding_service.embed_and_store_mentions_batch(db, pending_post)
-            except Exception as exc:
-                logger.warning("batched embedding flush failed: %s", exc)
-            for m in pending_post:
-                try:
-                    topic_id = await topic_service.assign_to_best_topic(db, m)
-                    if topic_id:
-                        m.topic_id = topic_id
-                except Exception as exc:
-                    logger.warning("topic auto-assignment failed for %s: %s", m.id, exc)
+            ids = [m.id for m in pending_post]
             pending_post.clear()
 
+            from app.database import AsyncSessionLocal
+            from app.services import embedding_service, topic_service
+            try:
+                async with AsyncSessionLocal() as side:
+                    rows = (
+                        await side.execute(select(Mention).where(Mention.id.in_(ids)))
+                    ).scalars().all()
+                    if not rows:
+                        return
+                    try:
+                        await embedding_service.embed_and_store_mentions_batch(side, rows)
+                    except Exception as exc:
+                        logger.warning("embedding enrichment skipped: %s", exc)
+                    for m in rows:
+                        try:
+                            topic_id = await topic_service.assign_to_best_topic(side, m)
+                            if topic_id:
+                                m.topic_id = topic_id
+                        except Exception as exc:
+                            logger.warning("topic assign skipped for %s: %s", m.id, exc)
+                    try:
+                        await side.commit()
+                    except Exception as exc:
+                        logger.warning("enrichment commit skipped: %s", exc)
+                        try:
+                            await side.rollback()
+                        except Exception:
+                            pass
+            except Exception as exc:
+                logger.warning("enrichment session failed: %s", exc)
+
         async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
-            for lang in NEWS_API_LANGUAGES:
-                articles = await _fetch_newsapi(client, query=search_query, language=lang)
-                fetched_total += len(articles)
-                for article in articles:
-                    is_dup, created = await _safe_process(article)
-                    if is_dup:
-                        dedup_total += 1
-                    if created:
-                        saved_total += 1
-                await _flush_pending_post()
-                await job_progress_service.advance_job(job.id, delta=1)
-                await db.flush()
+            for na_variant in NEWS_API_VARIANTS:
+                await _run_step(
+                    f"newsapi:{na_variant}",
+                    _fetch_newsapi(
+                        client,
+                        query=search_query,
+                        language=na_variant.get("language"),
+                        domains=na_variant.get("domains"),
+                    ),
+                )
 
             for serp_lang in SERP_LANGUAGES:
-                articles = await _fetch_serpapi(client, query=search_query, hl=serp_lang["hl"], gl=serp_lang["gl"])
-                fetched_total += len(articles)
-                for article in articles:
-                    is_dup, created = await _safe_process(article)
-                    if is_dup:
-                        dedup_total += 1
-                    if created:
-                        saved_total += 1
-                await _flush_pending_post()
-                await job_progress_service.advance_job(job.id, delta=1)
-                await db.flush()
+                await _run_step(
+                    f"serpapi:{serp_lang['hl']}",
+                    _fetch_serpapi(
+                        client,
+                        query=search_query,
+                        hl=serp_lang["hl"],
+                        gl=serp_lang["gl"],
+                        location=serp_lang.get("location"),
+                    ),
+                )
 
             for nd_lang in NEWSDATA_LANGUAGES:
-                articles = await _fetch_newsdata(client, query=search_query, language=nd_lang)
-                fetched_total += len(articles)
-                for article in articles:
-                    is_dup, created = await _safe_process(article)
-                    if is_dup:
-                        dedup_total += 1
-                    if created:
-                        saved_total += 1
-                await _flush_pending_post()
-                await job_progress_service.advance_job(job.id, delta=1)
-                await db.flush()
+                await _run_step(
+                    f"newsdata:{nd_lang}",
+                    _fetch_newsdata(client, query=search_query, language=nd_lang),
+                )
 
-            for er_lang in EVENT_REGISTRY_LANGUAGES:
-                articles = await _fetch_event_registry(client, query=search_query, language=er_lang)
-                fetched_total += len(articles)
-                for article in articles:
-                    is_dup, created = await _safe_process(article)
-                    if is_dup:
-                        dedup_total += 1
-                    if created:
-                        saved_total += 1
-                await _flush_pending_post()
-                await job_progress_service.advance_job(job.id, delta=1)
-                await db.flush()
+            for er_variant in EVENT_REGISTRY_VARIANTS:
+                await _run_step(
+                    f"eventregistry:{er_variant}",
+                    _fetch_event_registry(
+                        client,
+                        query=search_query,
+                        language=er_variant.get("lang"),
+                        source_location_uri=er_variant.get("source_location"),
+                    ),
+                )
 
             for wn_variant in WORLD_NEWS_VARIANTS:
-                articles = await _fetch_world_news(client, query=search_query, variant=wn_variant)
-                fetched_total += len(articles)
-                for article in articles:
-                    is_dup, created = await _safe_process(article)
-                    if is_dup:
-                        dedup_total += 1
-                    if created:
-                        saved_total += 1
-                await _flush_pending_post()
-                await job_progress_service.advance_job(job.id, delta=1)
-                await db.flush()
+                await _run_step(
+                    f"worldnews:{wn_variant}",
+                    _fetch_world_news(client, query=search_query, variant=wn_variant),
+                )
+
+            # Google News RSS — free, key-less, best Kazakhstan coverage.
+            for gn_variant in GOOGLE_NEWS_VARIANTS:
+                await _run_step(
+                    f"gnews:{gn_variant['ceid']}",
+                    _fetch_google_news_rss(
+                        client,
+                        query=search_query,
+                        hl=gn_variant["hl"],
+                        gl=gn_variant["gl"],
+                        ceid=gn_variant["ceid"],
+                    ),
+                )
+
+            # GDELT — free global index (100+ languages); one broad request.
+            if gdelt_query:
+                await _run_step("gdelt", _fetch_gdelt(client, gdelt_query))
+
+            # Official entity website (registry match) — guaranteed-relevant
+            # news straight from the source (e.g. astanait.edu.kz).
+            if official_entry:
+                await _run_step(
+                    "official_site",
+                    _fetch_official_site(client, official_entry),
+                )
 
         await recompute_project_metrics(db=db, project_id=project_id)
 
@@ -744,7 +1546,10 @@ async def run_project_ingestion(
         # Best-effort with a hard time cap inside the service itself.
         try:
             from app.services import insight_service  # local import to avoid cycles
-            await insight_service.generate_insights_for_project(db, project_id)
+            await asyncio.wait_for(
+                insight_service.generate_insights_for_project(db, project_id),
+                timeout=60,
+            )
             await db.commit()
         except Exception as exc:
             logger.warning("Insight auto-generation skipped: %s", exc)
@@ -892,6 +1697,7 @@ async def _process_article(
     article: dict,
     search_terms: list[str] | None = None,
     pending_post: list[Mention] | None = None,
+    precomputed_nlp: tuple[str, float, dict] | None = None,
 ) -> tuple[bool, bool]:
     """Process a single article: dedup, NLP analysis, save as mention.
 
@@ -1002,23 +1808,64 @@ async def _process_article(
 
     full_text = f"{title}\n{body}".strip()
     language = nlp_service.detect_language(full_text, fallback="en")
-    sentiment_label, sentiment_score, emotions = (
-        await nlp_service.score_sentiment_and_emotions_gpt(full_text)
-    )
+    # Sentiment+emotions is the per-article bottleneck (a ~1.3s GPT call).
+    # When the caller has already computed it concurrently (pre-pass), reuse
+    # it instead of making another serial call here.
+    if precomputed_nlp is not None:
+        sentiment_label, sentiment_score, emotions = precomputed_nlp
+    else:
+        sentiment_label, sentiment_score, emotions = (
+            await nlp_service.score_sentiment_and_emotions_gpt(full_text)
+        )
     entities = nlp_service.extract_entities(full_text)
 
     proj_settings = dict(project.settings or {})
     keywords = list(proj_settings.get("keywords") or [])
     tags = nlp_service.topic_tags(full_text, keywords)
 
-    # Multi-keyword relevance: how many of the project's terms appear in the
-    # combined title+body? If the project has aliases and ZERO of them match,
-    # drop the article — it came from an OR-query collateral, not actually
-    # about our topic.
+    # Relevance gate — balance coverage with precision. The haystack is
+    # title+body+url lowercased. An article is accepted if ANY project term
+    # matches by:
+    #   - exact phrase match of a multi-word term ("astana it university",
+    #     "астана ит университет"), OR
+    #   - a specific single-token term/acronym present (>= 3 chars, e.g.
+    #     "aitu").
+    # We deliberately do NOT accept a loose "all tokens present somewhere"
+    # match: "it"/"university" appear in unrelated articles (e.g. "University
+    # of Arizona") and would pollute the project with off-topic noise.
     keyword_score = 1.0
-    if search_terms:
-        haystack = f"{title}\n{body}".lower()
-        hits = sum(1 for term in search_terms if term and term in haystack)
+    # Official-site articles come straight from the entity's own website
+    # (e.g. astanait.edu.kz) — they're guaranteed about the topic, so skip
+    # the keyword relevance gate entirely.
+    if article.get("_is_official"):
+        keyword_score = 1.0
+    elif search_terms:
+        haystack = f"{title}\n{body}\n{canonical_url}".lower()
+        hits = 0
+        for term in search_terms:
+            t = (term or "").strip().lower()
+            if not t:
+                continue
+            tokens = [tok for tok in t.split() if tok]
+            if len(tokens) >= 2:
+                # Multi-word term: require the full phrase as a substring.
+                if t in haystack:
+                    hits += 1
+            elif len(t) < 3:
+                continue
+            elif len(t) >= 5:
+                # Longer single token (typically a name/word): match at a word
+                # boundary allowing trailing letters, so inflected Russian /
+                # Kazakh forms still match ("Токаев" -> "Токаева", "Токаевым",
+                # "Тоқаевтың"...). This is essential for recall on names.
+                if re.search(r"\b" + re.escape(t), haystack):
+                    hits += 1
+            else:
+                # Short single token (3-4 chars, typically an acronym like
+                # "aitu"): require an exact whole word so we don't pull
+                # substring noise ("aitutaki", Samoan "aitu").
+                if re.search(r"\b" + re.escape(t) + r"\b", haystack):
+                    hits += 1
         if hits == 0:
             return False, False
         keyword_score = round(min(1.0, hits / max(1, min(len(search_terms), 4))), 4)
@@ -1120,17 +1967,7 @@ async def _get_or_create_source(db: AsyncSession, project_id: str, source_name: 
     if source_country == "XX":
         source_country = None
 
-    monthly = _DOMAIN_MONTHLY_VISITORS.get(domain, 0)
-    if monthly >= 50_000_000:
-        trust = 0.95
-    elif monthly >= 10_000_000:
-        trust = 0.85
-    elif monthly >= 1_000_000:
-        trust = 0.75
-    elif monthly >= 100_000:
-        trust = 0.6
-    else:
-        trust = 0.5
+    trust = _compute_source_trust(domain, source_name, article_url)
 
     source = Source(
         project_id=project_id,
@@ -1359,6 +2196,43 @@ def _estimate_domain_reach(url: str, source_name: str) -> int:
         "de": 1_500, "fr": 1_500,
     }
     return tld_defaults.get(tld, 500)
+
+
+def _compute_source_trust(domain: str, source_name: str, article_url: str) -> float:
+    """Source authority in [0, 1] — shown as ``influence`` (×100) in the UI.
+
+    Derived on a CONTINUOUS log scale from the hardcoded monthly-visitor
+    figures, so each outlet gets a realistic, varied score instead of the old
+    flat 0.5 (=50.00) default. Domains are normalised (``www.`` stripped,
+    sub-domains matched) so e.g. ``en.tengrinews.kz`` resolves to its parent.
+    Unknown domains fall back to a reach-based estimate plus a small STABLE
+    per-domain offset so two unknown sources never read identical numbers.
+    """
+    norm = (domain or "").lower()
+    if norm.startswith("www."):
+        norm = norm[4:]
+
+    monthly = _DOMAIN_MONTHLY_VISITORS.get(norm, 0)
+    if not monthly:
+        for known_domain, visitors in _DOMAIN_MONTHLY_VISITORS.items():
+            if norm.endswith("." + known_domain):
+                monthly = visitors
+                break
+
+    if monthly > 0:
+        # ~200k -> 0.55, 1M -> 0.66, 10M -> 0.81, 85M -> ~0.95
+        trust = 0.55 + (math.log10(monthly) - 5.3) * 0.152
+    else:
+        # Unknown outlet: base on the (already varied) reach estimate, then
+        # add a deterministic 0..0.10 offset keyed off the domain so the
+        # numbers differ between sources without being truly random per-run.
+        reach = _estimate_domain_reach(article_url, source_name)
+        base = 0.35 + (math.log10(max(reach, 100)) - 2.7) * 0.10
+        seed = int(hashlib.md5((norm or source_name or "x").encode("utf-8")).hexdigest(), 16)
+        jitter = (seed % 1000) / 10000.0  # 0.0000 – 0.0999
+        trust = base + jitter
+
+    return round(max(0.2, min(0.98, trust)), 4)
 
 
 def _guess_country(language: str) -> str:

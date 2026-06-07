@@ -6,14 +6,15 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.database import Base
 
 
-try:
-    from pgvector.sqlalchemy import Vector
+from sqlalchemy import ARRAY, Float
 
-    _EMBEDDING_TYPE = Vector(1536)
-except Exception:  # pragma: no cover — pgvector missing in dev/test env
-    from sqlalchemy import ARRAY, Float
-
-    _EMBEDDING_TYPE = ARRAY(Float)
+# The live database stores this column as a plain Postgres ``double precision[]``
+# array (the pgvector extension is not enabled here). We therefore use a SQL
+# ARRAY type so writes/reads work, and run cosine similarity in Python. If you
+# later enable the pgvector extension and migrate the column to ``vector(1536)``,
+# swap this for ``pgvector.sqlalchemy.Vector(1536)`` and set
+# ``embedding_service.USES_PGVECTOR = True``.
+_EMBEDDING_TYPE = ARRAY(Float)
 
 
 class MentionEmbedding(Base):

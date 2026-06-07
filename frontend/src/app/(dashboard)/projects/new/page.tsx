@@ -76,8 +76,10 @@ const LANGUAGES = [
 // project early if ingestion is taking unusually long.
 const SHOW_SKIP_AFTER_MS = 180_000; // 3 minutes
 
-// Polling interval for /ingestion/jobs/{id}.
-const POLL_INTERVAL_MS = 5_000;
+// Polling interval for /ingestion/jobs/{id}. Kept short so the live source
+// name and growing counters update frequently — the run is long, so the user
+// needs constant visible feedback that it isn't stuck.
+const POLL_INTERVAL_MS = 2_500;
 
 export default function NewProjectPage() {
   const router = useRouter();
@@ -93,6 +95,9 @@ export default function NewProjectPage() {
   // Counts consecutive network failures so we can surface a soft warning
   // without breaking the loop.
   const [consecutiveErrors, setConsecutiveErrors] = useState(0);
+  // Seconds since ingestion started — a ticking timer reassures the user the
+  // process is alive even while a slow source is being fetched.
+  const [elapsedSec, setElapsedSec] = useState(0);
 
   const features = [
     { icon: Search, label: t("newProjectPage.features.search", { defaultValue: "Search across 1000+ news sources" }) },
@@ -119,6 +124,19 @@ export default function NewProjectPage() {
       router.push("/login");
     }
   }, [router]);
+
+  // Ticking elapsed-time counter while a job is in progress.
+  useEffect(() => {
+    if (!tracking) {
+      setElapsedSec(0);
+      return;
+    }
+    const startedAt = Date.now();
+    const id = window.setInterval(() => {
+      setElapsedSec(Math.floor((Date.now() - startedAt) / 1000));
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [tracking]);
 
   // Polling effect — runs while we have a tracked job. NO hard redirect:
   // we wait for the backend to report `completed` or `failed`. If the user
@@ -271,21 +289,29 @@ export default function NewProjectPage() {
   const isCompleted = jobStatus?.status === "completed";
   const isFailed = jobStatus?.status === "failed";
   const isRetrying = refreshMutation.isPending;
+  const currentStage = jobStatus?.current_stage;
 
-  // Stage label changes depending on progress percent so the user can
-  // see what's actually happening behind the scenes.
+  const elapsedLabel = useMemo(() => {
+    const m = Math.floor(elapsedSec / 60);
+    const s = elapsedSec % 60;
+    return m > 0 ? `${m}:${String(s).padStart(2, "0")}` : `${s}s`;
+  }, [elapsedSec]);
+
+  // Stage label: while running, prefer the actual source being scanned right
+  // now (from the backend) so it's obvious the run is progressing; otherwise
+  // fall back to a phase description.
   const stageLabel = useMemo(() => {
     if (isCompleted) return t("newProjectPage.progress.completed");
     if (isFailed) return t("newProjectPage.progress.failed");
+    if (currentStage) {
+      return t("newProjectPage.progress.scanning", {
+        defaultValue: "Scanning: {{source}}",
+        source: currentStage,
+      });
+    }
     if (progressValue < 15) {
       return t("newProjectPage.progress.stages.discovering", {
         defaultValue: "Discovering relevant sources",
-      });
-    }
-    if (progressValue < 60) {
-      return t("newProjectPage.progress.stages.crawling", {
-        defaultValue: "Crawling {{count}} sources",
-        count: totalSources || processedSources || 0,
       });
     }
     if (progressValue < 90) {
@@ -296,7 +322,7 @@ export default function NewProjectPage() {
     return t("newProjectPage.progress.stages.finalising", {
       defaultValue: "Finalising",
     });
-  }, [isCompleted, isFailed, progressValue, totalSources, processedSources, t]);
+  }, [isCompleted, isFailed, progressValue, currentStage, t]);
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
@@ -428,8 +454,20 @@ export default function NewProjectPage() {
 
                     <Progress value={progressValue} />
 
-                    {/* Stage label */}
-                    <p className="text-sm font-medium">{stageLabel}</p>
+                    {/* Stage label + live elapsed timer */}
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-medium flex items-center gap-2 min-w-0">
+                        {!isCompleted && !isFailed && (
+                          <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-primary animate-pulse" />
+                        )}
+                        <span className="truncate">{stageLabel}</span>
+                      </p>
+                      {!isCompleted && !isFailed && (
+                        <span className="text-xs tabular-nums text-muted-foreground shrink-0">
+                          {elapsedLabel}
+                        </span>
+                      )}
+                    </div>
 
                     {/* Detailed stats — only meaningful while running */}
                     {!isFailed && (

@@ -1,0 +1,11 @@
+# Debug-session logs (Cursor debug mode)
+debug-*.log
+
+# Local env files (also covered by backend/ and frontend/ .gitignore)
+.env
+**/.env
+!**/.env.example
+
+# OS / editor noise
+.DS_Store
+Thumbs.db

@@ -16,6 +16,21 @@ from app.tasks.worker_tasks import (
 
 logger = logging.getLogger(__name__)
 
+# In "local" task mode every enqueue becomes an asyncio.create_task in the API
+# process. The scheduler refreshes EVERY project at once, so without a global
+# bound dozens of ingestion jobs run concurrently — exhausting the DB pool and
+# saturating the OpenAI rate limit. This semaphore caps concurrent local
+# project refreshes; the rest queue and run as slots free up.
+_LOCAL_REFRESH_MAX_CONCURRENCY = 2
+_local_refresh_semaphore: asyncio.Semaphore | None = None
+
+
+def _get_refresh_semaphore() -> asyncio.Semaphore:
+    global _local_refresh_semaphore
+    if _local_refresh_semaphore is None:
+        _local_refresh_semaphore = asyncio.Semaphore(_LOCAL_REFRESH_MAX_CONCURRENCY)
+    return _local_refresh_semaphore
+
 
 def _publish_or_local(task_type: str, task_id: str, payload: dict, local_coro) -> str:
     """Publish to Kafka, falling back to local execution if the broker is
@@ -54,16 +69,18 @@ async def _local_refresh(
     limit_sources: int | None,
     per_source_limit: int,
 ):
-    async with AsyncSessionLocal() as db:
-        await ingestion_service.run_project_ingestion(
-            db=db,
-            project_id=project_id,
-            created_by=created_by,
-            limit_sources=limit_sources,
-            per_source_limit=per_source_limit,
-            crawl_job_id=crawl_job_id,
-        )
-        await db.commit()
+    # Bound concurrent refreshes process-wide (see _get_refresh_semaphore).
+    async with _get_refresh_semaphore():
+        async with AsyncSessionLocal() as db:
+            await ingestion_service.run_project_ingestion(
+                db=db,
+                project_id=project_id,
+                created_by=created_by,
+                limit_sources=limit_sources,
+                per_source_limit=per_source_limit,
+                crawl_job_id=crawl_job_id,
+            )
+            await db.commit()
 
 
 async def _local_crawl_source(

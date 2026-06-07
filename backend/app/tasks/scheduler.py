@@ -10,10 +10,27 @@ from app.tasks.dispatcher import enqueue_refresh_project_mentions
 
 
 async def _refresh_all_projects_job():
+    """Periodic refresh. Skips any project that already has a running/pending
+    job so we never pile up a 'thundering herd' of duplicate ingestion runs
+    (which would saturate the DB pool and the OpenAI rate limit). Actual
+    concurrency is further bounded by the dispatcher's refresh semaphore."""
+    from app.models.crawl_job import CrawlJob
+
     async with AsyncSessionLocal() as db:
         result = await db.execute(select(Project.id))
         project_ids = [row[0] for row in result.all()]
+
+        # Projects that already have an in-flight job — don't re-enqueue them.
+        active_rows = await db.execute(
+            select(CrawlJob.project_id)
+            .where(CrawlJob.status.in_(("running", "pending")))
+            .distinct()
+        )
+        active_project_ids = {row[0] for row in active_rows.all()}
+
         for project_id in project_ids:
+            if project_id in active_project_ids:
+                continue
             crawl_job = await ingestion_service.create_crawl_job(
                 db=db,
                 project_id=project_id,
