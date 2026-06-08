@@ -130,11 +130,6 @@ cp .env.example .env.local      # set NEXT_PUBLIC_API_URL, NEXT_PUBLIC_GOOGLE_CL
 npm run dev                     # http://localhost:3000
 ```
 
-## Deployment
-
-A complete A-to-Z guide for deploying to a custom domain (Render for the API + Postgres,
-Vercel for the frontend) lives in **[DEPLOY.md](./DEPLOY.md)**. The repository also ships a
-`render.yaml` blueprint and a backend `Dockerfile`.
 
 ## Authors
 
