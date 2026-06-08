@@ -8,3 +8,15 @@ build/
 .venv/
 venv/
 .pytest_cache/
+
+# Runtime logs & generated artifacts
+*.log
+*.out.txt
+.logs/
+eval_out/
+
+# Local database dumps / backups (never commit data)
+.pgvector_migration/
+*.backup
+*.sql.gz
+*.dump

@@ -1,2 +1,0 @@
-<frozen runpy>:128: RuntimeWarning: 'app.tasks.kafka_worker' found in sys.modules after import of package 'app.tasks', but prior to execution of 'app.tasks.kafka_worker'; this may result in unpredictable behaviour
-Kafka worker started. topic=senti.tasks, group=senti-workers

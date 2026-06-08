@@ -1,10 +1,17 @@
-# Debug-session logs (Cursor debug mode)
+# Logs (debug sessions, runtime logs, etc.)
 debug-*.log
+*.log
 
 # Local env files (also covered by backend/ and frontend/ .gitignore)
 .env
 **/.env
 !**/.env.example
+
+# Editor / IDE / assistant local config
+.claude/
+.cursor/
+.idea/
+.vscode/
 
 # OS / editor noise
 .DS_Store
