@@ -4,7 +4,6 @@ from sqlalchemy import select, and_, or_, func, extract
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 from app.models.mention import Mention
-from app.models.source import Source
 from app.utils.pagination import paginate
 from app.core.exceptions import NotFoundError
 
@@ -63,8 +62,11 @@ async def get_mentions(
     if date_to:
         query = query.where(Mention.published_at <= _parse_date(date_to))
     if sources:
-        source_types = [s.strip() for s in sources.split(",")]
-        query = query.join(Source).where(Source.type.in_(source_types))
+        # ``sources`` now carries actual news-source IDs (the real outlets that
+        # produced mentions), not social-media type slugs.
+        source_ids = [s.strip() for s in sources.split(",") if s.strip()]
+        if source_ids:
+            query = query.where(Mention.source_id.in_(source_ids))
     if sentiment:
         sentiments = [s.strip() for s in sentiment.split(",")]
         query = query.where(Mention.sentiment_label.in_(sentiments))
@@ -179,9 +181,9 @@ async def get_mentions_stats(
         if date_to:
             query = query.where(Mention.published_at <= _parse_date(date_to))
         if sources:
-            source_types = [s.strip() for s in sources.split(",") if s.strip()]
-            if source_types:
-                query = query.join(Source).where(Source.type.in_(source_types))
+            source_ids = [s.strip() for s in sources.split(",") if s.strip()]
+            if source_ids:
+                query = query.where(Mention.source_id.in_(source_ids))
         if sentiment:
             sentiments = [s.strip() for s in sentiment.split(",") if s.strip()]
             if sentiments:

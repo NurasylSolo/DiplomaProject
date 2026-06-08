@@ -24,14 +24,8 @@ import { GradientText } from "@/components/ui/gradient-text";
 import { CompactCounter } from "@/components/ui/animated-counter";
 import { FloatingShapes, GridPattern } from "@/components/ui/floating-shapes";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { LanguageDropdown } from "@/components/ui/language-dropdown";
 import { useTranslation } from "@/hooks";
-import { supportedLanguages } from "@/lib/i18n";
 
 // Animation variants
 const fadeInUp = {
@@ -49,7 +43,7 @@ const staggerContainer = {
 };
 
 export default function LandingPage() {
-  const { t, changeLanguage, currentLanguage } = useTranslation();
+  const { t } = useTranslation();
   return (
     <div className="relative min-h-screen bg-background overflow-hidden">
       {/* Background elements */}
@@ -70,29 +64,11 @@ export default function LandingPage() {
             <div className="hidden md:flex items-center justify-center gap-8 absolute left-1/2 -translate-x-1/2">
               <NavLink href="#features">{t("landing.nav.features", { defaultValue: "Features" })}</NavLink>
               <NavLink href="#stats">{t("landing.nav.analytics", { defaultValue: "Analytics" })}</NavLink>
-              <NavLink href="#contact">{t("landing.nav.contact", { defaultValue: "Contact" })}</NavLink>
+              <NavLink href="/contact">{t("landing.nav.contact", { defaultValue: "Contact" })}</NavLink>
             </div>
 
             <div className="flex items-center gap-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" title={t("header.language")}>
-                    <Globe2 className="h-5 w-5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {supportedLanguages.map((lang) => (
-                    <DropdownMenuItem
-                      key={lang.code}
-                      onClick={() => changeLanguage(lang.code)}
-                      className={currentLanguage === lang.code ? "bg-accent" : ""}
-                    >
-                      <span className="mr-2">{lang.flag}</span>
-                      {lang.name}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <LanguageDropdown />
               <ThemeToggle />
               <Button variant="ghost" asChild>
                 <Link href="/login">{t("auth.login.submit")}</Link>

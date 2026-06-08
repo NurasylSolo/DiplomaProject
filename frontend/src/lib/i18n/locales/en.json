@@ -237,6 +237,11 @@
       "apply": "Apply Filters",
       "clear": "Clear All",
       "showAll": "Show all sources",
+      "showAllCount": "Show all {{count}}",
+      "showLess": "Show less",
+      "searchSources": "Search sources…",
+      "noSources": "No sources yet — collect mentions first.",
+      "noMatch": "No matches",
       "from": "From",
       "to": "To",
       "min": "Min",
@@ -1800,6 +1805,44 @@
   },
   "legal": {
     "backToApp": "Back to app",
+    "contact": {
+      "eyebrow": "Contact",
+      "title": "Get in touch",
+      "intro": "Have a question about SentiNews, want to report an issue, or interested in the research behind the platform? We'd love to hear from you. SentiNews is an academic diploma project, so the fastest way to reach us is by email.",
+      "cards": {
+        "email": {
+          "label": "Email",
+          "hint": "Best for questions, feedback, and collaboration requests."
+        },
+        "location": {
+          "label": "Location",
+          "value": "Astana IT University, Astana, Kazakhstan",
+          "hint": "Where the project was developed and is maintained."
+        },
+        "response": {
+          "label": "Response time",
+          "value": "Within 1–2 days",
+          "hint": "We reply to every message as soon as we can."
+        }
+      },
+      "teamTitle": "Meet the team",
+      "team": {
+        "member1": {
+          "name": "Nurasyl Kairkhanov",
+          "role": "Co-author — backend, data ingestion & AI"
+        },
+        "member2": {
+          "name": "Akezhan Meirkhanov",
+          "role": "Co-author — frontend, analytics & UX"
+        },
+        "affiliation": "Bachelor's diploma project, Astana IT University."
+      },
+      "ctaTitle": "Send us a message",
+      "ctaBody": "Questions, ideas, or feedback about the platform are always welcome. Drop us an email and we'll get back to you.",
+      "ctaButton": "Email us",
+      "ctaGithub": "View on GitHub",
+      "backHome": "← Back to home"
+    },
     "privacy": {
       "eyebrow": "Privacy Policy",
       "title": "Privacy Policy",

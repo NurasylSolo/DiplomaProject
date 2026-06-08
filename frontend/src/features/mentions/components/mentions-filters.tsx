@@ -34,9 +34,9 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
-import { SOURCE_TYPES, SENTIMENT_TYPES, DATE_RANGE_PRESETS } from "@/lib/constants";
+import { SENTIMENT_TYPES, DATE_RANGE_PRESETS } from "@/lib/constants";
 import { useMentionsFilterStore } from "@/stores";
-import { useTranslation } from "@/hooks";
+import { useTranslation, useSourcesBreakdown } from "@/hooks";
 
 interface MentionsFiltersProps {
   projectId: string;
@@ -237,37 +237,17 @@ export function MentionsFilters({ projectId }: MentionsFiltersProps) {
             </div>
           </FilterSection>
 
-          {/* Sources */}
+          {/* Sources — real news outlets that produced mentions */}
           <FilterSection
             title={t("mentions.filters.sources")}
             badge={sources.length}
             defaultOpen
           >
-            <div className="space-y-2">
-              {Object.values(SOURCE_TYPES).slice(0, 8).map((source) => (
-                <label
-                  key={source.id}
-                  className="flex items-center gap-2 cursor-pointer group"
-                >
-                  <Checkbox
-                    checked={sources.includes(source.id)}
-                    onCheckedChange={() => toggleSource(source.id)}
-                  />
-                  <span
-                    className="w-2 h-2 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: source.color }}
-                  />
-                  <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
-                    {t(`mentions.filters.sourceTypes.${source.id}`, {
-                      defaultValue: source.label,
-                    })}
-                  </span>
-                </label>
-              ))}
-              <Button variant="ghost" size="sm" className="w-full text-xs mt-1">
-                {t("mentions.filters.showAll")}
-              </Button>
-            </div>
+            <SourcesFilter
+              projectId={projectId}
+              selected={sources}
+              onToggle={toggleSource}
+            />
           </FilterSection>
 
           {/* Sentiment */}
@@ -349,6 +329,101 @@ export function MentionsFilters({ projectId }: MentionsFiltersProps) {
           </FilterSection>
         </div>
       </ScrollArea>
+    </div>
+  );
+}
+
+// Sources filter — lists the project's actual news outlets (with mention
+// counts), since the platform tracks news/media, not social networks.
+interface SourcesFilterProps {
+  projectId: string;
+  selected: string[];
+  onToggle: (sourceId: string) => void;
+}
+
+function SourcesFilter({ projectId, selected, onToggle }: SourcesFilterProps) {
+  const { t } = useTranslation();
+  const { data, isLoading } = useSourcesBreakdown(projectId, { limit: 100 });
+  const [query, setQuery] = useState("");
+  const [showAll, setShowAll] = useState(false);
+
+  const sources = data ?? [];
+  const filtered = sources.filter((s) =>
+    s.name.toLowerCase().includes(query.trim().toLowerCase())
+  );
+  const visible = showAll ? filtered : filtered.slice(0, 8);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-2">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="h-6 rounded bg-muted/50 animate-pulse" />
+        ))}
+      </div>
+    );
+  }
+
+  if (sources.length === 0) {
+    return (
+      <p className="text-xs text-muted-foreground py-1">
+        {t("mentions.filters.noSources", {
+          defaultValue: "No sources yet — collect mentions first.",
+        })}
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {sources.length > 8 && (
+        <Input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={t("mentions.filters.searchSources", {
+            defaultValue: "Search sources…",
+          })}
+          className="h-8 text-xs"
+        />
+      )}
+      <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
+        {visible.map((source) => (
+          <label
+            key={source.source_id}
+            className="flex items-center gap-2 cursor-pointer group"
+          >
+            <Checkbox
+              checked={selected.includes(source.source_id)}
+              onCheckedChange={() => onToggle(source.source_id)}
+            />
+            <span className="flex-1 truncate text-sm text-muted-foreground group-hover:text-foreground transition-colors">
+              {source.name}
+            </span>
+            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 shrink-0">
+              {source.mentions_count}
+            </Badge>
+          </label>
+        ))}
+        {filtered.length === 0 && (
+          <p className="text-xs text-muted-foreground py-1">
+            {t("mentions.filters.noMatch", { defaultValue: "No matches" })}
+          </p>
+        )}
+      </div>
+      {filtered.length > 8 && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full text-xs"
+          onClick={() => setShowAll((v) => !v)}
+        >
+          {showAll
+            ? t("mentions.filters.showLess", { defaultValue: "Show less" })
+            : t("mentions.filters.showAllCount", {
+                defaultValue: `Show all ${filtered.length}`,
+                count: filtered.length,
+              })}
+        </Button>
+      )}
     </div>
   );
 }
