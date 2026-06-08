@@ -53,10 +53,12 @@ export default function ProjectLayout({ children, params }: ProjectLayoutProps) 
       <main
         className={cn(
           "pt-16 min-h-screen transition-all duration-300",
-          isCollapsed ? "pl-[72px]" : "pl-[260px]"
+          // Mobile: full width (sidebar is an off-canvas drawer).
+          // Desktop (lg+): offset by the persistent sidebar width.
+          isCollapsed ? "lg:pl-[72px]" : "lg:pl-[260px]"
         )}
       >
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {children}
         </div>
       </main>

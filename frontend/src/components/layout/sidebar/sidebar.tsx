@@ -1,12 +1,13 @@
 "use client";
 
+import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebarStore } from "@/stores";
-import { useTranslation } from "@/hooks";
+import { useTranslation, useMediaQuery } from "@/hooks";
 import { Logo } from "@/components/ui/logo";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,30 +20,73 @@ interface SidebarProps {
 
 export function Sidebar({ projectId }: SidebarProps) {
   const pathname = usePathname();
-  const { isCollapsed, toggleCollapsed } = useSidebarStore();
+  const { isCollapsed, toggleCollapsed, isMobileOpen, setMobileOpen } = useSidebarStore();
   const { t } = useTranslation();
-  
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
+
+  // On mobile the sidebar is a full-width drawer, so the desktop "collapsed"
+  // (icon-only) mode must never apply there.
+  const effectiveCollapsed = isDesktop && isCollapsed;
+
   const sidebarData = getSidebarData(projectId, t);
-  
+
+  // Close the mobile drawer whenever the route changes.
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname, setMobileOpen]);
+
+  // Lock body scroll while the mobile drawer is open.
+  useEffect(() => {
+    if (!isMobileOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [isMobileOpen]);
+
   return (
     <TooltipProvider delayDuration={0}>
+      {/* Mobile backdrop */}
+      {isMobileOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          onClick={() => setMobileOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       <motion.aside
         className={cn(
-          "fixed left-0 top-0 z-40 h-screen flex flex-col",
+          "fixed left-0 top-0 z-50 h-screen flex flex-col",
           "bg-sidebar border-r border-sidebar-border",
-          "transition-all duration-300 ease-in-out"
+          "transition-transform duration-300 ease-in-out lg:transition-all",
+          // Mobile: always full-width drawer that slides in/out. The
+          // !w-[260px] overrides the framer-driven inline width below lg.
+          "max-lg:!w-[260px]",
+          isMobileOpen ? "max-lg:translate-x-0" : "max-lg:-translate-x-full"
         )}
         initial={false}
-        animate={{ width: isCollapsed ? 72 : 260 }}
+        animate={{ width: effectiveCollapsed ? 72 : 260 }}
       >
         {/* Logo */}
         <div className={cn(
           "flex items-center h-16 px-4 border-b border-sidebar-border",
-          isCollapsed ? "justify-center" : "justify-between"
+          effectiveCollapsed ? "lg:justify-center" : "justify-between"
         )}>
           <Link href="/dashboard" className="flex items-center gap-2">
-            <Logo size="sm" showText={!isCollapsed} animated={false} />
+            <Logo size="sm" showText={!effectiveCollapsed} animated={false} />
           </Link>
+          {/* Close button (mobile drawer only) */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="lg:hidden h-8 w-8"
+            onClick={() => setMobileOpen(false)}
+            aria-label={t("common.close", { defaultValue: "Close" })}
+          >
+            <X className="h-5 w-5" />
+          </Button>
         </div>
         
         {/* Navigation */}
@@ -52,7 +96,7 @@ export function Sidebar({ projectId }: SidebarProps) {
               <div key={sectionIndex}>
                 {/* Section Title */}
                 <AnimatePresence>
-                  {section.title && !isCollapsed && (
+                  {section.title && !effectiveCollapsed && (
                     <motion.h4
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
@@ -71,7 +115,7 @@ export function Sidebar({ projectId }: SidebarProps) {
                       key={item.id}
                       item={item}
                       pathname={pathname}
-                      isCollapsed={isCollapsed}
+                      isCollapsed={effectiveCollapsed}
                     />
                   ))}
                 </div>
@@ -80,8 +124,8 @@ export function Sidebar({ projectId }: SidebarProps) {
           </nav>
         </div>
         
-        {/* Collapse Toggle */}
-        <div className="p-3 border-t border-sidebar-border">
+        {/* Collapse Toggle (desktop only) */}
+        <div className="p-3 border-t border-sidebar-border hidden lg:block">
           <Button
             variant="ghost"
             size="sm"
@@ -92,7 +136,7 @@ export function Sidebar({ projectId }: SidebarProps) {
               "hover:bg-sidebar-accent"
             )}
           >
-            {isCollapsed ? (
+            {effectiveCollapsed ? (
               <ChevronRight className="h-4 w-4" />
             ) : (
               <>

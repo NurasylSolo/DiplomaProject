@@ -9,6 +9,7 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
   useAiChat,
   useChats,
@@ -17,6 +18,7 @@ import {
   useGenerateAiReport,
   useRenameChat,
   useTranslation,
+  useMediaQuery,
 } from "@/hooks";
 import {
   ChatHeader,
@@ -39,6 +41,8 @@ export default function AssistantPage({ params }: AssistantPageProps) {
   const { projectId } = use(params);
   const { t } = useTranslation();
   const searchParams = useSearchParams();
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
+  const [chatListOpen, setChatListOpen] = useState(false);
 
   // ── data
   const { data: chats = [], isLoading: chatsLoading } = useChats(projectId);
@@ -223,81 +227,110 @@ export default function AssistantPage({ params }: AssistantPageProps) {
     textareaRef.current?.focus();
   };
 
+  const chatSidebar = (
+    <ChatSidebar
+      chats={chats}
+      chatsLoading={chatsLoading}
+      activeChatId={activeChatId}
+      onSelectChat={(id) => {
+        setActiveChatId(id);
+        setChatListOpen(false);
+      }}
+      onNewChat={() => {
+        handleNewChat();
+        setChatListOpen(false);
+      }}
+      onRenameRequest={(chat) => {
+        setActiveChatId(chat.id);
+        setRenameValue(chat.title || "");
+        setRenameOpen(true);
+      }}
+      onDelete={handleDelete}
+      onQuickPrompt={handleQuickPrompt}
+    />
+  );
+
+  const chatPanel = (
+    <Card className="glass flex flex-col overflow-hidden h-full">
+      <ChatHeader
+        activeChat={activeChat}
+        activeChatId={activeChatId}
+        isReportPending={reportMutation.isPending}
+        onGenerateReport={handleGenerateReport}
+        onRequestRename={() => {
+          setRenameValue(activeChat?.title || "");
+          setRenameOpen(true);
+        }}
+        onDelete={() => activeChatId && handleDelete(activeChatId)}
+        onToggleSidebar={!isDesktop ? () => setChatListOpen(true) : undefined}
+      />
+
+      <CardContent className="p-0 flex-1 min-h-0 flex flex-col">
+        <MessageList
+          ref={messagesScrollRef}
+          endRef={messagesEndRef}
+          visibleMessages={visibleMessages}
+          messagesLoading={messagesLoading}
+          optimisticPending={optimistic.length > 0}
+          isAiPending={aiChat.isPending}
+          mentionsById={mentionsById}
+          suggestedPrompts={suggestedPrompts}
+          onSuggestedClick={(prompt) => {
+            setInput(prompt);
+            textareaRef.current?.focus();
+          }}
+          onCopy={handleCopy}
+        />
+
+        <MessageInput
+          ref={textareaRef}
+          value={input}
+          onChange={setInput}
+          onSend={handleSend}
+          isPending={aiChat.isPending}
+          showQuickPrompts={visibleMessages.length > 0}
+          onQuickPrompt={handleQuickPrompt}
+        />
+      </CardContent>
+    </Card>
+  );
+
   return (
     <div className="h-[calc(100vh-7rem)] min-h-[500px]">
-      <ResizablePanelGroup
-        direction="horizontal"
-        autoSaveId="assistant-layout"
-        className="h-full rounded-lg"
-      >
-        <ResizablePanel
-          defaultSize={22}
-          minSize={15}
-          maxSize={40}
-          collapsible={false}
+      {isDesktop ? (
+        <ResizablePanelGroup
+          direction="horizontal"
+          autoSaveId="assistant-layout"
+          className="h-full rounded-lg"
         >
-          <ChatSidebar
-            chats={chats}
-            chatsLoading={chatsLoading}
-            activeChatId={activeChatId}
-            onSelectChat={setActiveChatId}
-            onNewChat={handleNewChat}
-            onRenameRequest={(chat) => {
-              setActiveChatId(chat.id);
-              setRenameValue(chat.title || "");
-              setRenameOpen(true);
-            }}
-            onDelete={handleDelete}
-            onQuickPrompt={handleQuickPrompt}
-          />
-        </ResizablePanel>
+          <ResizablePanel
+            defaultSize={22}
+            minSize={15}
+            maxSize={40}
+            collapsible={false}
+          >
+            {chatSidebar}
+          </ResizablePanel>
 
-        <ResizableHandle withHandle />
+          <ResizableHandle withHandle />
 
-        <ResizablePanel defaultSize={78} minSize={40} className="pl-3">
-          <Card className="glass flex flex-col overflow-hidden h-full">
-            <ChatHeader
-              activeChat={activeChat}
-              activeChatId={activeChatId}
-              isReportPending={reportMutation.isPending}
-              onGenerateReport={handleGenerateReport}
-              onRequestRename={() => {
-                setRenameValue(activeChat?.title || "");
-                setRenameOpen(true);
-              }}
-              onDelete={() => activeChatId && handleDelete(activeChatId)}
-            />
-
-            <CardContent className="p-0 flex-1 min-h-0 flex flex-col">
-              <MessageList
-                ref={messagesScrollRef}
-                endRef={messagesEndRef}
-                visibleMessages={visibleMessages}
-                messagesLoading={messagesLoading}
-                optimisticPending={optimistic.length > 0}
-                isAiPending={aiChat.isPending}
-                mentionsById={mentionsById}
-                suggestedPrompts={suggestedPrompts}
-                onSuggestedClick={(prompt) => {
-                  setInput(prompt);
-                  textareaRef.current?.focus();
-                }}
-                onCopy={handleCopy}
-              />
-
-              <MessageInput
-                ref={textareaRef}
-                value={input}
-                onChange={setInput}
-                onSend={handleSend}
-                isPending={aiChat.isPending}
-                showQuickPrompts={visibleMessages.length > 0}
-                onQuickPrompt={handleQuickPrompt}
-              />
-            </CardContent>
-          </Card>
-        </ResizablePanel>
-      </ResizablePanelGroup>
+          <ResizablePanel defaultSize={78} minSize={40} className="pl-3">
+            {chatPanel}
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      ) : (
+        <>
+          <div className="h-full">{chatPanel}</div>
+          <Sheet open={chatListOpen} onOpenChange={setChatListOpen}>
+            <SheetContent side="left" className="w-[300px] p-0">
+              <SheetHeader className="sr-only">
+                <SheetTitle>{t("assistant.chats", { defaultValue: "Chats" })}</SheetTitle>
+              </SheetHeader>
+              <div className="h-full">{chatSidebar}</div>
+            </SheetContent>
+          </Sheet>
+        </>
+      )}
 
       <RenameDialog
         open={renameOpen}

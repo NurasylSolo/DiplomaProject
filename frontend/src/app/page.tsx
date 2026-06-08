@@ -429,7 +429,7 @@ function DashboardPreview() {
       </div>
       
       {/* Stats Row */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
         {[
           { label: "Total Mentions", value: "12,847", change: "+12%" },
           { label: "Social Reach", value: "2.4M", change: "+8%" },
@@ -445,7 +445,7 @@ function DashboardPreview() {
       </div>
       
       {/* Chart Area */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="col-span-2 p-4 rounded-xl bg-card border border-border h-48">
           {/* Fake chart lines */}
           <div className="h-full flex items-end gap-1">

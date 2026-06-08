@@ -114,6 +114,7 @@ export function SourcesTable({
                     onClick={() => onSort("type")}
                     icon={sortIcon("type")}
                     width="w-28"
+                    className="hidden md:table-cell"
                   />
                   <SortHeader
                     label={t("sources.table.mentions")}
@@ -128,6 +129,7 @@ export function SourcesTable({
                     icon={sortIcon("reach")}
                     width="w-24"
                     align="right"
+                    className="hidden lg:table-cell"
                   />
                   <SortHeader
                     label={t("sources.table.trust")}
@@ -135,6 +137,7 @@ export function SourcesTable({
                     icon={sortIcon("trust")}
                     width="w-24"
                     align="center"
+                    className="hidden md:table-cell"
                   />
                   <SortHeader
                     label={t("sources.table.lastSeen")}
@@ -142,6 +145,7 @@ export function SourcesTable({
                     icon={sortIcon("lastPublished")}
                     width="w-32"
                     align="right"
+                    className="hidden lg:table-cell"
                   />
                   <th className="p-4 text-xs font-medium text-muted-foreground uppercase tracking-wide w-20 text-center">
                     {t("sources.table.status")}
@@ -213,12 +217,14 @@ function SortHeader({
   icon,
   width = "",
   align = "left",
+  className = "",
 }: {
   label: string;
   onClick: () => void;
   icon: React.ReactNode;
   width?: string;
   align?: "left" | "right" | "center";
+  className?: string;
 }) {
   const alignCls =
     align === "right" ? "text-right" : align === "center" ? "text-center" : "";
@@ -230,7 +236,8 @@ function SortHeader({
       className={cn(
         "p-4 text-xs font-medium text-muted-foreground uppercase tracking-wide",
         width,
-        alignCls
+        alignCls,
+        className
       )}
     >
       <button
@@ -312,7 +319,7 @@ function SourceTableRow({
           </div>
         </div>
       </td>
-      <td className="p-4">
+      <td className="hidden md:table-cell p-4">
         <Badge
           variant="outline"
           className={cn("capitalize text-xs", TYPE_BADGE_COLORS[s.type])}
@@ -323,10 +330,10 @@ function SourceTableRow({
       <td className="p-4 text-right tabular-nums font-medium">
         {s.mentionCount.toLocaleString()}
       </td>
-      <td className="p-4 text-right tabular-nums text-muted-foreground">
+      <td className="hidden lg:table-cell p-4 text-right tabular-nums text-muted-foreground">
         {fmtCompact(s.totalReach)}
       </td>
-      <td className="p-4 text-center">
+      <td className="hidden md:table-cell p-4 text-center">
         <span
           className={cn(
             "text-sm font-semibold tabular-nums",
@@ -336,7 +343,7 @@ function SourceTableRow({
           {(s.trustScore * 10).toFixed(1)}
         </span>
       </td>
-      <td className="p-4 text-right text-xs text-muted-foreground">
+      <td className="hidden lg:table-cell p-4 text-right text-xs text-muted-foreground">
         {relativeTime(s.lastPublishedAt, t)}
       </td>
       <td className="p-4 text-center">

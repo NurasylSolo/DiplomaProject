@@ -5,6 +5,7 @@ import {
   FileText,
   Loader2,
   MoreHorizontal,
+  PanelLeft,
   Pencil,
   Trash2,
 } from "lucide-react";
@@ -26,6 +27,8 @@ interface ChatHeaderProps {
   onGenerateReport: () => void;
   onRequestRename: () => void;
   onDelete: () => void;
+  /** Mobile-only: open the chat-list drawer. */
+  onToggleSidebar?: () => void;
 }
 
 export function ChatHeader({
@@ -35,6 +38,7 @@ export function ChatHeader({
   onGenerateReport,
   onRequestRename,
   onDelete,
+  onToggleSidebar,
 }: ChatHeaderProps) {
   const { t } = useTranslation();
 
@@ -42,6 +46,17 @@ export function ChatHeader({
     <CardHeader className="border-b border-border/50 py-3 flex-shrink-0">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-3 min-w-0">
+          {onToggleSidebar && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden h-8 w-8 flex-shrink-0"
+              onClick={onToggleSidebar}
+              aria-label={t("assistant.chats", { defaultValue: "Chats" })}
+            >
+              <PanelLeft className="h-5 w-5" />
+            </Button>
+          )}
           <div className="p-2 rounded-lg bg-primary/10 flex-shrink-0">
             <Bot className="h-5 w-5 text-primary" />
           </div>

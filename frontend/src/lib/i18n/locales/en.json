@@ -524,6 +524,7 @@
       }
     },
     "newChat": "New Chat",
+    "chats": "Chats",
     "chatHistory": "Chat History",
     "noChats": "No chat history yet",
     "quickPrompts": "Quick Prompts",

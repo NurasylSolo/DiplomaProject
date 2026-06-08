@@ -157,12 +157,17 @@ export default function InfographicPage({ params }: InfographicPageProps) {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
-            <InfographicCanvas
-              ref={ref}
-              preview={previewQuery.data}
-              influencers={influencersQuery.data}
-              geoCountries={geoCountries}
-            />
+            // The canvas is a fixed 1080px wide (so the exported PNG is
+            // crisp); allow horizontal scrolling within the card on screens
+            // narrower than that instead of overflowing the page.
+            <div className="overflow-x-auto">
+              <InfographicCanvas
+                ref={ref}
+                preview={previewQuery.data}
+                influencers={influencersQuery.data}
+                geoCountries={geoCountries}
+              />
+            </div>
           )}
         </CardContent>
       </Card>

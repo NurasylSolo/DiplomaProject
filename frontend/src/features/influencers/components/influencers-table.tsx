@@ -86,7 +86,7 @@ export function InfluencersTable({
                     onClick={() => onSort("name")}
                     icon={sortIcon("name")}
                   />
-                  <th className="p-4 text-xs font-medium text-muted-foreground uppercase tracking-wide w-24 text-center">
+                  <th className="hidden sm:table-cell p-4 text-xs font-medium text-muted-foreground uppercase tracking-wide w-24 text-center">
                     {t("influencersPage.table.platform")}
                   </th>
                   <SortHeader
@@ -102,6 +102,7 @@ export function InfluencersTable({
                     icon={sortIcon("reach")}
                     width="w-24"
                     align="right"
+                    className="hidden lg:table-cell"
                   />
                   <SortHeader
                     label={t("influencersPage.table.shareOfVoice")}
@@ -109,6 +110,7 @@ export function InfluencersTable({
                     icon={sortIcon("share_of_voice")}
                     width="w-28"
                     align="right"
+                    className="hidden lg:table-cell"
                   />
                   <SortHeader
                     label={t("influencersPage.table.score")}
@@ -123,6 +125,7 @@ export function InfluencersTable({
                     icon={sortIcon("last_seen")}
                     width="w-32"
                     align="right"
+                    className="hidden md:table-cell"
                   />
                   <th className="p-4 w-12"></th>
                 </tr>
@@ -186,12 +189,14 @@ function SortHeader({
   icon,
   width = "",
   align = "left",
+  className = "",
 }: {
   label: string;
   onClick: () => void;
   icon: React.ReactNode;
   width?: string;
   align?: "left" | "right" | "center";
+  className?: string;
 }) {
   const alignCls =
     align === "right" ? "text-right" : align === "center" ? "text-center" : "";
@@ -203,7 +208,8 @@ function SortHeader({
       className={cn(
         "p-4 text-xs font-medium text-muted-foreground uppercase tracking-wide",
         width,
-        alignCls
+        alignCls,
+        className
       )}
     >
       <button
@@ -262,7 +268,7 @@ function InfluencerRow({
           </div>
         </div>
       </td>
-      <td className="p-4 text-center">
+      <td className="hidden sm:table-cell p-4 text-center">
         <Badge variant="secondary" className="capitalize text-[10px]">
           {inf.platform}
         </Badge>
@@ -270,10 +276,10 @@ function InfluencerRow({
       <td className="p-4 text-right tabular-nums font-medium">
         {(inf.mentions_count || 0).toLocaleString()}
       </td>
-      <td className="p-4 text-right tabular-nums text-muted-foreground">
+      <td className="hidden lg:table-cell p-4 text-right tabular-nums text-muted-foreground">
         {fmtCompact(inf.reach)}
       </td>
-      <td className="p-4 text-right tabular-nums">
+      <td className="hidden lg:table-cell p-4 text-right tabular-nums">
         {(inf.share_of_voice || 0).toFixed(1)}%
       </td>
       <td className="p-4 text-center">
@@ -281,7 +287,7 @@ function InfluencerRow({
           {inf.influence_score.toFixed(1)}
         </Badge>
       </td>
-      <td className="p-4 text-right text-xs text-muted-foreground">
+      <td className="hidden md:table-cell p-4 text-right text-xs text-muted-foreground">
         {lastSeenAgo(inf.last_seen, t)}
       </td>
       <td className="p-4" onClick={(e) => e.stopPropagation()}>

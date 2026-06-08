@@ -151,13 +151,13 @@ export function MentionsTable({ projectId }: MentionsTableProps) {
             <th className="p-4 text-xs font-medium text-muted-foreground uppercase tracking-wide w-24">
               {t("mentions.table.sentiment")}
             </th>
-            <th className="p-4 text-xs font-medium text-muted-foreground uppercase tracking-wide w-20 text-center">
+            <th className="hidden lg:table-cell p-4 text-xs font-medium text-muted-foreground uppercase tracking-wide w-20 text-center">
               {t("mentions.table.score")}
             </th>
-            <th className="p-4 text-xs font-medium text-muted-foreground uppercase tracking-wide w-24 text-right">
+            <th className="hidden md:table-cell p-4 text-xs font-medium text-muted-foreground uppercase tracking-wide w-24 text-right">
               {t("mentions.table.reach")}
             </th>
-            <th className="p-4 text-xs font-medium text-muted-foreground uppercase tracking-wide w-20 text-center">
+            <th className="hidden sm:table-cell p-4 text-xs font-medium text-muted-foreground uppercase tracking-wide w-20 text-center">
               {t("mentions.table.location")}
             </th>
             <th className="p-4 w-12"></th>
@@ -242,7 +242,7 @@ export function MentionsTable({ projectId }: MentionsTableProps) {
                       {mention.sentimentLabel}
                     </Badge>
                   </td>
-                  <td className="p-4 text-center">
+                  <td className="hidden lg:table-cell p-4 text-center">
                     <div className="flex flex-col items-center">
                       <span className="text-sm font-semibold">
                         {mention.influenceScore?.toFixed(1) || "0.0"}
@@ -252,12 +252,12 @@ export function MentionsTable({ projectId }: MentionsTableProps) {
                       </span>
                     </div>
                   </td>
-                  <td className="p-4 text-right">
+                  <td className="hidden md:table-cell p-4 text-right">
                     <span className="text-sm font-medium">
                       {formatReach(mention.reach || 0)}
                     </span>
                   </td>
-                  <td className="p-4 text-center">
+                  <td className="hidden sm:table-cell p-4 text-center">
                     <span className="inline-flex items-center justify-center" title={getCountryName(mention.country, "en")}>
                       <CountryFlag code={mention.country} size={22} />
                     </span>
@@ -302,8 +302,8 @@ export function MentionsTable({ projectId }: MentionsTableProps) {
       </table>
       
       {/* Pagination */}
-      <div className="flex items-center justify-between p-4 border-t border-border/50">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border-t border-border/50">
+        <div className="flex items-center gap-4 flex-wrap">
           <p className="text-sm text-muted-foreground">
             {t("mentions.table.showing", {
               from: Math.min((currentPage - 1) * perPage + 1, totalItems),

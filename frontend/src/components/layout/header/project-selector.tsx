@@ -46,7 +46,7 @@ export function ProjectSelector({
         value={currentProject.id}
         onValueChange={(value) => router.push(`/projects/${value}/mentions`)}
       >
-        <SelectTrigger className="w-60 h-9 border-0 bg-muted/50 hover:bg-muted">
+        <SelectTrigger className="w-[140px] sm:w-60 h-9 border-0 bg-muted/50 hover:bg-muted">
           <div className="flex items-center gap-2 min-w-0">
             <span
               className="w-2.5 h-2.5 rounded-full shrink-0"

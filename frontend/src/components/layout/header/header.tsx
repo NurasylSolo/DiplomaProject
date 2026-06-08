@@ -170,11 +170,13 @@ export function Header({ projectId }: HeaderProps) {
         "fixed top-0 right-0 z-30 h-16",
         "bg-background/80 backdrop-blur-xl border-b border-border/50",
         "transition-all duration-300",
-        isCollapsed ? "left-[72px]" : "left-[260px]"
+        // Mobile: span full width. Desktop (lg+): offset by the sidebar.
+        "left-0",
+        isCollapsed ? "lg:left-[72px]" : "lg:left-[260px]"
       )}
     >
-      <div className="flex items-center justify-between h-full px-4 lg:px-6">
-        <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between h-full px-3 sm:px-4 lg:px-6 gap-2">
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0">
           <Button
             variant="ghost"
             size="icon"
@@ -196,12 +198,14 @@ export function Header({ projectId }: HeaderProps) {
           <HeaderSearch />
         </div>
 
-        <div className="flex items-center gap-2">
-          <QuickActions
-            onDeletePreviousProjects={handleDeletePreviousProjects}
-            isDeletePreviousPending={deletePreviousProjectsMutation.isPending}
-            projectsCount={projects.length}
-          />
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+          <div className="hidden md:block">
+            <QuickActions
+              onDeletePreviousProjects={handleDeletePreviousProjects}
+              isDeletePreviousPending={deletePreviousProjectsMutation.isPending}
+              projectsCount={projects.length}
+            />
+          </div>
 
           <Sheet open={notificationsOpen} onOpenChange={setNotificationsOpen}>
             <NotificationsDropdown

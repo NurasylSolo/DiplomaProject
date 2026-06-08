@@ -101,7 +101,7 @@ export function PdfPreviewCard({
               <Loader2 className="h-5 w-5 animate-spin" />
             </div>
           ) : (
-            <div className="grid grid-cols-4 gap-2 mb-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
               {[
                 {
                   label: t("reportsPage.pdf.preview.mentions", {

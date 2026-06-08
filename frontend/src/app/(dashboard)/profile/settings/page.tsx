@@ -211,7 +211,7 @@ export default function ProfileSettingsPage() {
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="glass">
+        <TabsList className="glass max-w-full overflow-x-auto justify-start">
           <TabsTrigger value="profile" className="gap-2"><User className="h-4 w-4" />{t("accountSettingsPage.tabs.profile")}</TabsTrigger>
           <TabsTrigger value="security" className="gap-2"><Lock className="h-4 w-4" />{t("accountSettingsPage.tabs.security")}</TabsTrigger>
           <TabsTrigger value="sessions" className="gap-2"><Smartphone className="h-4 w-4" />{t("accountSettingsPage.tabs.sessions")}</TabsTrigger>

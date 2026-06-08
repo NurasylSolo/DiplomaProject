@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { MentionsFilters } from "@/features/mentions/components/mentions-filters";
 import { MentionsChart } from "@/features/mentions/components/mentions-chart";
 import { SentimentChart } from "@/features/mentions/components/sentiment-chart";
@@ -34,6 +35,7 @@ export default function MentionsPage({ params }: MentionsPageProps) {
   const { projectId } = use(params);
   const { t } = useTranslation();
   const [showFilters, setShowFilters] = useState(true);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const { filters } = useMentionsFilterStore();
 
   const filterParams = useMemo(() => buildFilterQuery(filters), [filters]);
@@ -88,22 +90,43 @@ export default function MentionsPage({ params }: MentionsPageProps) {
             {t("mentions.subtitle")}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)}>
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Desktop: toggle the inline filter rail */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="hidden lg:inline-flex"
+            onClick={() => setShowFilters(!showFilters)}
+          >
             <Filter className="h-4 w-4 mr-2" />
             {showFilters ? t("common.hideFilters") : t("common.showFilters")}
           </Button>
+          {/* Mobile/tablet: open filters in a drawer */}
+          <Sheet open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="sm" className="lg:hidden">
+                <Filter className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">{t("common.showFilters")}</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[88vw] max-w-sm overflow-y-auto p-4">
+              <SheetHeader className="sr-only">
+                <SheetTitle>{t("mentions.filters.title")}</SheetTitle>
+              </SheetHeader>
+              <MentionsFilters projectId={projectId} />
+            </SheetContent>
+          </Sheet>
           <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isRefetching}>
-            <RefreshCw className={cn("h-4 w-4 mr-2", isRefetching && "animate-spin")} />
-            {t("common.refresh")}
+            <RefreshCw className={cn("h-4 w-4 sm:mr-2", isRefetching && "animate-spin")} />
+            <span className="hidden sm:inline">{t("common.refresh")}</span>
           </Button>
           <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
-            {t("common.export")}
+            <Download className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">{t("common.export")}</span>
           </Button>
           <Button size="sm" className="glow-sm">
-            <Sparkles className="h-4 w-4 mr-2" />
-            {t("mentions.aiSummary")}
+            <Sparkles className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">{t("mentions.aiSummary")}</span>
           </Button>
         </div>
       </div>
@@ -119,7 +142,8 @@ export default function MentionsPage({ params }: MentionsPageProps) {
               transition={{ duration: 0.25, ease: "easeInOut" }}
               // 260px keeps room for the chart cards on common laptop
               // widths; the sidebar still scrolls vertically on its own.
-              className="flex-shrink-0 overflow-hidden"
+              // Desktop-only — on mobile the filters live in a drawer.
+              className="hidden lg:block flex-shrink-0 overflow-hidden"
             >
               <div className="w-[260px]">
                 <MentionsFilters projectId={projectId} />

@@ -295,7 +295,7 @@ export default function SettingsPage({ params }: SettingsPageProps) {
       </div>
 
       <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className="glass">
+        <TabsList className="glass max-w-full overflow-x-auto justify-start">
           <TabsTrigger value="general" className="gap-2">
             <FileText className="h-4 w-4" />
             {t("projectSettingsPage.tabs.general")}
