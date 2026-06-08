@@ -46,7 +46,7 @@ export function ProjectSelector({
         value={currentProject.id}
         onValueChange={(value) => router.push(`/projects/${value}/mentions`)}
       >
-        <SelectTrigger className="w-[140px] sm:w-60 h-9 border-0 bg-muted/50 hover:bg-muted">
+        <SelectTrigger className="w-[120px] sm:w-60 h-9 border-0 bg-muted/50 hover:bg-muted">
           <div className="flex items-center gap-2 min-w-0">
             <span
               className="w-2.5 h-2.5 rounded-full shrink-0"
@@ -98,9 +98,13 @@ export function ProjectSelector({
         </SelectContent>
       </Select>
 
+      {/* Power actions — desktop/tablet only. On phones they're hidden to
+          keep the header from overflowing (the icons would otherwise collide
+          with the right-hand cluster). */}
       <Button
         variant="ghost"
         size="icon"
+        className="hidden md:inline-flex"
         title={t("header.refreshProject", {
           defaultValue: "Refresh project data",
         })}
@@ -115,6 +119,7 @@ export function ProjectSelector({
       <Button
         variant="ghost"
         size="icon"
+        className="hidden md:inline-flex"
         title={t("header.deleteCurrentProject", {
           defaultValue: "Delete current project",
         })}
