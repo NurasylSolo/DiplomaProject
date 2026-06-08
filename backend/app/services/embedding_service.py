@@ -339,9 +339,16 @@ async def _search_similar_python(
     if not rows:
         return []
 
+    query_dim = len(query_vec)
     scored: list[tuple[str, float]] = []
     for mention_id, vec in rows:
-        sim = vector_service.cosine_similarity(query_vec, list(vec or []))
+        vec = list(vec or [])
+        # Only score embeddings of matching dimensionality. Mixing dims
+        # (e.g. legacy 64-dim hash fallbacks against a 1536-dim query) would
+        # silently truncate in cosine_similarity and surface bogus matches.
+        if len(vec) != query_dim:
+            continue
+        sim = vector_service.cosine_similarity(query_vec, vec)
         if sim >= min_similarity:
             scored.append((mention_id, sim))
     scored.sort(key=lambda x: x[1], reverse=True)
